@@ -37,7 +37,7 @@
 
 import logging
 
-from blatann.nrf.nrf_event import *
+from blatann.nrf.nrf_events import *
 from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_observers import NrfDriverObserver
 from blatann.nrf.nrf_event_sync import EventSync, ProcedureSync

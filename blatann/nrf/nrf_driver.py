@@ -44,7 +44,7 @@ import traceback
 from threading import Thread, Lock, Event
 from types import NoneType
 
-from blatann.nrf.nrf_event import *
+from blatann.nrf.nrf_events import *
 from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_dll_load import driver
 from pc_ble_driver_py.exceptions import NordicSemiException

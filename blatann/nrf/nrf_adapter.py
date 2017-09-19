@@ -40,7 +40,7 @@ import Queue
 
 from blatann.nrf.nrf_observers import NrfDriverObserver
 from blatann.nrf.nrf_driver import NrfDriver
-from blatann.nrf.nrf_event import *
+from blatann.nrf.nrf_events import *
 from blatann.nrf.nrf_event_sync import EventSync
 from pc_ble_driver_py.exceptions import NordicSemiException
 

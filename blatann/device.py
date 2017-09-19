@@ -1,6 +1,6 @@
 from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
-from blatann.nrf import nrf_event, nrf_event_sync
+from blatann.nrf import nrf_events, nrf_event_sync
 
 from blatann import peripheral, uuid
 
@@ -22,10 +22,10 @@ class BleDevice(NrfDriverObserver):
 
     def on_driver_event(self, nrf_driver, event):
         print("Got driver event: {}".format(str(event)))
-        if isinstance(event, nrf_event.GapEvtConnected):
+        if isinstance(event, nrf_events.GapEvtConnected):
             print("Connected")
 
     def wait_for_connection(self, timeout=30):
-        with nrf_event_sync.EventSync(self.ble_driver, nrf_event.GapEvtConnected) as sync:
+        with nrf_event_sync.EventSync(self.ble_driver, nrf_events.GapEvtConnected) as sync:
             event = sync.get(timeout=timeout)
         return event

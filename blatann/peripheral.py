@@ -1,4 +1,4 @@
-from blatann.nrf import nrf_observers, nrf_event, nrf_types
+from blatann.nrf import nrf_observers, nrf_events, nrf_types
 from blatann import gatts, peer
 
 
@@ -33,6 +33,6 @@ class PeripheralManager(nrf_observers.NrfDriverObserver):
         return self._db
 
     def on_driver_event(self, nrf_driver, event):
-        if isinstance(event, nrf_event.GapEvtConnected):
-            if event.role == nrf_event.BLEGapRoles.periph:
+        if isinstance(event, nrf_events.GapEvtConnected):
+            if event.role == nrf_events.BLEGapRoles.periph:
                 self.peer.peer_connected(event.conn_handle, event.peer_addr)
