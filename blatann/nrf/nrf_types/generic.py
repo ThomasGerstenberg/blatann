@@ -1,4 +1,5 @@
 from enum import Enum
+from types import NoneType
 import logging
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
