@@ -1,0 +1,41 @@
+
+# OS generated files
+.DS_Store
+
+# Generated Protobuf modules
+*_pb2.py
+
+# Log files
+*.log
+
+# Compiled python objects
+*.py[co]
+
+# Auto-generated version file
+version.py
+
+# User-specific project settings
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/encodings.xml
+.idea/misc.xml
+
+# Sensitive or high-churn files:
+.idea/dataSources.ids
+.idea/dataSources.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+
+# build outputs
+build/
+dist/
+*egg-info/
+
+# Code coverage files
+.coverage
+_coverage/
+
+# Log Files
+log/
