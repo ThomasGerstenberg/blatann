@@ -75,8 +75,8 @@ class BLEGapSecLevels(object):
         return sec_level
 
     def __repr__(self):
-        return "%s(lv1=%r, lv2=%r, lv3=%r, lv4=%r)" % (self.__class__.__name__,
-                                                       self.lv1, self.lv2, self.lv3, self.lv4)
+        return "{}(lv1={!r}, lv2={!r}, lv3={!r}, lv4={!r})".format(self.__class__.__name__,
+                                                                   self.lv1, self.lv2, self.lv3, self.lv4)
 
 
 class BLEGapSecKeyDist(object):
@@ -102,9 +102,10 @@ class BLEGapSecKeyDist(object):
         return kdist
 
     def __repr__(self):
-        return "%s(enc_key=%r, id_key=%r, sign_key=%r, link_key=%r)" % (self.__class__.__name__,
-                                                                        self.enc_key, self.id_key, self.sign_key,
-                                                                        self.link_key)
+        return "{}(enc_key={!r}, id_key={!r}, sign_key={!r}, link_key={!r})".format(self.__class__.__name__,
+                                                                                    self.enc_key, self.id_key,
+                                                                                    self.sign_key,
+                                                                                    self.link_key)
 
 
 class BLEGapSecParams(object):
@@ -149,10 +150,17 @@ class BLEGapSecParams(object):
         return sec_params
 
     def __repr__(self):
-        return "%s(bond=%r, mitm=%r, le_sec_pairing=%r, keypress_noti=%r, io_caps=%r, oob=%r, " \
-               "min_key_size=%r, max_key_size=%r, kdist_own=%r, kdist_peer=%r)" % (
-                   self.__class__.__name__, self.bond, self.mitm, self.le_sec_pairing, self.keypress_noti, self.io_caps,
-                   self.oob, self.min_key_size, self.max_key_size, self.kdist_own, self.kdist_peer,)
+        return "{}(bond={!r}, mitm={!r}, le_sec_pairing={!r}, keypress_noti={!r}, io_caps={!r}, oob={!r}, " \
+               "min_key_size={!r}, max_key_size={!r}, kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__,
+                                                                                               self.bond, self.mitm,
+                                                                                               self.le_sec_pairing,
+                                                                                               self.keypress_noti,
+                                                                                               self.io_caps,
+                                                                                               self.oob,
+                                                                                               self.min_key_size,
+                                                                                               self.max_key_size,
+                                                                                               self.kdist_own,
+                                                                                               self.kdist_peer, )
 
 
 class BLEGapSecKeyset(object):

@@ -110,10 +110,11 @@ class BLEGapConnParams(object):
         return conn_params
 
     def __str__(self):
-        return "%s(interval: [%r-%r] ms, timeout: %r ms, latency: %r)" % (
-            self.__class__.__name__, self.min_conn_interval_ms, self.max_conn_interval_ms,
-            self.conn_sup_timeout_ms, self.slave_latency
-        )
+        return "{}(interval: [{!r}-{!r}] ms, timeout: {!r} ms, latency: {!r})".format(self.__class__.__name__,
+                                                                                      self.min_conn_interval_ms,
+                                                                                      self.max_conn_interval_ms,
+                                                                                      self.conn_sup_timeout_ms,
+                                                                                      self.slave_latency)
 
 
 class BLEGapAddr(object):
@@ -175,7 +176,7 @@ class BLEGapAddr(object):
             return 'err {0:02b}'.format((self.AddressLtlEnd[-1] >> 6) & 0b11)
 
     def get_addr_str(self):
-        return '"%s" (% 6s)' % (self, self.get_addr_type_str())
+        return '"{}" ({:> 6})'.format(self, self.get_addr_type_str())
 
     def __eq__(self, other):
         if not isinstance(other, BLEGapAddr):
@@ -192,11 +193,10 @@ class BLEGapAddr(object):
         return 'p' if self.addr_type == BLEGapAddr.Types.public else 'r'
 
     def __str__(self):
-        return '%s,%s' % (':'.join(['%02X' % i for i in self.addr]), self.get_addr_flag())
+        return '{},{}'.format(':'.join(['%02X' % i for i in self.addr]), self.get_addr_flag())
 
     def __repr__(self):
-        return "%s.from_string('%s,%s')" % (self.__class__.__name__,
-                                            ':'.join(['%02X' % i for i in self.addr]), self.get_addr_flag())
+        return "{}.from_string({})".format(self.__class__.__name__, str(self))
 
 
 class BLEAdvData(object):
@@ -266,8 +266,8 @@ class BLEAdvData(object):
         ble_adv_data = cls()
         index = 0
         while index < len(ad_list):
+            ad_len = ad_list[index]
             try:
-                ad_len = ad_list[index]
                 ad_type = ad_list[index + 1]
                 offset = index + 2
                 key = BLEAdvData.Types(ad_type)
