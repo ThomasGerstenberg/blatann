@@ -87,47 +87,32 @@ class NrfDriver(object):
         self.observers = []
         self.ble_enable_params = None
 
-        # TODO: Is this the best way?
-        # if auto_flash:
-        #    try:
-        #        flasher = Flasher(serial_port=serial_port)
-        #    except Exception:
-        #        logger.error("Unable to find serial port")
-        #        raise
-
-        #    if flasher.fw_check() == False:
-        #        logger.info("Flashing board with firmware")
-        #        flasher.fw_flash()
-
-        #    flasher.reset()
-        #    time.sleep(1)
-
         phy_layer = driver.sd_rpc_physical_layer_create_uart(serial_port,
                                                              baud_rate,
                                                              driver.SD_RPC_FLOW_CONTROL_NONE,
-                                                             driver.SD_RPC_PARITY_NONE);
+                                                             driver.SD_RPC_PARITY_NONE)
         link_layer = driver.sd_rpc_data_link_layer_create_bt_three_wire(phy_layer, 100)
         transport_layer = driver.sd_rpc_transport_layer_create(link_layer, 100)
         self.rpc_adapter = driver.sd_rpc_adapter_create(transport_layer)
 
-    @wrapt.synchronized(api_lock)
-    @classmethod
-    def enum_serial_ports(cls):
-        MAX_SERIAL_PORTS = 64
-        c_descs = [driver.sd_rpc_serial_port_desc_t() for i in range(MAX_SERIAL_PORTS)]
-        c_desc_arr = util.list_to_serial_port_desc_array(c_descs)
-
-        arr_len = driver.new_uint32()
-        driver.uint32_assign(arr_len, MAX_SERIAL_PORTS)
-
-        err_code = driver.sd_rpc_serial_port_enum(c_desc_arr, arr_len)
-        if err_code != driver.NRF_SUCCESS:
-            raise NordicSemiException('Failed to {}. Error code: {}'.format(func.__name__, err_code))
-
-        dlen = driver.uint32_value(arr_len)
-
-        descs = util.serial_port_desc_array_to_list(c_desc_arr, dlen)
-        return map(SerialPortDescriptor.from_c, descs)
+    # @wrapt.synchronized(api_lock)
+    # @classmethod
+    # def enum_serial_ports(cls):
+    #     MAX_SERIAL_PORTS = 64
+    #     c_descs = [driver.sd_rpc_serial_port_desc_t() for i in range(MAX_SERIAL_PORTS)]
+    #     c_desc_arr = util.list_to_serial_port_desc_array(c_descs)
+    #
+    #     arr_len = driver.new_uint32()
+    #     driver.uint32_assign(arr_len, MAX_SERIAL_PORTS)
+    # 
+    #     err_code = driver.sd_rpc_serial_port_enum(c_desc_arr, arr_len)
+    #     if err_code != driver.NRF_SUCCESS:
+    #         raise NordicSemiException('Failed to {}. Error code: {}'.format(func.__name__, err_code))
+    #
+    #     dlen = driver.uint32_value(arr_len)
+    #
+    #     descs = util.serial_port_desc_array_to_list(c_desc_arr, dlen)
+    #     return map(SerialPortDescriptor.from_c, descs)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
