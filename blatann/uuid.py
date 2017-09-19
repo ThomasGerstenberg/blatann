@@ -29,7 +29,11 @@ class UuidManager(object):
             raise ValueError("uuid must be a 16-bit or 128-bit UUID")
 
 
-class Uuid128(object):
+class Uuid(object):
+    pass
+
+
+class Uuid128(Uuid):
     def __init__(self, uuid):
         if isinstance(uuid, str):
             self.uuid_str = uuid.lower()
@@ -70,7 +74,7 @@ class Uuid128(object):
         return self.uuid_str
 
 
-class Uuid16(object):
+class Uuid16(Uuid):
     def __init__(self, uuid):
         if not isinstance(uuid, int) or uuid > 0xFFFF:
             raise ValueError("UUID Must be a valid 16-bit integer")

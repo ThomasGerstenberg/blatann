@@ -16,14 +16,14 @@ class ServiceType(enum.Enum):
 
 
 class CharacteristicProperties(object):
-    def __init__(self, read=True, write=True, notify=True, indicate=True, security_level=SecurityLevel.OPEN,
-                 initial_length=20, max_length=20, variable_length=True, prefer_indications=True):
+    def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
+                 security_level=SecurityLevel.OPEN, max_length=20, variable_length=True, prefer_indications=True):
         self.read = read
         self.write = write
         self.notify = notify
         self.indicate = indicate
+        self.broadcast = broadcast
         self.security_level = security_level
-        self.init_len = initial_length
         self.max_len = max_length
         self.variable_length = variable_length
         self.prefer_indications = prefer_indications
@@ -54,8 +54,7 @@ class Characteristic(object):
         self.uuid = uuid
         self.declaration_handle = INVALID_HANDLE
         self.value_handle = INVALID_HANDLE
-        self.descriptors = []
-
+        self.cccd_handle = INVALID_HANDLE
 
 class Service(object):
     def __init__(self, ble_device, peer, uuid, service_type, start_handle=INVALID_HANDLE, end_handle=INVALID_HANDLE):

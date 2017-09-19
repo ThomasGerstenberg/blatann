@@ -108,10 +108,12 @@ class BLEGattsAttribute(object):
 
 class BLEGattsAttrMetadata(object):
     def __init__(self, read_permissions=BLEGapSecModeType.OPEN, write_permissions=BLEGapSecModeType.OPEN,
-                 variable_length=False):
+                 variable_length=False, read_auth=True, write_auth=True):
         self.read_perm = read_permissions
         self.write_perm = write_permissions
         self.vlen = variable_length
+        self.read_auth = read_auth
+        self.write_auth = write_auth
 
     def to_c(self):
         params = driver.ble_gatts_attr_md_t()
@@ -119,8 +121,8 @@ class BLEGattsAttrMetadata(object):
         params.write_perm = self.write_perm.to_c()
         params.vlen = self.vlen
         params.vloc = 1  # STACK
-        params.rd_auth = 1
-        params.wr_auth = 1
+        params.rd_auth = int(self.read_auth)
+        params.wr_auth = int(self.write_auth)
         return params
 
     @classmethod
@@ -128,7 +130,9 @@ class BLEGattsAttrMetadata(object):
         read_perm = BLEGapSecMode.from_c(params.read_perm)
         write_perm = BLEGapSecMode.from_c(params.write_perm)
         vlen = params.vlen
-        return cls(read_perm, write_perm, vlen)
+        read_auth = bool(params.rd_auth)
+        write_auth = bool(params.wr_auth)
+        return cls(read_perm, write_perm, vlen, read_auth, write_auth)
 
 
 class BLEGattsCharMetadata(object):

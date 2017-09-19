@@ -56,5 +56,7 @@ _event_classes = [
 _events_by_id = {e.evt_id: e for e in _event_classes}
 
 def event_decode(ble_event):
-
-    return _events_by_id.get(ble_event.header.evt_id, None)
+    event_cls = _events_by_id.get(ble_event.header.evt_id, None)
+    if event_cls:
+        return event_cls.from_c(ble_event)
+    return None

@@ -11,6 +11,9 @@ class BLEEvent(object):
     def __init__(self, conn_handle):
         self.conn_handle = conn_handle
 
+    def __str__(self):
+        return self.__repr__()
+
 
 class EvtTxComplete(BLEEvent):
     evt_id = driver.BLE_EVT_TX_COMPLETE
