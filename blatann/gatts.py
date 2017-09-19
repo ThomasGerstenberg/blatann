@@ -41,7 +41,7 @@ class GattsService(gatt.Service):
         self.ble_device.uuid_manager.register_uuid(uuid)
         # Add characteristic to driver
         # TODO Fill out properties
-        props = nrf_types.BLECharacteristicProperties()
+        props = nrf_types.BLECharacteristicProperties(read=True)
         char_md = nrf_types.BLEGattsCharMetadata(props)
         attrs = nrf_types.BLEGattsAttribute(uuid.nrf_uuid, nrf_types.BLEGattsAttrMetadata(), 2)
         handles = nrf_types.BLEGattsCharHandles()

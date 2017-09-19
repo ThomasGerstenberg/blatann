@@ -4,37 +4,57 @@ from blatann.nrf.nrf_events.smp_events import *
 from blatann.nrf.nrf_events.gatt_events import *
 
 
+_event_classes = [
+    EvtTxComplete,
+
+    # Gap
+    GapEvtConnected,
+    GapEvtDisconnected,
+    GapEvtConnParamUpdate,
+    GapEvtAdvReport,
+    GapEvtTimeout,
+    GapEvtConnParamUpdateRequest,
+
+    # SMP
+    GapEvtSecParamsRequest,
+    GapEvtAuthKeyRequest,
+    GapEvtConnSecUpdate,
+    GapEvtAuthStatus,
+    GapEvtPasskeyDisplay,
+    # TODO: (not all listed)
+    # driver.BLE_GAP_EVT_SEC_INFO_REQUEST,
+    # driver.BLE_GAP_EVT_SEC_REQUEST,
+
+    # Gattc
+    GattcEvtPrimaryServiceDiscoveryResponse,
+    GattcEvtCharacteristicDiscoveryResponse,
+    GattcEvtDescriptorDiscoveryResponse,
+    GattcEvtReadResponse,
+    GattcEvtWriteResponse,
+    GattcEvtHvx,
+    # TODO:
+    # driver.BLE_GATTC_EVT_REL_DISC_RSP
+    # driver.BLE_GATTC_ATTR_INFO_DISC_RSP
+    # driver.BLE_GATTC_EVT_CHAR_VAL_BY_UUID_READ_RSP
+    # driver.BLE_GATTC_EVT_CHAR_VALS_READ_RSP
+    # driver.BLE_GATTC_EVT_EXCHANGE_MTU_RSP
+    # driver.BLE_GATTC_EVT_TIMEOUT
+    # driver.BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE
+
+    # Gatts
+    GattsEvtWrite,
+    GattsEvtReadWriteAuthorizeRequest,
+    GattsEvtHandleValueConfirm,
+    GattsEvtExchangeMtuRequest,
+    # GattsEvtNotificationTxComplete,
+    # TODO:
+    # driver.BLE_GATTS_SYS_ATTR_MISSING
+    # driver.BLE_GATTS_EVT_SC_CONFIRM
+    # driver.BLE_GATTS_EVT_TIMEOUT
+]
+
+_events_by_id = {e.evt_id: e for e in _event_classes}
+
 def event_decode(ble_event):
-    event_classes = [
-        EvtTxComplete,
 
-        # Gap
-        GapEvtAdvReport,
-        GapEvtConnected,
-        GapEvtDisconnected,
-        GapEvtTimeout,
-
-        GapEvtConnParamUpdateRequest,
-        GapEvtConnParamUpdate,
-
-        # SMP
-        GapEvtSecParamsRequest,
-        GapEvtAuthKeyRequest,
-        GapEvtConnSecUpdate,
-        GapEvtAuthStatus,
-        GapEvtPasskeyDisplay,
-        # driver.BLE_GAP_EVT_SEC_INFO_REQUEST,
-        # driver.BLE_GAP_EVT_SEC_REQUEST,
-
-        # Gattc
-        GattcEvtReadResponse,
-        GattcEvtHvx,
-        GattcEvtWriteResponse,
-        GattcEvtPrimaryServiceDiscoveryResponse,
-        GattcEvtCharacteristicDiscoveryResponse,
-        GattcEvtDescriptorDiscoveryResponse
-    ]
-
-    for event_class in event_classes:
-        if ble_event.header.evt_id == event_class.evt_id:
-            return event_class.from_c(ble_event)
+    return _events_by_id.get(ble_event.header.evt_id, None)

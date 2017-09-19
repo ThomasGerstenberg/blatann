@@ -6,7 +6,15 @@ import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_events.generic_events import BLEEvent
 
 
-class GattcEvt(BLEEvent):
+class GattEvt(BLEEvent):
+    pass
+
+
+class GattcEvt(GattEvt):
+    pass
+
+
+class GattsEvt(GattEvt):
     pass
 
 
@@ -183,3 +191,146 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
     def __repr__(self):
         return "{}(conn_handle={!r}, status={!r}, descriptions={!r})".format(self.__class__.__name__, self.conn_handle,
                                                                              self.status, self.descriptions)
+
+
+# GATTS events
+
+# TODO: SYS_ATTR_MISSING, SC_CONFIRM, TIMEOUT
+
+
+class GattsEvtWrite(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_WRITE
+
+    def __init__(self, conn_handle, attr_handle, uuid, write_operand, auth_required, offset, data):
+        super(GattsEvtWrite, self).__init__(conn_handle)
+        self.attribute_handle = attr_handle
+        self.uuid = uuid
+        self.write_op = write_operand
+        self.auth_required = auth_required
+        self.offset = offset
+        self.data = data
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gatts_evt.conn_handle
+        write_event = event.evt.gatts_evt.write
+        return cls.from_auth_request(conn_handle, write_event)
+
+    @classmethod
+    def from_auth_request(cls, conn_handle, write_event):
+        attr_handle = write_event.handle
+        uuid = BLEUUID.from_c(write_event.uuid)
+        write_operand = BLEGattWriteOperation(write_event.write_op)
+        auth_required = bool(write_event.auth_required)
+        offset = write_event.offset
+        data = util.uint8_array_to_list(write_event.data, write_event.len)
+
+        return cls(conn_handle, attr_handle, uuid, write_operand, auth_required, offset, data)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, attr_handle={!r}, uuid={!r}, write_op={!r}, auth_required={!r}, offset={!r}, " \
+               "data={!r})".format(self.__class__.__name__, self.conn_handle, self.attribute_handle, self.uuid,
+                                   self.write_op, self.auth_required, self.offset, self.data)
+
+
+class GattsEvtRead(GattsEvt):
+    def __init__(self, conn_handle, attr_handle, uuid, offset):
+        super(GattsEvtRead, self).__init__(conn_handle)
+        self.attribute_handle = attr_handle
+        self.uuid = uuid
+        self.offset = offset
+
+    @classmethod
+    def from_auth_request(cls, conn_handle, read_event):
+        attr_handle = read_event.handle
+        uuid = BLEUUID.from_c(read_event.uuid)
+        offset = read_event.offset
+
+        return cls(conn_handle, attr_handle, uuid, offset)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, attr_handle={!r}, uuid={!r}, offset={!r}, )".format(self.__class__.__name__,
+                                                                                         self.conn_handle,
+                                                                                         self.attribute_handle,
+                                                                                         self.uuid, self.offset)
+
+
+class GattsEvtReadWriteAuthorizeRequest(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST
+
+    def __init__(self, conn_handle, read=None, write=None):
+        super(GattsEvtReadWriteAuthorizeRequest, self).__init__(conn_handle)
+        self.read = read
+        self.write = write
+
+    @classmethod
+    def from_c(cls, event):
+        auth_event = event.evt.gatts_evt.authorize_request
+        conn_handle = event.evt.gatts_evt.conn_handle
+        read = None
+        write = None
+        if auth_event.type == driver.BLE_GATTS_AUTHORIZE_TYPE_READ:
+            read = GattsEvtRead.from_auth_request(conn_handle, auth_event.read)
+        elif auth_event.type == driver.BLE_GATTS_AUTHORIZE_TYPE_WRITE:
+            write = GattsEvtWrite.from_auth_request(conn_handle, auth_event.write)
+        else:
+            raise NordicSemiException("Unknown authorize request type: {}".format(auth_event.type))
+        return cls(conn_handle, read, write)
+
+    def __repr__(self):
+        if self.read is not None:
+            txt = "read"
+            data = self.read
+        else:
+            txt = "write"
+            data = self.write
+            
+        return "{}(conn_handle={!r}, {}={!r})".format(self.__class__.__name__, self.conn_handle, txt, data)
+
+
+class GattsEvtHandleValueConfirm(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_HVC
+
+    def __init__(self, conn_handle, attr_handle):
+        super(GattsEvtHandleValueConfirm, self).__init__(conn_handle)
+        self.attribute_handle = attr_handle
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gatts_evt.conn_handle
+        return cls(conn_handle, event.evt.gatts_evt.hvc.handle)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, attr_handle={!r})".format(self.__class__.__name__, self.conn_handle, self.attribute_handle)
+
+
+class GattsEvtExchangeMtuRequest(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
+
+    def __init__(self, conn_handle, client_mtu):
+        super(GattsEvtExchangeMtuRequest, self).__init__(conn_handle)
+        self.client_mtu = client_mtu
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gatts_evt.conn_handle
+        return cls(conn_handle, event.evt.gatts_evt.exchange_mtu_request.client_rx_mtu)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)
+
+
+# class GattsEvtNotificationTxComplete(GattsEvt):
+#     evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
+#
+#     def __init__(self, conn_handle, count):
+#         super(GattsEvtNotificationTxComplete, self).__init__(conn_handle)
+#         self.count = count
+#
+#     @classmethod
+#     def from_c(cls, event):
+#         conn_handle = event.evt.gatts_evt.conn_handle
+#         return cls(conn_handle, event.evt.gatts_evt.hvn_tx_complete.count)
+#
+#     def __repr__(self):
+#         return "{}(conn_handle={!r}, count={!r})".format(self.__class__.__name__, self.conn_handle, self.count)

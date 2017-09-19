@@ -21,7 +21,7 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.close()
 
     def on_driver_event(self, nrf_driver, event):
-        print("Got driver event: {}".format(str(event)))
+        print("Got driver event: {}".format(event))
         if isinstance(event, nrf_events.GapEvtConnected):
             print("Connected")
 
