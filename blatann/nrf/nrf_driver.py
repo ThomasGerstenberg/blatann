@@ -104,7 +104,7 @@ class NrfDriver(object):
     #
     #     arr_len = driver.new_uint32()
     #     driver.uint32_assign(arr_len, MAX_SERIAL_PORTS)
-    # 
+    #
     #     err_code = driver.sd_rpc_serial_port_enum(c_desc_arr, arr_len)
     #     if err_code != driver.NRF_SUCCESS:
     #         raise NordicSemiException('Failed to {}. Error code: {}'.format(func.__name__, err_code))
@@ -184,7 +184,7 @@ class NrfDriver(object):
                                mitm=True,
                                le_sec_pairing=False,
                                keypress_noti=False,
-                               io_caps=GapIoCaps.NONE,
+                               io_caps=BLEGapIoCaps.NONE,
                                oob=False,
                                min_key_size=8,
                                max_key_size=16,

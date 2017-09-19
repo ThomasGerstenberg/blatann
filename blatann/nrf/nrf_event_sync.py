@@ -45,7 +45,7 @@ from blatann.nrf.nrf_observers import NrfDriverObserver
 class EventSync(NrfDriverObserver):
     """Register an observer to synchronize waiting for events
 
-    This class is used for serial code to start a procedure and wait for the resonse.
+    This class is used for serial code to start a procedure and wait for the response.
 
     The class takes both a list of classes to filter and a callback filter function.
     * The class filter is useful for instance to only receive GattcEvtHvx.

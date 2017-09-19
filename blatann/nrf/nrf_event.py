@@ -66,8 +66,7 @@ class EvtTxComplete(BLEEvent):
                    count=tx_complete_evt.count)
 
     def __repr__(self):
-        return "%s(conn_handle=%r, count=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.count)
+        return "{}(conn_handle={!r}, count={!r})".format(self.__class__.__name__, self.conn_handle, self.count)
 
 
 class GapEvt(BLEEvent):
@@ -109,7 +108,7 @@ class GapEvtAdvReport(GapEvt):
                    adv_data=BLEAdvData.from_c(adv_report_evt))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, peer_addr=%r, rssi=%r, adv_type=%r, adv_data=%r)" % (
+        return "{}(conn_handle={!r}, peer_addr={!r}, rssi={!r}, adv_type={!r}, adv_data={!r})".format(
             self.__class__.__name__, self.conn_handle,
             self.peer_addr, self.rssi, self.adv_type, self.adv_data)
 
@@ -128,8 +127,7 @@ class GapEvtTimeout(GapEvt):
                    src=BLEGapTimeoutSrc(timeout_evt.src))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, src=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.src)
+        return "{}(conn_handle={!r}, src={!r})".format(self.__class__.__name__, self.conn_handle, self.src)
 
 
 class GapEvtConnParamUpdateRequest(GapEvt):
@@ -146,8 +144,8 @@ class GapEvtConnParamUpdateRequest(GapEvt):
                    conn_params=BLEGapConnParams.from_c(conn_params))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, conn_params=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.conn_params)
+        return "{}(conn_handle={!r}, conn_params={!r})".format(self.__class__.__name__, self.conn_handle,
+                                                               self.conn_params)
 
 
 class GapEvtConnParamUpdate(GapEvt):
@@ -164,8 +162,8 @@ class GapEvtConnParamUpdate(GapEvt):
                    conn_params=BLEGapConnParams.from_c(conn_params))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, conn_params=%s)" % (
-            self.__class__.__name__, self.conn_handle, self.conn_params)
+        return "{}(conn_handle={!r}, conn_params={})".format(self.__class__.__name__, self.conn_handle,
+                                                             self.conn_params)
 
 
 class GapEvtConnected(GapEvt):
@@ -186,9 +184,10 @@ class GapEvtConnected(GapEvt):
                    conn_params=BLEGapConnParams.from_c(connected_evt.conn_params))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, peer_addr=%r, role=%r, conn_params=%s)" % (
-            self.__class__.__name__, self.conn_handle,
-            self.peer_addr, self.role, self.conn_params)
+        return "{}(conn_handle={!r}, peer_addr={!r}, role={!r}, conn_params={})".format(self.__class__.__name__,
+                                                                                        self.conn_handle,
+                                                                                        self.peer_addr, self.role,
+                                                                                        self.conn_params)
 
 
 class GapEvtDisconnected(GapEvt):
@@ -205,8 +204,7 @@ class GapEvtDisconnected(GapEvt):
                    reason=BLEHci(disconnected_evt.reason))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, reason=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.reason)
+        return "{}(conn_handle={!r}, reason={!r})".format(self.__class__.__name__, self.conn_handle, self.reason)
 
 
 class GapEvtSec(GapEvt):
@@ -231,8 +229,11 @@ class GapEvtConnSecUpdate(GapEvtSec):
                    encr_key_size=conn_sec.encr_key_size)
 
     def __repr__(self):
-        return "%s(conn_handle=%r, sec_mode=%r, sec_level=%r, encr_key_size=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.sec_mode, self.sec_level, self.encr_key_size)
+        return "{}(conn_handle={!r}, sec_mode={!r}, sec_level={!r}, encr_key_size={!r})".format(self.__class__.__name__,
+                                                                                                self.conn_handle,
+                                                                                                self.sec_mode,
+                                                                                                self.sec_level,
+                                                                                                self.encr_key_size)
 
 
 class GapEvtSecParamsRequest(GapEvtSec):
@@ -249,23 +250,8 @@ class GapEvtSecParamsRequest(GapEvtSec):
                    sec_params=BLEGapSecParams.from_c(sec_params))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, sec_params=%r)" % (self.__class__.__name__, self.conn_handle, self.sec_params)
-
-
-# TODO: Move to nrf_types, merge with BLEGapIOCaps
-class GapIoCaps(IntEnum):
-    DISPLAY_ONLY = driver.BLE_GAP_IO_CAPS_DISPLAY_ONLY
-    DISPLAY_YESNO = driver.BLE_GAP_IO_CAPS_DISPLAY_YESNO
-    KEYBOARD_ONLY = driver.BLE_GAP_IO_CAPS_KEYBOARD_ONLY
-    NONE = driver.BLE_GAP_IO_CAPS_NONE
-    KEYBOARD_DISPLAY = driver.BLE_GAP_IO_CAPS_KEYBOARD_DISPLAY
-
-
-# TODO: Move to nrf_types
-class GapAuthKeyType(IntEnum):
-    NONE = driver.BLE_GAP_AUTH_KEY_TYPE_NONE
-    PASSKEY = driver.BLE_GAP_AUTH_KEY_TYPE_PASSKEY
-    OOB = driver.BLE_GAP_AUTH_KEY_TYPE_OOB
+        return "{}(conn_handle={!r}, sec_params={!r})".format(self.__class__.__name__, self.conn_handle,
+                                                              self.sec_params)
 
 
 class GapEvtAuthKeyRequest(GapEvtSec):
@@ -279,10 +265,10 @@ class GapEvtAuthKeyRequest(GapEvtSec):
     def from_c(cls, event):
         auth_key_request = event.evt.gap_evt.params.auth_key_request
         return cls(conn_handle=event.evt.gap_evt.conn_handle,
-                   key_type=GapAuthKeyType(auth_key_request.key_type))
+                   key_type=BLEGapAuthKeyType(auth_key_request.key_type))
 
     def __repr__(self):
-        return "%s(conn_handle=%r, key_type=%r)" % (self.__class__.__name__, self.conn_handle, self.key_type)
+        return "{}(conn_handle={!r}, key_type={!r})".format(self.__class__.__name__, self.conn_handle, self.key_type)
 
 
 class GapEvtAuthStatus(GapEvtSec):
@@ -311,9 +297,11 @@ class GapEvtAuthStatus(GapEvtSec):
                    kdist_peer=BLEGapSecKeyDist.from_c(auth_status.kdist_peer))
 
     def __str__(self):
-        return "%s(conn_handle=%r, auth_status=%r, error_src=%r, bonded=%r, sm1_levels=%r, sm2_levels=%r, kdist_own=%r, kdist_peer=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.auth_status, self.error_src, self.bonded,
-            self.sm1_levels, self.sm2_levels, self.kdist_own, self.kdist_peer)
+        return "{}(conn_handle={!r}, auth_status={!r}, error_src={!r}, bonded={!r}, sm1_levels={!r}, sm2_levels={!r}, " \
+               "kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__, self.conn_handle, self.auth_status,
+                                                         self.error_src, self.bonded,
+                                                         self.sm1_levels, self.sm2_levels, self.kdist_own,
+                                                         self.kdist_peer)
 
 
 class GapEvtPasskeyDisplay(GapEvtSec):
@@ -334,8 +322,9 @@ class GapEvtPasskeyDisplay(GapEvtSec):
                    match_request=match_request)
 
     def __str__(self):
-        return "%s(conn_handle=%r, passkey=%r, match_request=%r)" % (
-            self.__class__.__name__, self.conn_handle, self.passkey, self.match_request)
+        return "{}(conn_handle={!r}, passkey={!r}, match_request={!r})".format(self.__class__.__name__,
+                                                                               self.conn_handle, self.passkey,
+                                                                               self.match_request)
 
 
 class GattcEvt(BLEEvent):
@@ -372,7 +361,7 @@ class GattcEvtReadResponse(GattcEvt):
         data = None
         if self.data is not None:
             data = ''.join(map(chr, self.data))
-        return "%s(conn_handle=%r, status=%r, error_handle=%r, attr_handle=%r, offset=%r, data=%r)" % (
+        return "{}(conn_handle={!r}, status={!r}, error_handle={!r}, attr_handle={!r}, offset={!r}, data={!r})".format(
             self.__class__.__name__, self.conn_handle,
             self.status, self.error_handle, self.attr_handle, self.offset, data)
 
@@ -403,7 +392,7 @@ class GattcEvtHvx(GattcEvt):
 
     def __repr__(self):
         data = ''.join(map(chr, self.data))
-        return "%s(conn_handle=%r, status=%r, error_handle=%r, attr_handle=%r, hvx_type=%r, data=%r)" % (
+        return "{}(conn_handle={!r}, status={!r}, error_handle={!r}, attr_handle={!r}, hvx_type={!r}, data={!r})".format(
             self.__class__.__name__, self.conn_handle,
             self.status, self.error_handle, self.attr_handle, self.hvx_type, data)
 
@@ -436,7 +425,7 @@ class GattcEvtWriteResponse(GattcEvt):
 
     def __repr__(self):
         data = ''.join(map(chr, self.data))
-        return "%s(conn_handle=%r, status=%r, error_handle=%r, attr_handle=%r, write_op=%r, offset=%r, data=%r)" % (
+        return "{}(conn_handle={!r}, status={!r}, error_handle={!r}, attr_handle={!r}, write_op={!r}, offset={!r}, data={!r})".format(
             self.__class__.__name__, self.conn_handle,
             self.status, self.error_handle, self.attr_handle, self.write_op, self.offset, data)
 
@@ -462,9 +451,8 @@ class GattcEvtPrimaryServiceDiscoveryResponse(GattcEvt):
                    services=services)
 
     def __repr__(self):
-        return "%s(conn_handle=%r, status=%r, services=%r)" % (
-            self.__class__.__name__, self.conn_handle,
-            self.status, self.services)
+        return "{}(conn_handle={!r}, status={!r}, services={!r})".format(self.__class__.__name__, self.conn_handle,
+                                                                         self.status, self.services)
 
 
 class GattcEvtCharacteristicDiscoveryResponse(GattcEvt):
@@ -488,9 +476,9 @@ class GattcEvtCharacteristicDiscoveryResponse(GattcEvt):
                    characteristics=characteristics)
 
     def __repr__(self):
-        return "%s(conn_handle=%r, status=%r, characteristics=%r)" % (
-            self.__class__.__name__, self.conn_handle,
-            self.status, self.characteristics)
+        return "{}(conn_handle={!r}, status={!r}, characteristics={!r})".format(self.__class__.__name__,
+                                                                                self.conn_handle,
+                                                                                self.status, self.characteristics)
 
 
 class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
@@ -514,9 +502,8 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
                    descriptions=descriptions)
 
     def __repr__(self):
-        return "%s(conn_handle=%r, status=%r, descriptions=%r)" % (
-            self.__class__.__name__, self.conn_handle,
-            self.status, self.descriptions)
+        return "{}(conn_handle={!r}, status={!r}, descriptions={!r})".format(self.__class__.__name__, self.conn_handle,
+                                                                             self.status, self.descriptions)
 
 
 def event_decode(ble_event):

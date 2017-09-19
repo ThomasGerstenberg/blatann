@@ -2,7 +2,8 @@ from enum import Enum
 import logging
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
-from blatann.nrf.types.generic import BLEUUID
+from blatann.nrf.nrf_types.generic import BLEUUID
+from blatann.nrf.nrf_types.smp import *
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import logging
 from pc_ble_driver_py.exceptions import NordicSemiException
 from blatann.nrf.nrf_dll_load import driver
@@ -26,6 +26,20 @@ class BLEGapTimeoutSrc(Enum):
     security_req = driver.BLE_GAP_TIMEOUT_SRC_SECURITY_REQUEST
     scan = driver.BLE_GAP_TIMEOUT_SRC_SCAN
     conn = driver.BLE_GAP_TIMEOUT_SRC_CONN
+
+
+class BLEGapIoCaps(IntEnum):
+    DISPLAY_ONLY = driver.BLE_GAP_IO_CAPS_DISPLAY_ONLY
+    DISPLAY_YESNO = driver.BLE_GAP_IO_CAPS_DISPLAY_YESNO
+    KEYBOARD_ONLY = driver.BLE_GAP_IO_CAPS_KEYBOARD_ONLY
+    NONE = driver.BLE_GAP_IO_CAPS_NONE
+    KEYBOARD_DISPLAY = driver.BLE_GAP_IO_CAPS_KEYBOARD_DISPLAY
+
+
+class BLEGapAuthKeyType(IntEnum):
+    NONE = driver.BLE_GAP_AUTH_KEY_TYPE_NONE
+    PASSKEY = driver.BLE_GAP_AUTH_KEY_TYPE_PASSKEY
+    OOB = driver.BLE_GAP_AUTH_KEY_TYPE_OOB
 
 
 class BLEGapAdvParams(object):
