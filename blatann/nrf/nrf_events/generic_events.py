@@ -15,6 +15,22 @@ class BLEEvent(object):
         return self.__repr__()
 
 
+class EvtUserMemoryRequest(BLEEvent):
+    evt_id = driver.BLE_EVT_USER_MEM_REQUEST
+
+    def __init__(self, conn_handle, request_type):
+        super(EvtUserMemoryRequest, self).__init__(conn_handle)
+        self.type = request_type
+
+    @classmethod
+    def from_c(cls, event):
+        return cls(event.evt.common_evt.conn_handle, event.evt.common_evt.params.user_mem_request.type)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, type={!r})".format(self.__class__.__name__, self.conn_handle, self.type)
+
+
+
 class EvtTxComplete(BLEEvent):
     evt_id = driver.BLE_EVT_TX_COMPLETE
 

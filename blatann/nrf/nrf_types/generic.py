@@ -6,6 +6,8 @@ import blatann.nrf.nrf_driver_types as util
 
 logger = logging.getLogger(__name__)
 
+BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
+
 
 class BLEHci(Enum):
     success = driver.BLE_HCI_STATUS_CODE_SUCCESS

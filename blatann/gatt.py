@@ -1,6 +1,5 @@
 import enum
-
-INVALID_HANDLE = 0x0000
+from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 
 
 class SecurityLevel(enum.Enum):
@@ -52,12 +51,14 @@ class Characteristic(object):
         self.ble_device = ble_device
         self.peer = peer
         self.uuid = uuid
-        self.declaration_handle = INVALID_HANDLE
-        self.value_handle = INVALID_HANDLE
-        self.cccd_handle = INVALID_HANDLE
+        self.declaration_handle = BLE_GATT_HANDLE_INVALID
+        self.value_handle = BLE_GATT_HANDLE_INVALID
+        self.cccd_handle = BLE_GATT_HANDLE_INVALID
+
 
 class Service(object):
-    def __init__(self, ble_device, peer, uuid, service_type, start_handle=INVALID_HANDLE, end_handle=INVALID_HANDLE):
+    def __init__(self, ble_device, peer, uuid, service_type,
+                 start_handle=BLE_GATT_HANDLE_INVALID, end_handle=BLE_GATT_HANDLE_INVALID):
         """
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peer
@@ -70,7 +71,7 @@ class Service(object):
         self.start_handle = start_handle
         # If a valid starting handle is given and not a valid ending handle, then the ending handle
         # is the starting handle
-        if start_handle != INVALID_HANDLE and end_handle == INVALID_HANDLE:
+        if start_handle != BLE_GATT_HANDLE_INVALID and end_handle == BLE_GATT_HANDLE_INVALID:
             end_handle = start_handle
         self.end_handle = end_handle
 

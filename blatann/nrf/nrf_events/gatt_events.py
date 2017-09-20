@@ -195,6 +195,15 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
 
 # GATTS events
 
+class GattsWriteOperation(Enum):
+    invalid = driver.BLE_GATTS_OP_INVALID
+    write_req = driver.BLE_GATTS_OP_WRITE_REQ
+    write_cmd = driver.BLE_GATTS_OP_WRITE_CMD
+    sign_write_cmd = driver.BLE_GATTS_OP_SIGN_WRITE_CMD
+    prep_write_req = driver.BLE_GATTS_OP_PREP_WRITE_REQ
+    exec_write_req_cancel = driver.BLE_GATTS_OP_EXEC_WRITE_REQ_CANCEL
+    exec_write_req_now = driver.BLE_GATTS_OP_EXEC_WRITE_REQ_NOW
+
 # TODO: SYS_ATTR_MISSING, SC_CONFIRM, TIMEOUT
 
 
@@ -213,14 +222,14 @@ class GattsEvtWrite(GattsEvt):
     @classmethod
     def from_c(cls, event):
         conn_handle = event.evt.gatts_evt.conn_handle
-        write_event = event.evt.gatts_evt.write
+        write_event = event.evt.gatts_evt.params.write
         return cls.from_auth_request(conn_handle, write_event)
 
     @classmethod
     def from_auth_request(cls, conn_handle, write_event):
         attr_handle = write_event.handle
         uuid = BLEUUID.from_c(write_event.uuid)
-        write_operand = BLEGattWriteOperation(write_event.write_op)
+        write_operand = GattsWriteOperation(write_event.op)
         auth_required = bool(write_event.auth_required)
         offset = write_event.offset
         data = util.uint8_array_to_list(write_event.data, write_event.len)
@@ -265,14 +274,14 @@ class GattsEvtReadWriteAuthorizeRequest(GattsEvt):
 
     @classmethod
     def from_c(cls, event):
-        auth_event = event.evt.gatts_evt.authorize_request
+        auth_event = event.evt.gatts_evt.params.authorize_request
         conn_handle = event.evt.gatts_evt.conn_handle
         read = None
         write = None
         if auth_event.type == driver.BLE_GATTS_AUTHORIZE_TYPE_READ:
-            read = GattsEvtRead.from_auth_request(conn_handle, auth_event.read)
+            read = GattsEvtRead.from_auth_request(conn_handle, auth_event.request.read)
         elif auth_event.type == driver.BLE_GATTS_AUTHORIZE_TYPE_WRITE:
-            write = GattsEvtWrite.from_auth_request(conn_handle, auth_event.write)
+            write = GattsEvtWrite.from_auth_request(conn_handle, auth_event.request.write)
         else:
             raise NordicSemiException("Unknown authorize request type: {}".format(auth_event.type))
         return cls(conn_handle, read, write)
@@ -284,7 +293,7 @@ class GattsEvtReadWriteAuthorizeRequest(GattsEvt):
         else:
             txt = "write"
             data = self.write
-            
+
         return "{}(conn_handle={!r}, {}={!r})".format(self.__class__.__name__, self.conn_handle, txt, data)
 
 
@@ -298,7 +307,7 @@ class GattsEvtHandleValueConfirm(GattsEvt):
     @classmethod
     def from_c(cls, event):
         conn_handle = event.evt.gatts_evt.conn_handle
-        return cls(conn_handle, event.evt.gatts_evt.hvc.handle)
+        return cls(conn_handle, event.evt.gatts_evt.params.hvc.handle)
 
     def __repr__(self):
         return "{}(conn_handle={!r}, attr_handle={!r})".format(self.__class__.__name__, self.conn_handle, self.attribute_handle)
@@ -314,7 +323,7 @@ class GattsEvtExchangeMtuRequest(GattsEvt):
     @classmethod
     def from_c(cls, event):
         conn_handle = event.evt.gatts_evt.conn_handle
-        return cls(conn_handle, event.evt.gatts_evt.exchange_mtu_request.client_rx_mtu)
+        return cls(conn_handle, event.evt.gatts_evt.params.exchange_mtu_request.client_rx_mtu)
 
     def __repr__(self):
         return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)

@@ -36,3 +36,6 @@ class PeripheralManager(nrf_observers.NrfDriverObserver):
         if isinstance(event, nrf_events.GapEvtConnected):
             if event.role == nrf_events.BLEGapRoles.periph:
                 self.peer.peer_connected(event.conn_handle, event.peer_addr)
+        elif isinstance(event, nrf_events.GapEvtDisconnected):
+            if event.conn_handle == self.peer.conn_handle:
+                self.peer.peer_disconnected()

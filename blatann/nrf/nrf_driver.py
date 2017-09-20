@@ -76,7 +76,7 @@ class NrfDriver(object):
     default_baud_rate = 115200
     ATT_MTU_DEFAULT = driver.GATT_MTU_SIZE_DEFAULT
 
-    def __init__(self, serial_port, baud_rate=None):
+    def __init__(self, serial_port, baud_rate=None, log_driver_comms=False):
         if baud_rate is None:
             baud_rate = self.default_baud_rate
 
@@ -86,6 +86,9 @@ class NrfDriver(object):
         self._event_stopped = Event()
         self.observers = []
         self.ble_enable_params = None
+        self._event_observers = {}
+        self._event_observer_lock = Lock()
+        self._log_driver_comms = log_driver_comms
 
         phy_layer = driver.sd_rpc_physical_layer_create_uart(serial_port,
                                                              baud_rate,
@@ -151,11 +154,34 @@ class NrfDriver(object):
         self._event_thread_join()
         return driver.sd_rpc_close(self.rpc_adapter)
 
+    def event_subscribe(self, handler, *event_types):
+        for event_type in event_types:
+            if not issubclass(event_type, BLEEvent):
+                raise ValueError("Event type must be a valid BLEEvent class type. Got {}".format(event_type))
+        with self._event_observer_lock:
+            for event_type in event_types:
+                # If event type not already in dict, create an empty list
+                if event_type not in self._event_observers.keys():
+                    self._event_observers[event_type] = []
+                handlers = self._event_observers[event_type]
+                if handler not in handlers:
+                    handlers.append(handler)
+
+    def event_unsubscribe(self, handler, *event_types):
+        with self._event_observer_lock:
+            for event_type in event_types:
+                handlers = self._event_observers.get(event_type, [])
+                if handler in handlers:
+                    handlers.remove(handler)
+
     def observer_register(self, observer):
-        self.observers.append(observer)
+        with self._event_observer_lock:
+            self.observers.append(observer)
 
     def observer_unregister(self, observer):
-        self.observers.remove(observer)
+        with self._event_observer_lock:
+            if observer in self.observers:
+                self.observers.remove(observer)
 
     def ble_enable_params_setup(self):
         return BLEEnableParams(vs_uuid_count=10,
@@ -199,6 +225,11 @@ class NrfDriver(object):
         assert isinstance(ble_enable_params, BLEEnableParams), 'Invalid argument type'
         self.ble_enable_params = ble_enable_params
         return driver.sd_ble_enable(self.rpc_adapter, ble_enable_params.to_c(), None)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_user_mem_reply(self, conn_handle):
+        return driver.sd_ble_user_mem_reply(self.rpc_adapter, conn_handle, None)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -358,7 +389,7 @@ class NrfDriver(object):
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_gatts_characteristic_add(self, service_handle, char_md, attr_char_value, char_handle):
-        # TODO Return handles
+        # TODO type assertions
         handle_params = driver.ble_gatts_char_handles_t()
         err_code = driver.sd_ble_gatts_characteristic_add(self.rpc_adapter,
                                                           service_handle,
@@ -371,6 +402,12 @@ class NrfDriver(object):
             char_handle.cccd_handle = handle_params.cccd_handle
             char_handle.sccd_handle = handle_params.sccd_handle
         return err_code
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_rw_authorize_reply(self, conn_handle, authorize_reply_params):
+        assert isinstance(authorize_reply_params, BLEGattsRwAuthorizeReplyParams)
+        return driver.sd_ble_gatts_rw_authorize_reply(self.rpc_adapter, conn_handle, authorize_reply_params.to_c())
 
     # GATTC
 
@@ -429,8 +466,8 @@ class NrfDriver(object):
         pass
 
     def log_message_handler(self, adapter, severity, log_message):
-        # print(log_message)
-        pass
+        if self._log_driver_comms:
+            print("LOG [{}]: {}".format(severity, log_message))
 
     def ble_evt_handler(self, adapter, ble_event):
         self._events.put(ble_event)
@@ -455,9 +492,26 @@ class NrfDriver(object):
                 continue
 
             logger.debug('ble_event.header.evt_id %r ----  %r', ble_event.header.evt_id, event)
-            for obs in self.observers[:]:
+
+            # Get a copy of the observers and event observers in case its modified during this execution
+            with self._event_observer_lock:
+                observers = self.observers[:]
+                event_handlers = self._event_observers.copy()
+
+            # Call all the observers
+            for obs in observers:
                 try:
                     obs.on_driver_event(self, event)
                 except:
                     traceback.print_exc()
+
+            # Call all the handlers for the event type provided
+            for event_type, handlers in event_handlers.items():
+                if issubclass(type(event), event_type):
+                    for handler in handlers:
+                        try:
+                            handler(self, event)
+                        except:
+                            traceback.print_exc()
+
         self._event_stopped.set()

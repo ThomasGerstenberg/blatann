@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+from types import NoneType
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.generic import BLEUUID
@@ -8,11 +9,14 @@ from blatann.nrf.nrf_types.smp import *
 logger = logging.getLogger(__name__)
 
 
+BLE_GATT_HANDLE_INVALID = driver.BLE_GATT_HANDLE_INVALID
+
+
 class BLEGattWriteOperation(Enum):
     invalid = driver.BLE_GATT_OP_INVALID
     write_req = driver.BLE_GATT_OP_WRITE_REQ
     write_cmd = driver.BLE_GATT_OP_WRITE_CMD
-    singed_write_cmd = driver.BLE_GATT_OP_SIGN_WRITE_CMD
+    signed_write_cmd = driver.BLE_GATT_OP_SIGN_WRITE_CMD
     prepare_write_req = driver.BLE_GATT_OP_PREP_WRITE_REQ
     execute_write_req = driver.BLE_GATT_OP_EXEC_WRITE_REQ
 
@@ -91,24 +95,25 @@ class BLEGattsAttribute(object):
         self.uuid = uuid
         self.attribute_metadata = attr_metadata
         self.max_len = max_len
-        self.value = [1]
+        self.value = value
 
     def to_c(self):
+        self.__data__array = util.list_to_uint8_array(self.value)
         params = driver.ble_gatts_attr_t()
         params.p_uuid = self.uuid.to_c()
         params.p_attr_md = self.attribute_metadata.to_c()
-        params.init_len = len(self.value)
-        params.init_offs = 0
         params.max_len = self.max_len
         # TODO
-        # if self.value:
-        #     params.p_value = util.list_to_uint8_array(self.value)
+        if self.value:
+            params.init_len = len(self.value)
+            params.init_offs = 0
+            params.p_value = self.__data__array.cast()
         return params
 
 
 class BLEGattsAttrMetadata(object):
     def __init__(self, read_permissions=BLEGapSecModeType.OPEN, write_permissions=BLEGapSecModeType.OPEN,
-                 variable_length=False, read_auth=True, write_auth=True):
+                 variable_length=False, read_auth=False, write_auth=False):
         self.read_perm = read_permissions
         self.write_perm = write_permissions
         self.vlen = variable_length
@@ -165,6 +170,51 @@ class BLEGattsCharMetadata(object):
     @classmethod
     def from_c(cls, params):
         pass
+
+
+class BLEGattsAuthorizeParams(object):
+    def __init__(self, gatt_status, update, offset=0, data=""):
+        assert isinstance(gatt_status, BLEGattStatusCode)
+        self.gatt_status = gatt_status
+        self.update = update
+        self.offset = offset
+        self.data = data
+
+    def to_c(self):
+        params = driver.ble_gatts_authorize_params_t()
+        params.gatt_status = self.gatt_status.value
+        params.update = int(self.update)
+        params.offset = self.offset
+
+        self.__data_array = util.list_to_uint8_array(self.data)
+        params.p_data = self.__data_array.cast()
+        params.len = len(self.data)
+
+        return params
+
+
+class BLEGattsRwAuthorizeReplyParams(object):
+    def __init__(self, read=None, write=None):
+        assert isinstance(read, (BLEGattsAuthorizeParams, NoneType))
+        assert isinstance(write, (BLEGattsAuthorizeParams, NoneType))
+
+        if read is None and write is None:
+            raise ValueError("read or write must be set")
+        if isinstance(read, BLEGattsAuthorizeParams) and isinstance(write, BLEGattsAuthorizeParams):
+            raise ValueError("Both read and write cannot be set at the same time")
+
+        self.read = read
+        self.write = write
+
+    def to_c(self):
+        params = driver.ble_gatts_rw_authorize_reply_params_t()
+        if self.read:
+            params.type = driver.BLE_GATTS_AUTHORIZE_TYPE_READ
+            params.params.read = self.read.to_c()
+        else:
+            params.type = driver.BLE_GATTS_AUTHORIZE_TYPE_WRITE
+            params.params.write = self.write.to_c()
+        return params
 
 
 class BLEGattcWriteParams(object):

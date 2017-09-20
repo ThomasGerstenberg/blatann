@@ -156,7 +156,8 @@ def list_to_char_array(data_list):
 
 def list_to_uint8_array(data_list):
     """Convert python list to uint8_array."""
-
+    if isinstance(data_list, str):
+        data_list = bytearray(data_list)
     data_array = _populate_array(data_list, driver.uint8_array)
     return data_array
 

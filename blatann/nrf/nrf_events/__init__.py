@@ -6,6 +6,7 @@ from blatann.nrf.nrf_events.gatt_events import *
 
 _event_classes = [
     EvtTxComplete,
+    EvtUserMemoryRequest,
 
     # Gap
     GapEvtConnected,
