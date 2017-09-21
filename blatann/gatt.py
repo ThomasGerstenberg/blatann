@@ -14,6 +14,12 @@ class ServiceType(enum.Enum):
     SECONDARY = 2
 
 
+class SubscriptionState(enum.Enum):
+    NOT_SUBSCRIBED = 0
+    NOTIFY = 1
+    INDICATION = 2
+
+
 class CharacteristicProperties(object):
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  security_level=SecurityLevel.OPEN, max_length=20, variable_length=True, prefer_indications=True):
@@ -54,6 +60,7 @@ class Characteristic(object):
         self.declaration_handle = BLE_GATT_HANDLE_INVALID
         self.value_handle = BLE_GATT_HANDLE_INVALID
         self.cccd_handle = BLE_GATT_HANDLE_INVALID
+        self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
 
 
 class Service(object):

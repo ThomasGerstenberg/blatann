@@ -1,6 +1,7 @@
 from collections import namedtuple
 import threading
-from blatann.nrf import nrf_types, nrf_events, nrf_observers
+import traceback
+from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 
 _security_mapping = {
@@ -21,6 +22,7 @@ class GattsCharacteristic(gatt.Characteristic):
         self._handler_lock = threading.Lock()
         self._on_write_handlers = []
         self._on_read_handlers = []
+        self._on_cccd_change_handlers = []
         self.ble_device.ble_driver.event_subscribe(self._on_gatts_write, nrf_events.GattsEvtWrite)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request, nrf_events.GattsEvtReadWriteAuthorizeRequest)
         self._write_queued = False
@@ -30,17 +32,40 @@ class GattsCharacteristic(gatt.Characteristic):
     def set_value(self, value, notify_client=False):
         pass
 
-    def register_on_write(self, on_write):
+    def _register(self, handlers, func):
         with self._handler_lock:
-            self._on_write_handlers.append(on_write)
+            if func not in handlers:
+                handlers.append(func)
+
+    def _deregister(self, handlers, func):
+        with self._handler_lock:
+            if func in handlers:
+                handlers.remove(func)
+
+    def register_on_write(self, on_write):
+        self._register(self._on_write_handlers, on_write)
 
     def deregister_on_write(self, on_write):
-        with self._handler_lock:
-            if on_write in self._on_write_handlers:
-                self._on_write_handlers.remove(on_write)
+        self._deregister(self._on_write_handlers, on_write)
+
+    def register_on_subscription_change(self, on_subscription_change):
+        self._register(self._on_cccd_change_handlers, on_subscription_change)
+
+    def deregister_on_subscription_change(self, on_subscription_change):
+        self._deregister(self._on_cccd_change_handlers, on_subscription_change)
 
     def _handle_in_characteristic(self, attribute_handle):
         return attribute_handle in [self.value_handle, self.cccd_handle]
+
+    def _notify_handlers(self, handlers, *args, **kwargs):
+        with self._handler_lock:
+            handlers_copy = handlers[:]
+
+        for h in handlers_copy:
+            try:
+                h(self, *args, **kwargs)
+            except Exception:
+                traceback.print_exc()
 
     def _execute_queued_write(self, write_op):
         self._write_queued = False
@@ -53,10 +78,30 @@ class GattsCharacteristic(gatt.Characteristic):
             for chunk in self._queued_write_chunks:
                 new_value += bytearray(chunk.data)
             print("New value: 0x{}".format(str(new_value).encode("hex")))
+            self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
+                                                           nrf_types.BLEGattsValue(new_value))
+            self.value = new_value
+            self._notify_handlers(self._on_write_handlers)
         self._queued_write_chunks = []
 
+    def _on_cccd_write(self, event):
+        """
+        :type event: nrf_events.GattsEvtWrite
+        """
+        self.cccd_state = gatt.SubscriptionState(event.data[0])
+        self._notify_handlers(self._on_cccd_change_handlers, self.cccd_state)
+
     def _on_gatts_write(self, driver, event):
-        print("Got gatts write: {}".format(event))
+        """
+        :type event: nrf_events.GattsEvtWrite
+        """
+        if event.attribute_handle == self.cccd_handle:
+            self._on_cccd_write(event)
+            return
+        elif event.attribute_handle != self.value_handle:
+            return
+        self.value = event.data
+        self._notify_handlers(self._on_write_handlers)
 
     def _on_write_auth_request(self, write_event):
         """
@@ -72,12 +117,16 @@ class GattsCharacteristic(gatt.Characteristic):
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, True, write_event.offset, write_event.data)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)
 
-        if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
-            self._write_queued = True
-            self._queued_write_chunks.append(self.QueuedChunk(write_event.offset, write_event.data))
-        elif write_event.write_op == nrf_events.BLEGattsWriteOperation.write_req:
+        if write_event.offset + len(write_event.data) > self.properties.max_len:
+            params.gatt_status = nrf_types.BLEGattStatusCode.invalid_att_val_length
+        elif write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
+            if write_event.offset + len(write_event.data) > self.properties.max_len:
+                params.gatt_status = nrf_types.BLEGattStatusCode.invalid_att_val_length
+            else:
+                self._write_queued = True
+                self._queued_write_chunks.append(self.QueuedChunk(write_event.offset, write_event.data))
+        elif write_event.write_op in [nrf_events.BLEGattsWriteOperation.write_req, nrf_types.BLEGattsWriteOperation.write_cmd]:
             self._on_gatts_write(None, write_event)
-            return  # reply handled by function since it needs to be called first
 
         # TODO More logic
 
@@ -119,8 +168,8 @@ class GattsService(gatt.Service):
 
         :type uuid: blatann.uuid.Uuid
         :type properties: gatt.CharacteristicProperties
-        :param initial_value:
-        :return:
+        :type initial_value: str or list or bytearray
+        :rtype: GattsCharacteristic
         """
         c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, initial_value)
         # Register UUID
@@ -153,6 +202,7 @@ class GattsService(gatt.Service):
             self.end_handle = c.value_handle
 
         self.characteristics.append(c)
+        return c
 
 
 class GattsDatabase(gatt.GattDatabase):

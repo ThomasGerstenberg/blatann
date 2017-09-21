@@ -427,11 +427,11 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gatts_value_get(self, conn_handle, gatts_value):
+    def ble_gatts_value_get(self, conn_handle, attribute_handle, gatts_value):
         assert isinstance(gatts_value, BLEGattsValue)
         value_params = gatts_value.to_c()
         value_params.len = 512  # Allow up to 512 bytes to be read
-        err_code = driver.sd_ble_gatts_value_get(conn_handle, value_params)
+        err_code = driver.sd_ble_gatts_value_get(self.rpc_adapter, conn_handle, attribute_handle, value_params)
 
         if err_code == driver.NRF_SUCCESS:
             value_out = BLEGattsValue.from_c(value_params)
@@ -441,26 +441,26 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gatts_value_set(self, conn_handle, gatts_value):
+    def ble_gatts_value_set(self, conn_handle, attribute_handle, gatts_value):
         assert isinstance(gatts_value, BLEGattsValue)
         value_params = gatts_value.to_c()
-        return driver.sd_ble_gatts_value_set(conn_handle, value_params)
+        return driver.sd_ble_gatts_value_set(self.rpc_adapter, conn_handle, attribute_handle, value_params)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_gatts_hvx(self, conn_handle, hvx_params):
         assert isinstance(hvx_params, BLEGattsHvx)
-        return driver.sd_ble_gatts_hvx(conn_handle, hvx_params.to_c())
+        return driver.sd_ble_gatts_hvx(self.rpc_adapter, conn_handle, hvx_params.to_c())
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_gatts_service_changed(self, conn_handle, start_handle, end_handle):
-        return driver.sd_ble_gatts_service_changed(conn_handle, start_handle, end_handle)
+        return driver.sd_ble_gatts_service_changed(self.rpc_adapter, conn_handle, start_handle, end_handle)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_gatts_exchange_mtu_reply(self, conn_handle, server_mtu):
-        return driver.sd_ble_gatts_exchange_mtu_reply(conn_handle, server_mtu)
+        return driver.sd_ble_gatts_exchange_mtu_reply(self.rpc_adapter, conn_handle, server_mtu)
 
     """
     GATTC Methods
