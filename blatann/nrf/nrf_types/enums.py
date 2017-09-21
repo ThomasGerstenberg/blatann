@@ -155,7 +155,7 @@ class BLEGapSecStatus(Enum):
 
 
 """
-Gatt Enums
+GATT Enums
 """
 
 
@@ -208,13 +208,18 @@ class BLEGattStatusCode(Enum):
     cps_out_of_range = driver.BLE_GATT_STATUS_ATTERR_CPS_OUT_OF_RANGE
 
 
+class BLEGattExecWriteFlag(Enum):
+    prepared_cancel = driver.BLE_GATT_EXEC_WRITE_FLAG_PREPARED_CANCEL
+    prepared_write = driver.BLE_GATT_EXEC_WRITE_FLAG_PREPARED_WRITE
+    unused = 0x00
+
 """
-Gattc Enums
+GATTC Enums
 """
 
 
 """
-Gatts Enums
+GATTS Enums
 """
 
 

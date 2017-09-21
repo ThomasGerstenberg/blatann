@@ -6,6 +6,11 @@ import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_events.generic_events import BLEEvent
 
 
+"""
+Base Event Classes
+"""
+
+
 class GattEvt(BLEEvent):
     pass
 
@@ -16,6 +21,11 @@ class GattcEvt(GattEvt):
 
 class GattsEvt(GattEvt):
     pass
+
+
+"""
+GATTC Events
+"""
 
 
 class GattcEvtReadResponse(GattcEvt):
@@ -131,7 +141,7 @@ class GattcEvtPrimaryServiceDiscoveryResponse(GattcEvt):
 
         services = list()
         for s in util.service_array_to_list(prim_srvc_disc_rsp_evt.services, prim_srvc_disc_rsp_evt.count):
-            services.append(BLEService.from_c(s))
+            services.append(BLEGattService.from_c(s))
 
         return cls(conn_handle=event.evt.gattc_evt.conn_handle,
                    status=BLEGattStatusCode(event.evt.gattc_evt.gatt_status),
@@ -156,7 +166,7 @@ class GattcEvtCharacteristicDiscoveryResponse(GattcEvt):
 
         characteristics = list()
         for ch in util.ble_gattc_char_array_to_list(char_disc_rsp_evt.chars, char_disc_rsp_evt.count):
-            characteristics.append(BLECharacteristic.from_c(ch))
+            characteristics.append(BLEGattCharacteristic.from_c(ch))
 
         return cls(conn_handle=event.evt.gattc_evt.conn_handle,
                    status=BLEGattStatusCode(event.evt.gattc_evt.gatt_status),
@@ -182,7 +192,7 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
 
         descriptions = list()
         for d in util.desc_array_to_list(desc_disc_rsp_evt.descs, desc_disc_rsp_evt.count):
-            descriptions.append(BLEDescriptor.from_c(d))
+            descriptions.append(BLEGattcDescriptor.from_c(d))
 
         return cls(conn_handle=event.evt.gattc_evt.conn_handle,
                    status=BLEGattStatusCode(event.evt.gattc_evt.gatt_status),
@@ -193,7 +203,9 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
                                                                              self.status, self.descriptions)
 
 
-# GATTS events
+"""
+GATTS Events
+"""
 
 
 # TODO: SYS_ATTR_MISSING, SC_CONFIRM, TIMEOUT
@@ -234,7 +246,7 @@ class GattsEvtWrite(GattsEvt):
                                    self.write_op, self.auth_required, self.offset, self.data)
 
 
-class GattsEvtRead(GattsEvt):
+class GattsEvtRead(GattsEvt):  # Not a _true_ event, but is used for the Read/Write event class
     def __init__(self, conn_handle, attr_handle, uuid, offset):
         super(GattsEvtRead, self).__init__(conn_handle)
         self.attribute_handle = attr_handle
@@ -321,7 +333,7 @@ class GattsEvtExchangeMtuRequest(GattsEvt):
         return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)
 
 
-# Is this only in v4.0 softdevice? Am I looking at the wrong headers?
+# This isn't present in v3.0 of the softdevice. I was looking at the 4.0 softdevice headers :/
 # class GattsEvtNotificationTxComplete(GattsEvt):
 #     evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
 #

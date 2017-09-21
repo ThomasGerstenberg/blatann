@@ -127,8 +127,8 @@ class GattsService(gatt.Service):
         self.ble_device.uuid_manager.register_uuid(uuid)
 
         # Create property structure
-        props = nrf_types.BLECharacteristicProperties(properties.broadcast, properties.read, False, properties.write,
-                                                      properties.notify, properties.indicate, False)
+        props = nrf_types.BLEGattCharacteristicProperties(properties.broadcast, properties.read, False, properties.write,
+                                                          properties.notify, properties.indicate, False)
         # Create cccd metadata if notify/indicate enabled
         if properties.notify or properties.indicate:
             cccd_metadata = nrf_types.BLEGattsAttrMetadata(read_auth=False, write_auth=False)

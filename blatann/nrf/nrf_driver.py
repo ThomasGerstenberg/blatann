@@ -125,9 +125,9 @@ class NrfDriver(object):
             return
 
         err_code = driver.sd_rpc_open(self.rpc_adapter,
-                                      self.status_handler,
+                                      self._status_handler,
                                       self.ble_evt_handler,
-                                      self.log_message_handler)
+                                      self._log_message_handler)
 
         if err_code == driver.NRF_SUCCESS:
             self._event_thread = Thread(target=self._event_handler)
@@ -217,6 +217,10 @@ class NrfDriver(object):
                                kdist_own=BLEGapSecKeyDist(),
                                kdist_peer=BLEGapSecKeyDist(enc_key=True))
 
+    """
+    BLE Generic methods
+    """
+
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_enable(self, ble_enable_params=None):
@@ -230,6 +234,23 @@ class NrfDriver(object):
     @wrapt.synchronized(api_lock)
     def ble_user_mem_reply(self, conn_handle):
         return driver.sd_ble_user_mem_reply(self.rpc_adapter, conn_handle, None)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_vs_uuid_add(self, uuid_base):
+        assert isinstance(uuid_base, BLEUUIDBase), 'Invalid argument type'
+        uuid_type = driver.new_uint8()
+
+        err_code = driver.sd_ble_uuid_vs_add(self.rpc_adapter,
+                                             uuid_base.to_c(),
+                                             uuid_type)
+        if err_code == driver.NRF_SUCCESS:
+            uuid_base.type = driver.uint8_value(uuid_type)
+        return err_code
+
+    """
+    GAP Methods
+    """
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -305,6 +326,10 @@ class NrfDriver(object):
                                               p_scan_data,
                                               scan_data_len)
 
+    """
+    SMP Methods
+    """
+
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_gap_authenticate(self, conn_handle, sec_params):
@@ -358,20 +383,11 @@ class NrfDriver(object):
         enc_info.auth = auth
         return driver.sd_ble_gap_encrypt(self.rpc_adapter, conn_handle, master_id, enc_info)
 
-    @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
-    def ble_vs_uuid_add(self, uuid_base):
-        assert isinstance(uuid_base, BLEUUIDBase), 'Invalid argument type'
-        uuid_type = driver.new_uint8()
-
-        err_code = driver.sd_ble_uuid_vs_add(self.rpc_adapter,
-                                             uuid_base.to_c(),
-                                             uuid_type)
-        if err_code == driver.NRF_SUCCESS:
-            uuid_base.type = driver.uint8_value(uuid_type)
-        return err_code
-
-    # GATTS
+    """
+    GATTS Methods
+    """
+    # TODO: sd_ble_gatts_include_add, sd_ble_gatts_descriptor_add, sd_ble_gatts_sys_attr_set/get,
+    # sd_ble_gatts_initial_user_handle_get, sd_ble_gatts_attr_get
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -409,7 +425,46 @@ class NrfDriver(object):
         assert isinstance(authorize_reply_params, BLEGattsRwAuthorizeReplyParams)
         return driver.sd_ble_gatts_rw_authorize_reply(self.rpc_adapter, conn_handle, authorize_reply_params.to_c())
 
-    # GATTC
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_value_get(self, conn_handle, gatts_value):
+        assert isinstance(gatts_value, BLEGattsValue)
+        value_params = gatts_value.to_c()
+        value_params.len = 512  # Allow up to 512 bytes to be read
+        err_code = driver.sd_ble_gatts_value_get(conn_handle, value_params)
+
+        if err_code == driver.NRF_SUCCESS:
+            value_out = BLEGattsValue.from_c(value_params)
+            gatts_value.offset = value_out.offset
+            gatts_value.value = value_out.value
+        return err_code
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_value_set(self, conn_handle, gatts_value):
+        assert isinstance(gatts_value, BLEGattsValue)
+        value_params = gatts_value.to_c()
+        return driver.sd_ble_gatts_value_set(conn_handle, value_params)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_hvx(self, conn_handle, hvx_params):
+        assert isinstance(hvx_params, BLEGattsHvx)
+        return driver.sd_ble_gatts_hvx(conn_handle, hvx_params.to_c())
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_service_changed(self, conn_handle, start_handle, end_handle):
+        return driver.sd_ble_gatts_service_changed(conn_handle, start_handle, end_handle)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_exchange_mtu_reply(self, conn_handle, server_mtu):
+        return driver.sd_ble_gatts_exchange_mtu_reply(conn_handle, server_mtu)
+
+    """
+    GATTC Methods
+    """
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -461,13 +516,21 @@ class NrfDriver(object):
                                                         conn_handle,
                                                         self.ble_enable_params.att_mtu)
 
-    def status_handler(self, adapter, status_code, status_message):
+    """
+    Driver handlers
+    """
+
+    def _status_handler(self, adapter, status_code, status_message):
         # print(status_message)
         pass
 
-    def log_message_handler(self, adapter, severity, log_message):
+    def _log_message_handler(self, adapter, severity, log_message):
         if self._log_driver_comms:
             print("LOG [{}]: {}".format(severity, log_message))
+
+    """
+    Event handling
+    """
 
     def ble_evt_handler(self, adapter, ble_event):
         self._events.put(ble_event)
