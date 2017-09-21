@@ -213,7 +213,6 @@ Gattc Enums
 """
 
 
-
 """
 Gatts Enums
 """

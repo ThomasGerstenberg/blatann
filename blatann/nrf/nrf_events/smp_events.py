@@ -95,7 +95,7 @@ class GapEvtAuthStatus(GapEvtSec):
                    kdist_own=BLEGapSecKeyDist.from_c(auth_status.kdist_own),
                    kdist_peer=BLEGapSecKeyDist.from_c(auth_status.kdist_peer))
 
-    def __str__(self):
+    def __repr__(self):
         return "{}(conn_handle={!r}, auth_status={!r}, error_src={!r}, bonded={!r}, sm1_levels={!r}, sm2_levels={!r}, " \
                "kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__, self.conn_handle, self.auth_status,
                                                          self.error_src, self.bonded,
@@ -120,7 +120,7 @@ class GapEvtPasskeyDisplay(GapEvtSec):
                    passkey=passkey,
                    match_request=match_request)
 
-    def __str__(self):
+    def __repr__(self):
         return "{}(conn_handle={!r}, passkey={!r}, match_request={!r})".format(self.__class__.__name__,
                                                                                self.conn_handle, self.passkey,
                                                                                self.match_request)
