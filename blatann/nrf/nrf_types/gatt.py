@@ -357,11 +357,18 @@ class BLEGattsHvx(object):
         self.data = data
 
     def to_c(self):
-        self.__data_array = util.list_to_uint8_array(self.data)
         params = driver.ble_gatts_hvx_params_t()
+
+        self._len_ptr = driver.new_uint16()
+        if self.data:
+            self.__data_array = util.list_to_uint8_array(self.data)
+            params.p_data = self.__data_array.cast()
+            driver.uint16_assign(self._len_ptr, len(self.data))
+        else:
+            driver.uint16_assign(self._len_ptr, 0)
+
         params.handle = self.handle
         params.type = self.type.value
         params.offset = self.offset
-        params.p_data = self.__data_array.cast()
-        params.p_len = len(self.data)  # TODO: Not sure if this works
+        params.p_len = self._len_ptr  # TODO: Not sure if this works
         return params

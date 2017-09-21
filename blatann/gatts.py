@@ -3,6 +3,7 @@ import threading
 import traceback
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
+from blatann.exceptions import InvalidOperationException
 
 _security_mapping = {
     gatt.SecurityLevel.NO_ACCESS: nrf_types.BLEGapSecModeType.NO_ACCESS,
@@ -15,6 +16,15 @@ _security_mapping = {
 
 class GattsCharacteristic(gatt.Characteristic):
     def __init__(self, ble_device, peer, uuid, properties, value="", prefer_indications=True):
+        """
+
+        :param ble_device:
+        :param peer:
+        :param uuid:
+        :type properties: gatt.CharacteristicProperties
+        :param value:
+        :param prefer_indications:
+        """
         super(GattsCharacteristic, self).__init__(ble_device, peer, uuid)
         self.properties = properties
         self.value = value
@@ -29,8 +39,34 @@ class GattsCharacteristic(gatt.Characteristic):
         self._queued_write_chunks = []
         self.QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
+    """
+    Public Methods
+    """
+
     def set_value(self, value, notify_client=False):
-        pass
+        if len(value) > self.properties.max_len:
+            raise InvalidOperationException("Attempted to set value of {} with length greater than max "
+                                            "(got {}, max {})".format(self.uuid, len(value), self.properties.max_len))
+        if notify_client and not self.properties.indicate and not self.properties.notify:
+            raise InvalidOperationException("Cannot notify client. "
+                                            "{} not set up for notifications or indications".format(self.uuid))
+
+        v = nrf_types.BLEGattsValue(value)
+        self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle, v)
+
+        if notify_client:
+            if self.cccd_state == gatt.SubscriptionState.INDICATION:
+                hvx_type = nrf_types.BLEGattHVXType.indication
+            else:
+                hvx_type = nrf_types.BLEGattHVXType.notification
+            hvx_params = nrf_types.BLEGattsHvx(self.value_handle, hvx_type, None)
+            self.ble_device.ble_driver.ble_gatts_hvx(self.peer.conn_handle, hvx_params)
+
+        self.value = value
+
+    """
+    Handler Registering/Deregistering
+    """
 
     def _register(self, handlers, func):
         with self._handler_lock:
@@ -54,9 +90,6 @@ class GattsCharacteristic(gatt.Characteristic):
     def deregister_on_subscription_change(self, on_subscription_change):
         self._deregister(self._on_cccd_change_handlers, on_subscription_change)
 
-    def _handle_in_characteristic(self, attribute_handle):
-        return attribute_handle in [self.value_handle, self.cccd_handle]
-
     def _notify_handlers(self, handlers, *args, **kwargs):
         with self._handler_lock:
             handlers_copy = handlers[:]
@@ -66,6 +99,13 @@ class GattsCharacteristic(gatt.Characteristic):
                 h(self, *args, **kwargs)
             except Exception:
                 traceback.print_exc()
+
+    """
+    Event Handling
+    """
+
+    def _handle_in_characteristic(self, attribute_handle):
+        return attribute_handle in [self.value_handle, self.cccd_handle]
 
     def _execute_queued_write(self, write_op):
         self._write_queued = False
@@ -100,7 +140,7 @@ class GattsCharacteristic(gatt.Characteristic):
             return
         elif event.attribute_handle != self.value_handle:
             return
-        self.value = event.data
+        self.value = bytearray(event.data)
         self._notify_handlers(self._on_write_handlers)
 
     def _on_write_auth_request(self, write_event):
@@ -147,7 +187,6 @@ class GattsCharacteristic(gatt.Characteristic):
         return reply
 
     def _on_rw_auth_request(self, driver, event):
-        print("Got rw_auth_request: {}".format(event))
         if self.peer.conn_handle != event.conn_handle:
             print("incorrect conn_handle: {}".format(event.conn_handle))
             return

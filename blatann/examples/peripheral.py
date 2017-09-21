@@ -12,10 +12,12 @@ def on_gatts_characteristic_write(characteristic):
     """
     print("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
                                                                              str(characteristic.value).encode("hex")))
+    new_value = "Hello, {}".format(str(characteristic.value).encode("hex"))
+    characteristic.set_value(new_value, True)
 
 
 def on_gatts_subscription_state_changed(characteristic, new_state):
-    print("Subscription state changed - characteristic: {}, state: {}".format(characteristic, new_state))
+    print("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, new_state))
 
 
 def main():
