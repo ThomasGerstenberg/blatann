@@ -54,7 +54,7 @@ class GattsCharacteristic(gatt.Characteristic):
         v = nrf_types.BLEGattsValue(value)
         self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle, v)
 
-        if notify_client:
+        if notify_client and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED:
             if self.cccd_state == gatt.SubscriptionState.INDICATION:
                 hvx_type = nrf_types.BLEGattHVXType.indication
             else:
