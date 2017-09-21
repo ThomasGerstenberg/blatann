@@ -3,43 +3,10 @@ import logging
 from pc_ble_driver_py.exceptions import NordicSemiException
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
+from blatann.nrf.nrf_types.enums import *
 
 
 logger = logging.getLogger(__name__)
-
-
-class BLEGapAdvType(Enum):
-    connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_IND
-    connectable_directed = driver.BLE_GAP_ADV_TYPE_ADV_DIRECT_IND
-    scanable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_SCAN_IND
-    non_connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_NONCONN_IND
-
-
-class BLEGapRoles(Enum):
-    invalid = driver.BLE_GAP_ROLE_INVALID
-    periph = driver.BLE_GAP_ROLE_PERIPH
-    central = driver.BLE_GAP_ROLE_CENTRAL
-
-
-class BLEGapTimeoutSrc(Enum):
-    advertising = driver.BLE_GAP_TIMEOUT_SRC_ADVERTISING
-    security_req = driver.BLE_GAP_TIMEOUT_SRC_SECURITY_REQUEST
-    scan = driver.BLE_GAP_TIMEOUT_SRC_SCAN
-    conn = driver.BLE_GAP_TIMEOUT_SRC_CONN
-
-
-class BLEGapIoCaps(IntEnum):
-    DISPLAY_ONLY = driver.BLE_GAP_IO_CAPS_DISPLAY_ONLY
-    DISPLAY_YESNO = driver.BLE_GAP_IO_CAPS_DISPLAY_YESNO
-    KEYBOARD_ONLY = driver.BLE_GAP_IO_CAPS_KEYBOARD_ONLY
-    NONE = driver.BLE_GAP_IO_CAPS_NONE
-    KEYBOARD_DISPLAY = driver.BLE_GAP_IO_CAPS_KEYBOARD_DISPLAY
-
-
-class BLEGapAuthKeyType(IntEnum):
-    NONE = driver.BLE_GAP_AUTH_KEY_TYPE_NONE
-    PASSKEY = driver.BLE_GAP_AUTH_KEY_TYPE_PASSKEY
-    OOB = driver.BLE_GAP_AUTH_KEY_TYPE_OOB
 
 
 class BLEGapAdvParams(object):

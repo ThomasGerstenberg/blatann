@@ -195,14 +195,6 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
 
 # GATTS events
 
-class GattsWriteOperation(Enum):
-    invalid = driver.BLE_GATTS_OP_INVALID
-    write_req = driver.BLE_GATTS_OP_WRITE_REQ
-    write_cmd = driver.BLE_GATTS_OP_WRITE_CMD
-    sign_write_cmd = driver.BLE_GATTS_OP_SIGN_WRITE_CMD
-    prep_write_req = driver.BLE_GATTS_OP_PREP_WRITE_REQ
-    exec_write_req_cancel = driver.BLE_GATTS_OP_EXEC_WRITE_REQ_CANCEL
-    exec_write_req_now = driver.BLE_GATTS_OP_EXEC_WRITE_REQ_NOW
 
 # TODO: SYS_ATTR_MISSING, SC_CONFIRM, TIMEOUT
 
@@ -229,7 +221,7 @@ class GattsEvtWrite(GattsEvt):
     def from_auth_request(cls, conn_handle, write_event):
         attr_handle = write_event.handle
         uuid = BLEUUID.from_c(write_event.uuid)
-        write_operand = GattsWriteOperation(write_event.op)
+        write_operand = BLEGattsWriteOperation(write_event.op)
         auth_required = bool(write_event.auth_required)
         offset = write_event.offset
         data = util.uint8_array_to_list(write_event.data, write_event.len)
@@ -329,6 +321,7 @@ class GattsEvtExchangeMtuRequest(GattsEvt):
         return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)
 
 
+# Is this only in v4.0 softdevice? Am I looking at the wrong headers?
 # class GattsEvtNotificationTxComplete(GattsEvt):
 #     evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
 #

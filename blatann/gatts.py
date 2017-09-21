@@ -44,7 +44,7 @@ class GattsCharacteristic(gatt.Characteristic):
 
     def _execute_queued_write(self, write_op):
         self._write_queued = False
-        if write_op == nrf_events.GattsWriteOperation.exec_write_req_cancel:
+        if write_op == nrf_events.BLEGattsWriteOperation.exec_write_req_cancel:
             print("Cancelling write request")
         else:
             print("Executing write request")
@@ -62,8 +62,8 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         :type write_event: nrf_events.GattsEvtWrite
         """
-        if write_event.write_op in [nrf_events.GattsWriteOperation.exec_write_req_cancel,
-                                    nrf_events.GattsWriteOperation.exec_write_req_now] and self._write_queued:
+        if write_event.write_op in [nrf_events.BLEGattsWriteOperation.exec_write_req_cancel,
+                                    nrf_events.BLEGattsWriteOperation.exec_write_req_now] and self._write_queued:
             self._execute_queued_write(write_event.write_op)
             return
 
@@ -72,10 +72,10 @@ class GattsCharacteristic(gatt.Characteristic):
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, True, write_event.offset, write_event.data)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)
 
-        if write_event.write_op == nrf_events.GattsWriteOperation.prep_write_req:
+        if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
             self._write_queued = True
             self._queued_write_chunks.append(self.QueuedChunk(write_event.offset, write_event.data))
-        elif write_event.write_op == nrf_events.GattsWriteOperation.write_req:
+        elif write_event.write_op == nrf_events.BLEGattsWriteOperation.write_req:
             self._on_gatts_write(None, write_event)
             return  # reply handled by function since it needs to be called first
 
@@ -176,7 +176,7 @@ class GattsDatabase(gatt.GattDatabase):
     def _on_rw_auth_request(self, driver, event):
         if not event.write:
             return
-        if event.write.write_op not in [nrf_events.GattsWriteOperation.exec_write_req_now, nrf_events.GattsWriteOperation.exec_write_req_cancel]:
+        if event.write.write_op not in [nrf_events.BLEGattsWriteOperation.exec_write_req_now, nrf_events.BLEGattsWriteOperation.exec_write_req_cancel]:
             return
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, False)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)

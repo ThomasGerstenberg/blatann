@@ -5,60 +5,12 @@ from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.generic import BLEUUID
 from blatann.nrf.nrf_types.smp import *
+from blatann.nrf.nrf_types.enums import *
 
 logger = logging.getLogger(__name__)
 
 
 BLE_GATT_HANDLE_INVALID = driver.BLE_GATT_HANDLE_INVALID
-
-
-class BLEGattWriteOperation(Enum):
-    invalid = driver.BLE_GATT_OP_INVALID
-    write_req = driver.BLE_GATT_OP_WRITE_REQ
-    write_cmd = driver.BLE_GATT_OP_WRITE_CMD
-    signed_write_cmd = driver.BLE_GATT_OP_SIGN_WRITE_CMD
-    prepare_write_req = driver.BLE_GATT_OP_PREP_WRITE_REQ
-    execute_write_req = driver.BLE_GATT_OP_EXEC_WRITE_REQ
-
-
-class BLEGattHVXType(Enum):
-    invalid = driver.BLE_GATT_HVX_INVALID
-    notification = driver.BLE_GATT_HVX_NOTIFICATION
-    indication = driver.BLE_GATT_HVX_INDICATION
-
-
-class BLEGattStatusCode(Enum):
-    success = driver.BLE_GATT_STATUS_SUCCESS
-    unknown = driver.BLE_GATT_STATUS_UNKNOWN
-    invalid = driver.BLE_GATT_STATUS_ATTERR_INVALID
-    invalid_handle = driver.BLE_GATT_STATUS_ATTERR_INVALID_HANDLE
-    read_not_permitted = driver.BLE_GATT_STATUS_ATTERR_READ_NOT_PERMITTED
-    write_not_permitted = driver.BLE_GATT_STATUS_ATTERR_WRITE_NOT_PERMITTED
-    invalid_pdu = driver.BLE_GATT_STATUS_ATTERR_INVALID_PDU
-    insuf_authentication = driver.BLE_GATT_STATUS_ATTERR_INSUF_AUTHENTICATION
-    request_not_supported = driver.BLE_GATT_STATUS_ATTERR_REQUEST_NOT_SUPPORTED
-    invalid_offset = driver.BLE_GATT_STATUS_ATTERR_INVALID_OFFSET
-    insuf_authorization = driver.BLE_GATT_STATUS_ATTERR_INSUF_AUTHORIZATION
-    prepare_queue_full = driver.BLE_GATT_STATUS_ATTERR_PREPARE_QUEUE_FULL
-    attribute_not_found = driver.BLE_GATT_STATUS_ATTERR_ATTRIBUTE_NOT_FOUND
-    attribute_not_long = driver.BLE_GATT_STATUS_ATTERR_ATTRIBUTE_NOT_LONG
-    insuf_enc_key_size = driver.BLE_GATT_STATUS_ATTERR_INSUF_ENC_KEY_SIZE
-    invalid_att_val_length = driver.BLE_GATT_STATUS_ATTERR_INVALID_ATT_VAL_LENGTH
-    unlikely_error = driver.BLE_GATT_STATUS_ATTERR_UNLIKELY_ERROR
-    insuf_encryption = driver.BLE_GATT_STATUS_ATTERR_INSUF_ENCRYPTION
-    unsupported_group_type = driver.BLE_GATT_STATUS_ATTERR_UNSUPPORTED_GROUP_TYPE
-    insuf_resources = driver.BLE_GATT_STATUS_ATTERR_INSUF_RESOURCES
-    rfu_range1_begin = driver.BLE_GATT_STATUS_ATTERR_RFU_RANGE1_BEGIN
-    rfu_range1_end = driver.BLE_GATT_STATUS_ATTERR_RFU_RANGE1_END
-    app_begin = driver.BLE_GATT_STATUS_ATTERR_APP_BEGIN
-    app_end = driver.BLE_GATT_STATUS_ATTERR_APP_END
-    rfu_range2_begin = driver.BLE_GATT_STATUS_ATTERR_RFU_RANGE2_BEGIN
-    rfu_range2_end = driver.BLE_GATT_STATUS_ATTERR_RFU_RANGE2_END
-    rfu_range3_begin = driver.BLE_GATT_STATUS_ATTERR_RFU_RANGE3_BEGIN
-    rfu_range3_end = driver.BLE_GATT_STATUS_ATTERR_RFU_RANGE3_END
-    cps_cccd_config_error = driver.BLE_GATT_STATUS_ATTERR_CPS_CCCD_CONFIG_ERROR
-    cps_proc_alr_in_prog = driver.BLE_GATT_STATUS_ATTERR_CPS_PROC_ALR_IN_PROG
-    cps_out_of_range = driver.BLE_GATT_STATUS_ATTERR_CPS_OUT_OF_RANGE
 
 
 class BLEGattExecWriteFlag(Enum):

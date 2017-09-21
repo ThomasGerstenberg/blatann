@@ -124,4 +124,3 @@ class GapEvtPasskeyDisplay(GapEvtSec):
         return "{}(conn_handle={!r}, passkey={!r}, match_request={!r})".format(self.__class__.__name__,
                                                                                self.conn_handle, self.passkey,
                                                                                self.match_request)
-
