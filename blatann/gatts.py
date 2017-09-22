@@ -1,9 +1,13 @@
 from collections import namedtuple
-import threading
-import traceback
+import logging
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.exceptions import InvalidOperationException
+from blatann.event_handler import EventSource
+
+
+logger = logging.getLogger(__name__)
+
 
 _security_mapping = {
     gatt.SecurityLevel.NO_ACCESS: nrf_types.BLEGapSecModeType.NO_ACCESS,
@@ -17,7 +21,6 @@ _security_mapping = {
 class GattsCharacteristic(gatt.Characteristic):
     def __init__(self, ble_device, peer, uuid, properties, value="", prefer_indications=True):
         """
-
         :param ble_device:
         :param peer:
         :param uuid:
@@ -29,13 +32,16 @@ class GattsCharacteristic(gatt.Characteristic):
         self.properties = properties
         self.value = value
         self.prefer_indications = prefer_indications
-        self._handler_lock = threading.Lock()
-        self._on_write_handlers = []
-        self._on_read_handlers = []
-        self._on_cccd_change_handlers = []
+        # Events
+        self._on_write = EventSource("Write Event", logger)
+        self._on_read = EventSource("Read Event", logger)
+        self._on_sub_change = EventSource("Subscription Change Event")
+        # Subscribed events
         self.ble_device.ble_driver.event_subscribe(self._on_gatts_write, nrf_events.GattsEvtWrite)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request, nrf_events.GattsEvtReadWriteAuthorizeRequest)
+        # Internal state tracking stuff
         self._write_queued = False
+        self._read_in_process = False
         self._queued_write_chunks = []
         self.QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
@@ -44,17 +50,27 @@ class GattsCharacteristic(gatt.Characteristic):
     """
 
     def set_value(self, value, notify_client=False):
-        if len(value) > self.properties.max_len:
+        """
+        Sets the value of the characteristic.
+
+        :param value: The value to set to. Must be an iterable type such as a str, bytearray, or list of uint8 values.
+                      Length must be less than the characteristic's max length
+        :param notify_client: Flag whether or not to notify the client. If indications and notifications are not set up
+                              for the characteristic, will raise an InvalidOperationException
+        :raises: InvalidOperationException if value length is too long, or notify client set and characteristic
+                 is not notifiable
+        """
+        if len(value) > self.max_length:
             raise InvalidOperationException("Attempted to set value of {} with length greater than max "
-                                            "(got {}, max {})".format(self.uuid, len(value), self.properties.max_len))
-        if notify_client and not self.properties.indicate and not self.properties.notify:
+                                            "(got {}, max {})".format(self.uuid, len(value), self.max_length))
+        if notify_client and not self.notifiable:
             raise InvalidOperationException("Cannot notify client. "
                                             "{} not set up for notifications or indications".format(self.uuid))
 
         v = nrf_types.BLEGattsValue(value)
         self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle, v)
 
-        if notify_client and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED:
+        if notify_client and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED and not self._read_in_process:
             if self.cccd_state == gatt.SubscriptionState.INDICATION:
                 hvx_type = nrf_types.BLEGattHVXType.indication
             else:
@@ -65,40 +81,70 @@ class GattsCharacteristic(gatt.Characteristic):
         self.value = value
 
     """
-    Handler Registering/Deregistering
+    Properties
     """
 
-    def _register(self, handlers, func):
-        with self._handler_lock:
-            if func not in handlers:
-                handlers.append(func)
+    @property
+    def max_length(self):
+        """
+        The max possible the value the characteristic can be set to
+        """
+        return self.properties.max_len
 
-    def _deregister(self, handlers, func):
-        with self._handler_lock:
-            if func in handlers:
-                handlers.remove(func)
+    @property
+    def notifiable(self):
+        """
+        Gets if the characteristic is set up to asynchonously notify clients via notifications or indications
+        """
+        return self.properties.indicate or self.properties.notify
 
-    def register_on_write(self, on_write):
-        self._register(self._on_write_handlers, on_write)
+    """
+    Events
+    """
 
-    def deregister_on_write(self, on_write):
-        self._deregister(self._on_write_handlers, on_write)
+    @property
+    def on_write(self):
+        """
+        Event generated whenever a client writes to this characteristic.
 
-    def register_on_subscription_change(self, on_subscription_change):
-        self._register(self._on_cccd_change_handlers, on_subscription_change)
+        Handler args: (GattsCharacteristic this characteristic, bytearray value written)
 
-    def deregister_on_subscription_change(self, on_subscription_change):
-        self._deregister(self._on_cccd_change_handlers, on_subscription_change)
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_handler.Event
+        """
+        return self._on_write
 
-    def _notify_handlers(self, handlers, *args, **kwargs):
-        with self._handler_lock:
-            handlers_copy = handlers[:]
+    @property
+    def on_read(self):
+        """
+        Event generated whenever a client requests to read from this characteristic. At this point, the application
+        may choose to update the value of the characteristic to a new value using set_value.
 
-        for h in handlers_copy:
-            try:
-                h(self, *args, **kwargs)
-            except Exception:
-                traceback.print_exc()
+        A good example of this is a "system time" characteristic which reports the applications system time in seconds.
+        Instead of updating this characteristic every second, it can be "lazily" updated only when read from.
+
+        NOTE: if there are multiple handlers subscribed to this and each set the value differently, it may cause
+        unintended behavior.
+
+        Handler args: (GattsCharacteristic this characteristic)
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_handler.Event
+        """
+        return self._on_read
+
+    @property
+    def on_subscription_change(self):
+        """
+        Event that is generated whenever a client changes its subscription state of the characteristic
+        (notify, indicate, none).
+
+        Handler args: (GattsCharacteristic this characteristic, blatann.gatt.SubscriptionState new state)
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_handler.Event
+        """
+        return self._on_sub_change
 
     """
     Event Handling
@@ -121,7 +167,7 @@ class GattsCharacteristic(gatt.Characteristic):
             self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
                                                            nrf_types.BLEGattsValue(new_value))
             self.value = new_value
-            self._notify_handlers(self._on_write_handlers)
+            self._on_write.notify(self)
         self._queued_write_chunks = []
 
     def _on_cccd_write(self, event):
@@ -129,7 +175,7 @@ class GattsCharacteristic(gatt.Characteristic):
         :type event: nrf_events.GattsEvtWrite
         """
         self.cccd_state = gatt.SubscriptionState(event.data[0])
-        self._notify_handlers(self._on_cccd_change_handlers, self.cccd_state)
+        self._on_sub_change.notify(self, self.cccd_state)
 
     def _on_gatts_write(self, driver, event):
         """
@@ -141,7 +187,7 @@ class GattsCharacteristic(gatt.Characteristic):
         elif event.attribute_handle != self.value_handle:
             return
         self.value = bytearray(event.data)
-        self._notify_handlers(self._on_write_handlers)
+        self._on_write.notify(self)
 
     def _on_write_auth_request(self, write_event):
         """
@@ -150,55 +196,63 @@ class GattsCharacteristic(gatt.Characteristic):
         if write_event.write_op in [nrf_events.BLEGattsWriteOperation.exec_write_req_cancel,
                                     nrf_events.BLEGattsWriteOperation.exec_write_req_now] and self._write_queued:
             self._execute_queued_write(write_event.write_op)
+            # Reply should already be handled in database since this can span multiple characteristics and services
             return
 
         if not self._handle_in_characteristic(write_event.attribute_handle):
+            # Handle is not for this characteristic, do nothing
             return
+
+        # Build out the reply
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, True, write_event.offset, write_event.data)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)
 
+        # Check that the write length is valid
         if write_event.offset + len(write_event.data) > self.properties.max_len:
             params.gatt_status = nrf_types.BLEGattStatusCode.invalid_att_val_length
-        elif write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
-            if write_event.offset + len(write_event.data) > self.properties.max_len:
-                params.gatt_status = nrf_types.BLEGattStatusCode.invalid_att_val_length
-            else:
+            self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
+        else:
+            # Send reply before processing write, in case user sets data in gatts_write handler
+            self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
+            if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
                 self._write_queued = True
                 self._queued_write_chunks.append(self.QueuedChunk(write_event.offset, write_event.data))
-        elif write_event.write_op in [nrf_events.BLEGattsWriteOperation.write_req, nrf_types.BLEGattsWriteOperation.write_cmd]:
-            self._on_gatts_write(None, write_event)
+            elif write_event.write_op in [nrf_events.BLEGattsWriteOperation.write_req, nrf_types.BLEGattsWriteOperation.write_cmd]:
+                self._on_gatts_write(None, write_event)
 
         # TODO More logic
-
-        return reply
 
     def _on_read_auth_request(self, read_event):
         """
         :type read_event: nrf_events.GattsEvtRead
         """
         if not self._handle_in_characteristic(read_event.attribute_handle):
+            # Don't care about handles outside of this characteristic
             return
+
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, False, read_event.offset)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(read=params)
         if read_event.offset > len(self.value):
             params.gatt_status = nrf_types.BLEGattStatusCode.invalid_offset
         else:
-            params.data = self.value[params.offset:]
-        return reply
+            self._read_in_process = True
+            # If the client is reading from the beginning, notify handlers in case an update needs to be made
+            if read_event.offset == 0:
+                self._on_read.notify(self)
+            self._read_in_process = False
+
+        self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(read_event.conn_handle, reply)
 
     def _on_rw_auth_request(self, driver, event):
         if self.peer.conn_handle != event.conn_handle:
             print("incorrect conn_handle: {}".format(event.conn_handle))
             return
         if event.read:
-            reply = self._on_read_auth_request(event.read)
+            self._on_read_auth_request(event.read)
         elif event.write:
-            reply = self._on_write_auth_request(event.write)
+            self._on_write_auth_request(event.write)
         else:
             print("auth request was not read or write???")
-            return
-        if reply:
-            self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(event.conn_handle, reply)
 
 
 class GattsService(gatt.Service):
@@ -226,7 +280,7 @@ class GattsService(gatt.Service):
         char_md = nrf_types.BLEGattsCharMetadata(props, cccd_metadata=cccd_metadata)
         security = _security_mapping[properties.security_level]
         attr_metadata = nrf_types.BLEGattsAttrMetadata(security, security, properties.variable_length,
-                                                       read_auth=False, write_auth=True)
+                                                       read_auth=True, write_auth=True)
         attribute = nrf_types.BLEGattsAttribute(uuid.nrf_uuid, attr_metadata, properties.max_len, initial_value)
 
         handles = nrf_types.BLEGattsCharHandles()  # Populated in call
