@@ -50,11 +50,11 @@ def main():
     time_char.on_read.register(on_time_char_read)
 
     ble_device.peripheral.set_advertise_data(BLEAdvData(complete_local_name='Thomas Test'))
-    ble_device.peripheral.advertise()
+
     print("Advertising")
-    event = ble_device.wait_for_connection()
-    if event:
-        print("Connected, event: {}".format(event))
+    peer = ble_device.peripheral.advertise().wait(30, False)
+    if peer:
+        print("Connected, peer: {}".format(peer))
     else:
         print("Connection timeout")
         return

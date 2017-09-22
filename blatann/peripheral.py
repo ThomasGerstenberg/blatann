@@ -1,5 +1,6 @@
 from blatann.nrf import nrf_observers, nrf_events, nrf_types
 from blatann import gatts, peer
+from blatann.waitables.connected_waitable import ConnectionWaitable
 
 
 class PeripheralManager(nrf_observers.NrfDriverObserver):
@@ -23,6 +24,7 @@ class PeripheralManager(nrf_observers.NrfDriverObserver):
         params = nrf_types.BLEGapAdvParams(adv_interval_ms, timeout_sec)
         self._restart_adv_on_disconnect = restart_on_disconnect
         self.ble_device.ble_driver.ble_gap_adv_start(params)
+        return ConnectionWaitable(self.ble_device.ble_driver)
 
     def stop_advertising(self):
         self._restart_adv_on_disconnect = False

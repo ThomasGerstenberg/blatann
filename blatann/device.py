@@ -11,6 +11,7 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
         self.ble_driver.open()
+        # TODO: BLE Configuration
         self.ble_driver.ble_enable()
 
         self.peripheral = peripheral.PeripheralManager(self)
@@ -29,8 +30,3 @@ class BleDevice(NrfDriverObserver):
         print("Got driver event: {}".format(event))
         if isinstance(event, nrf_events.GapEvtConnected):
             print("Connected")
-
-    def wait_for_connection(self, timeout=30):
-        with nrf_event_sync.EventSync(self.ble_driver, nrf_events.GapEvtConnected) as sync:
-            event = sync.get(timeout=timeout)
-        return event
