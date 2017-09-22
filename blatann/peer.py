@@ -24,7 +24,3 @@ class Peer(object):
 
     def peer_secured(self):
         self.connection_state = PeerState.CONNECTED_SECURE
-
-    def peer_disconnected(self):
-        self.conn_handle = -1
-        self.connection_state = PeerState.DISCONNECTED

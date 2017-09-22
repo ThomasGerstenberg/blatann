@@ -5,17 +5,17 @@ from blatann.nrf.nrf_events import GapEvtConnected, GapEvtTimeout, BLEGapRoles, 
 
 
 class ConnectionWaitable(Waitable):
-    def __init__(self, ble_driver, current_peer=None, role=BLEGapRoles.periph):
+    def __init__(self, ble_device, current_peer=None, role=BLEGapRoles.periph):
         """
-        :type ble_driver: blatann.nrf.nrf_driver.NrfDriver
+        :type ble_driver: blatann.device.BleDevice
         :param current_peer:
         """
         self._callback = None
         self._peer = current_peer or peer.Peer()
         self._queue = queue.Queue()
         self._role = role
-        ble_driver.event_subscribe(self._on_connected_event, GapEvtConnected)
-        ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
+        ble_device.ble_driver.event_subscribe(self._on_connected_event, GapEvtConnected)
+        ble_device.ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
 
     def _event_occured(self, ble_driver, result):
         ble_driver.event_unsubscribe(self._on_connected_event, GapEvtConnected)
@@ -54,3 +54,4 @@ class ConnectionWaitable(Waitable):
 
     def then(self, func_to_execute):
         self._callback = func_to_execute
+        return self

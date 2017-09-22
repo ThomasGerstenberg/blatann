@@ -19,6 +19,12 @@ _security_mapping = {
 
 
 class GattsCharacteristic(gatt.Characteristic):
+    """
+    Represents a single characteristic within a service. This class is usually not instantiated directly; it
+    is added to a service through GattsService::add_characteristic()
+    """
+    _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
+
     def __init__(self, ble_device, peer, uuid, properties, value="", prefer_indications=True):
         """
         :param ble_device:
@@ -29,8 +35,8 @@ class GattsCharacteristic(gatt.Characteristic):
         :param prefer_indications:
         """
         super(GattsCharacteristic, self).__init__(ble_device, peer, uuid)
-        self.properties = properties
-        self.value = value
+        self._properties = properties
+        self._value = value
         self.prefer_indications = prefer_indications
         # Events
         self._on_write = EventSource("Write Event", logger)
@@ -43,7 +49,6 @@ class GattsCharacteristic(gatt.Characteristic):
         self._write_queued = False
         self._read_in_process = False
         self._queued_write_chunks = []
-        self.QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
     """
     Public Methods
@@ -78,7 +83,7 @@ class GattsCharacteristic(gatt.Characteristic):
             hvx_params = nrf_types.BLEGattsHvx(self.value_handle, hvx_type, None)
             self.ble_device.ble_driver.ble_gatts_hvx(self.peer.conn_handle, hvx_params)
 
-        self.value = value
+        self._value = value
 
     """
     Properties
@@ -89,15 +94,18 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         The max possible the value the characteristic can be set to
         """
-        return self.properties.max_len
+        return self._properties.max_len
 
     @property
     def notifiable(self):
         """
         Gets if the characteristic is set up to asynchonously notify clients via notifications or indications
         """
-        return self.properties.indicate or self.properties.notify
+        return self._properties.indicate or self._properties.notify
 
+    @property
+    def value(self):
+        return self._value
     """
     Events
     """
@@ -166,8 +174,8 @@ class GattsCharacteristic(gatt.Characteristic):
             print("New value: 0x{}".format(str(new_value).encode("hex")))
             self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
                                                            nrf_types.BLEGattsValue(new_value))
-            self.value = new_value
-            self._on_write.notify(self)
+            self._value = new_value
+            self._on_write.notify(self, self.value)
         self._queued_write_chunks = []
 
     def _on_cccd_write(self, event):
@@ -186,8 +194,8 @@ class GattsCharacteristic(gatt.Characteristic):
             return
         elif event.attribute_handle != self.value_handle:
             return
-        self.value = bytearray(event.data)
-        self._on_write.notify(self)
+        self._value = bytearray(event.data)
+        self._on_write.notify(self, self.value)
 
     def _on_write_auth_request(self, write_event):
         """
@@ -204,11 +212,12 @@ class GattsCharacteristic(gatt.Characteristic):
             return
 
         # Build out the reply
-        params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, True, write_event.offset, write_event.data)
+        params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, True,
+                                                   write_event.offset, write_event.data)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)
 
         # Check that the write length is valid
-        if write_event.offset + len(write_event.data) > self.properties.max_len:
+        if write_event.offset + len(write_event.data) > self._properties.max_len:
             params.gatt_status = nrf_types.BLEGattStatusCode.invalid_att_val_length
             self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
         else:
@@ -216,8 +225,9 @@ class GattsCharacteristic(gatt.Characteristic):
             self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
             if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
                 self._write_queued = True
-                self._queued_write_chunks.append(self.QueuedChunk(write_event.offset, write_event.data))
-            elif write_event.write_op in [nrf_events.BLEGattsWriteOperation.write_req, nrf_types.BLEGattsWriteOperation.write_cmd]:
+                self._queued_write_chunks.append(self._QueuedChunk(write_event.offset, write_event.data))
+            elif write_event.write_op in [nrf_events.BLEGattsWriteOperation.write_req,
+                                          nrf_types.BLEGattsWriteOperation.write_cmd]:
                 self._on_gatts_write(None, write_event)
 
         # TODO More logic
@@ -258,7 +268,6 @@ class GattsCharacteristic(gatt.Characteristic):
 class GattsService(gatt.Service):
     def add_characteristic(self, uuid, properties, initial_value=""):
         """
-
         :type uuid: blatann.uuid.Uuid
         :type properties: gatt.CharacteristicProperties
         :type initial_value: str or list or bytearray
@@ -269,8 +278,9 @@ class GattsService(gatt.Service):
         self.ble_device.uuid_manager.register_uuid(uuid)
 
         # Create property structure
-        props = nrf_types.BLEGattCharacteristicProperties(properties.broadcast, properties.read, False, properties.write,
-                                                          properties.notify, properties.indicate, False)
+        props = nrf_types.BLEGattCharacteristicProperties(properties.broadcast, properties.read, False,
+                                                          properties.write, properties.notify, properties.indicate,
+                                                          False)
         # Create cccd metadata if notify/indicate enabled
         if properties.notify or properties.indicate:
             cccd_metadata = nrf_types.BLEGattsAttrMetadata(read_auth=False, write_auth=False)
@@ -305,6 +315,14 @@ class GattsDatabase(gatt.GattDatabase):
                                                    nrf_events.GattsEvtReadWriteAuthorizeRequest)
 
     def add_service(self, uuid, service_type=gatt.ServiceType.PRIMARY):
+        """
+        Adds a service to the local database
+
+        :type uuid: blatann.uuid.Uuid
+        :type service_type: gatt.ServiceType
+        :return: The added and newly created service
+        :rtype: GattsService
+        """
         # Register UUID
         self.ble_device.uuid_manager.register_uuid(uuid)
         handle = nrf_types.BleGattHandle()
@@ -319,7 +337,9 @@ class GattsDatabase(gatt.GattDatabase):
     def _on_rw_auth_request(self, driver, event):
         if not event.write:
             return
-        if event.write.write_op not in [nrf_events.BLEGattsWriteOperation.exec_write_req_now, nrf_events.BLEGattsWriteOperation.exec_write_req_cancel]:
+        # execute writes can span multiple services and characteristics. Should only reply at the top-level here
+        if event.write.write_op not in [nrf_events.BLEGattsWriteOperation.exec_write_req_now,
+                                        nrf_events.BLEGattsWriteOperation.exec_write_req_cancel]:
             return
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, False)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)

@@ -2,7 +2,7 @@ from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
 from blatann.nrf import nrf_events, nrf_event_sync
 
-from blatann import peripheral, uuid
+from blatann import peripheral_manager, uuid
 
 
 class BleDevice(NrfDriverObserver):
@@ -14,7 +14,7 @@ class BleDevice(NrfDriverObserver):
         # TODO: BLE Configuration
         self.ble_driver.ble_enable()
 
-        self.peripheral = peripheral.PeripheralManager(self)
+        self.peripheral = peripheral_manager.PeripheralManager(self)
         self.uuid_manager = uuid.UuidManager(self.ble_driver)
         self.active_connections = []
 
@@ -28,5 +28,3 @@ class BleDevice(NrfDriverObserver):
 
     def on_driver_event(self, nrf_driver, event):
         print("Got driver event: {}".format(event))
-        if isinstance(event, nrf_events.GapEvtConnected):
-            print("Connected")

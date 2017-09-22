@@ -13,7 +13,7 @@ class UuidManager(object):
 
     def register_uuid(self, uuid):
         if isinstance(uuid, Uuid16):
-            return
+            return  # Don't need to register standard 16-bit UUIDs
         elif isinstance(uuid, Uuid128):
             # Check if the base is already registered. If so, do nothing
             for registered_base in self.registered_vs_uuids:
@@ -30,11 +30,13 @@ class UuidManager(object):
 
 
 class Uuid(object):
-    pass
+    def __init__(self, nrf_uuid=None):
+        self.nrf_uuid = nrf_uuid
 
 
 class Uuid128(Uuid):
     def __init__(self, uuid):
+        super(Uuid128, self).__init__()
         if isinstance(uuid, str):
             self.uuid_str = uuid.lower()
             self.uuid = self._validate_uuid_str(uuid)
@@ -70,6 +72,22 @@ class Uuid128(Uuid):
     def uuid16(self):
         return self.uuid[2] << 8 | self.uuid[3]
 
+    def new_uuid_from_base(self, uuid16):
+        if isinstance(uuid16, str):
+            uuid16 = int(uuid16, 16)
+        if not isinstance(uuid16, int) or uuid16 > 0xFFFF:
+            raise ValueError("UUID must be specified as a 16-bit number (0 - 0xFFFF) or a 4 character hex-string")
+        uuid = self.uuid_base
+        uuid[2] = uuid16 >> 8 & 0xFF
+        uuid[3] = uuid16 & 0xFF
+        return Uuid128(uuid)
+
+    @classmethod
+    def combine_with_base(cls, uuid16, uuid128_base):
+        uuid_base = Uuid128(uuid128_base)
+        return uuid_base.new_uuid_from_base(uuid16)
+
+
     def __str__(self):
         return self.uuid_str
 
@@ -78,8 +96,8 @@ class Uuid16(Uuid):
     def __init__(self, uuid):
         if not isinstance(uuid, int) or uuid > 0xFFFF:
             raise ValueError("UUID Must be a valid 16-bit integer")
+        super(Uuid16, self).__init__(BLEUUID(uuid))
         self.uuid = uuid
-        self.nrf_uuid = BLEUUID(uuid)
 
     def __str__(self):
         return "{:x}".format(self.uuid)
