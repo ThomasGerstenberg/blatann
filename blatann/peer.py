@@ -1,4 +1,5 @@
 import enum
+from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 
 
 class PeerState(enum.Enum):
@@ -10,7 +11,7 @@ class PeerState(enum.Enum):
 
 class Peer(object):
     def __init__(self):
-        self.conn_handle = -1
+        self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.address = "",
         self.connection_state = PeerState.DISCONNECTED
 
@@ -24,3 +25,8 @@ class Peer(object):
 
     def peer_secured(self):
         self.connection_state = PeerState.CONNECTED_SECURE
+
+    def peer_disconnected(self):
+        self.conn_handle = BLE_CONN_HANDLE_INVALID
+        self.connection_state = PeerState.DISCONNECTED
+        self.address = ""

@@ -14,7 +14,7 @@ class BleDevice(NrfDriverObserver):
         # TODO: BLE Configuration
         self.ble_driver.ble_enable()
 
-        self.peripheral = peripheral_manager.PeripheralManager(self)
+        self.peripheral_manager = peripheral_manager.PeripheralManager(self)
         self.uuid_manager = uuid.UuidManager(self.ble_driver)
         self.active_connections = []
 

@@ -30,7 +30,6 @@ class EvtUserMemoryRequest(BLEEvent):
         return "{}(conn_handle={!r}, type={!r})".format(self.__class__.__name__, self.conn_handle, self.type)
 
 
-
 class EvtTxComplete(BLEEvent):
     evt_id = driver.BLE_EVT_TX_COMPLETE
 
@@ -46,4 +45,3 @@ class EvtTxComplete(BLEEvent):
 
     def __repr__(self):
         return "{}(conn_handle={!r}, count={!r})".format(self.__class__.__name__, self.conn_handle, self.count)
-

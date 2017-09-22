@@ -94,6 +94,8 @@ class NrfError(Enum):
 Gap Enums
 """
 
+BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
+
 
 class BLEGapAdvType(Enum):
     connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_IND
