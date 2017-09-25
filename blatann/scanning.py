@@ -33,6 +33,7 @@ class ScanEntry(object):
             print("Peer address doesn't match")
             return
         self.advertise_data.update(adv_report.adv_data.records)
+        self._update_device_name()
 
     def __repr__(self):
         return "{!r}: {}".format(self.device_name, self.advertise_data)
