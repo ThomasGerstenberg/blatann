@@ -4,10 +4,9 @@ import threading
 import struct
 from blatann import BleDevice
 from blatann.uuid import Uuid128
-from blatann.nrf.nrf_types import BLEAdvData
 from blatann.nrf.nrf_events import GapEvtDisconnected
 from blatann.nrf.nrf_event_sync import EventSync
-from blatann import gatt
+from blatann import gatt, advertising
 
 
 def on_connect(peer):
@@ -73,8 +72,6 @@ class CountingCharacteristicThread(object):
         self._stopped.set()
 
 
-
-
 def main():
     ble_device = BleDevice("COM3")
 
@@ -86,7 +83,7 @@ def main():
     time_service_uuid = Uuid128.combine_with_base("dead", time_service_base_uuid)
     time_char_uuid = time_service_uuid.new_uuid_from_base("dddd")
 
-    service = ble_device.peripheral_manager.database.add_service(service_uuid)
+    service = ble_device.database.add_service(service_uuid)
 
     char1_props = gatt.CharacteristicProperties(read=True, notify=True, indicate=True, write=True, max_length=30,
                                                 variable_length=True)
@@ -98,15 +95,15 @@ def main():
     counting_char = service.add_characteristic(counting_char_uuid, counting_char_props, [0]*4)
     counting_char_thread = CountingCharacteristicThread(counting_char)
 
-    time_service = ble_device.peripheral_manager.database.add_service(time_service_uuid)
+    time_service = ble_device.database.add_service(time_service_uuid)
     time_char_props = gatt.CharacteristicProperties(read=True, max_length=30, variable_length=True)
     time_char = time_service.add_characteristic(time_char_uuid, time_char_props, "Time")
     time_char.on_read.register(on_time_char_read)
 
-    ble_device.peripheral_manager.set_advertise_data(BLEAdvData(complete_local_name='Periph Test'))
+    ble_device.advertiser.set_advertise_data(advertising.AdvertisingData(complete_local_name='Periph Test'))
 
     print("Advertising")
-    peer = ble_device.peripheral_manager.advertise().then(on_connect).wait(30, False)
+    peer = ble_device.advertiser.advertise().then(on_connect).wait(30, False)
     if not peer:
         return
     with EventSync(ble_device.ble_driver, GapEvtDisconnected) as sync:

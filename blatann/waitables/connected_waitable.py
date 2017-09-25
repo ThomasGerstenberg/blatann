@@ -41,7 +41,6 @@ class ConnectionWaitable(Waitable):
         """
         if event.role != self._role:
             return
-        self._peer.peer_connected(event.conn_handle, event.peer_addr)
         self._event_occured(ble_driver, self._peer)
 
     def wait(self, timeout=None, exception_on_timeout=True):

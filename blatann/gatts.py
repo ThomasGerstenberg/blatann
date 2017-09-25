@@ -3,7 +3,7 @@ import logging
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.exceptions import InvalidOperationException
-from blatann.event_handler import EventSource
+from blatann.event_type import EventSource
 
 
 logger = logging.getLogger(__name__)
@@ -75,8 +75,7 @@ class GattsCharacteristic(gatt.Characteristic):
         v = nrf_types.BLEGattsValue(value)
         self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle, v)
 
-        if notify_client and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED and not self._read_in_process\
-                and self.peer.conn_handle != nrf_types.BLE_CONN_HANDLE_INVALID:
+        if notify_client and self.client_subscribed and not self._read_in_process:
             if self.cccd_state == gatt.SubscriptionState.INDICATION:
                 hvx_type = nrf_types.BLEGattHVXType.indication
             else:
@@ -106,7 +105,20 @@ class GattsCharacteristic(gatt.Characteristic):
 
     @property
     def value(self):
+        """
+        Gets the current value of the characteristic
+
+        :rtype: bytearray
+        """
         return self._value
+
+    @property
+    def client_subscribed(self):
+        """
+        Gets if the client is currently subscribed (notify or indicate) to this characteristic
+        """
+        return self.peer and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED
+
     """
     Events
     """
@@ -119,7 +131,7 @@ class GattsCharacteristic(gatt.Characteristic):
         Handler args: (GattsCharacteristic this characteristic, bytearray value written)
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_handler.Event
+        :rtype: blatann.event_type.Event
         """
         return self._on_write
 
@@ -138,7 +150,7 @@ class GattsCharacteristic(gatt.Characteristic):
         Handler args: (GattsCharacteristic this characteristic)
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_handler.Event
+        :rtype: blatann.event_type.Event
         """
         return self._on_read
 
@@ -151,7 +163,7 @@ class GattsCharacteristic(gatt.Characteristic):
         Handler args: (GattsCharacteristic this characteristic, blatann.gatt.SubscriptionState new state)
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_handler.Event
+        :rtype: blatann.event_type.Event
         """
         return self._on_sub_change
 
@@ -255,8 +267,8 @@ class GattsCharacteristic(gatt.Characteristic):
         self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(read_event.conn_handle, reply)
 
     def _on_rw_auth_request(self, driver, event):
-        if self.peer.conn_handle != event.conn_handle:
-            print("incorrect conn_handle: {}".format(event.conn_handle))
+        if not self.peer:
+            print("Got RW request when peer not connected: {}".format(event.conn_handle))
             return
         if event.read:
             self._on_read_auth_request(event.read)

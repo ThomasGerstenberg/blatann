@@ -164,7 +164,6 @@ def list_to_uint8_array(data_list):
 
 def list_to_uint16_array(data_list):
     """Convert python list to uint16_array."""
-
     data_array = _populate_array(data_list, driver.uint16_array)
     return data_array
 
