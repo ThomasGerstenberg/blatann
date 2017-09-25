@@ -72,8 +72,8 @@ class CountingCharacteristicThread(object):
         self._stopped.set()
 
 
-def main():
-    ble_device = BleDevice("COM3")
+def main(serial_port):
+    ble_device = BleDevice(serial_port)
 
     service_uuid = Uuid128("deadbeef-0011-2345-6679-ab12ccd4f550")
     char1_uuid = service_uuid.new_uuid_from_base(0xbeaa)
@@ -113,4 +113,4 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
+    main("COM3")

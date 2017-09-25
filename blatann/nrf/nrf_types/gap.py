@@ -142,9 +142,6 @@ class BLEGapAddr(object):
         else:
             return 'err {0:02b}'.format((self.AddressLtlEnd[-1] >> 6) & 0b11)
 
-    def get_addr_str(self):
-        return '"{}" ({:> 6})'.format(self, self.get_addr_type_str())
-
     def __eq__(self, other):
         if not isinstance(other, BLEGapAddr):
             other = BLEGapAddr.from_string(str(other))
@@ -154,7 +151,10 @@ class BLEGapAddr(object):
         return not self == other
 
     def __hash__(self):
-        return str(self)
+        value = 0
+        for i, val in enumerate(self.addr[::-1]):
+            value |= val << i*8
+        return value
 
     def get_addr_flag(self):
         return 'p' if self.addr_type == BLEGapAddr.Types.public else 'r'
@@ -248,3 +248,6 @@ class BLEAdvData(object):
             index += (ad_len + 1)
 
         return ble_adv_data
+
+    def __repr__(self):
+        return str(self.records)

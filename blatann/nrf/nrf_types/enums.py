@@ -102,6 +102,7 @@ class BLEGapAdvType(Enum):
     connectable_directed = driver.BLE_GAP_ADV_TYPE_ADV_DIRECT_IND
     scanable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_SCAN_IND
     non_connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_NONCONN_IND
+    scsan_response = 4
 
 
 class BLEGapRoles(Enum):

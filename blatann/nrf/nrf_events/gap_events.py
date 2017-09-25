@@ -33,10 +33,10 @@ class GapEvtAdvReport(GapEvt):
     def from_c(cls, event):
         adv_report_evt = event.evt.gap_evt.params.adv_report
 
-        # TODO: adv_type what? We don't have a type for scan response?
-        adv_type = None
         if not adv_report_evt.scan_rsp:
             adv_type = BLEGapAdvType(adv_report_evt.type)
+        else:
+            adv_type = BLEGapAdvType.scsan_response
 
         return cls(conn_handle=event.evt.gap_evt.conn_handle,
                    peer_addr=BLEGapAddr.from_c(adv_report_evt.peer_addr),
