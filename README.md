@@ -35,3 +35,8 @@ Roadmap:
 
 The library aims to support both event-driven and procedural program styles. Initially the library
 will primarily support procedural, with some hooks to make it event-driven.
+
+**NOTE**
+
+This library is very much a work in progress. Interfaces, objects, method names **will** change.
+Semantic versioning has not been implemented

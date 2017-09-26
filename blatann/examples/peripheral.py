@@ -103,7 +103,7 @@ def main(serial_port):
     ble_device.advertiser.set_advertise_data(advertising.AdvertisingData(complete_local_name='Periph Test'))
 
     print("Advertising")
-    peer = ble_device.advertiser.advertise().then(on_connect).wait(30, False)
+    peer = ble_device.advertiser.start().then(on_connect).wait(300, False)
     if not peer:
         return
     with EventSync(ble_device.ble_driver, GapEvtDisconnected) as sync:

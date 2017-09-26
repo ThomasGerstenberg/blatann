@@ -11,7 +11,10 @@ class ConnectionWaitable(Waitable):
         :param current_peer:
         """
         self._callback = None
-        self._peer = current_peer or peer.Peer()
+        if current_peer is None:
+            self._peer = peer.Peer()
+        else:
+            self._peer = current_peer
         self._queue = queue.Queue()
         self._role = role
         ble_device.ble_driver.event_subscribe(self._on_connected_event, GapEvtConnected)
