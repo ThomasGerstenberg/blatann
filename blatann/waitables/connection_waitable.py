@@ -1,7 +1,7 @@
-import queue
 from blatann.waitables.waitable import Waitable
 from blatann import peer
-from blatann.nrf.nrf_events import GapEvtConnected, GapEvtTimeout, BLEGapRoles, BLEGapTimeoutSrc
+from blatann.nrf.nrf_events import GapEvtConnected, GapEvtTimeout, BLEGapRoles, BLEGapTimeoutSrc, GapEvtDisconnected
+from blatann.exceptions import InvalidStateException
 
 
 class ConnectionWaitable(Waitable):
@@ -10,12 +10,11 @@ class ConnectionWaitable(Waitable):
         :type ble_driver: blatann.device.BleDevice
         :param current_peer:
         """
-        self._callback = None
+        super(ConnectionWaitable, self).__init__()
         if current_peer is None:
-            self._peer = peer.Peer()
+            self._peer = peer.Peer(ble_device)
         else:
             self._peer = current_peer
-        self._queue = queue.Queue()
         self._role = role
         ble_device.ble_driver.event_subscribe(self._on_connected_event, GapEvtConnected)
         ble_device.ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
@@ -23,9 +22,7 @@ class ConnectionWaitable(Waitable):
     def _event_occured(self, ble_driver, result):
         ble_driver.event_unsubscribe(self._on_connected_event, GapEvtConnected)
         ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
-        self._queue.put(result)
-        if self._callback:
-            self._callback(result)
+        self._notify(result)
 
     def _on_timeout_event(self, ble_driver, event):
         """
@@ -46,14 +43,19 @@ class ConnectionWaitable(Waitable):
             return
         self._event_occured(ble_driver, self._peer)
 
-    def wait(self, timeout=None, exception_on_timeout=True):
-        try:
-            return self._queue.get(timeout=timeout)
-        except queue.Empty:
-            if exception_on_timeout:
-                raise
-        return None
 
-    def then(self, func_to_execute):
-        self._callback = func_to_execute
-        return self
+class DisconnectionWaitable(Waitable):
+    def __init__(self, connected_peer):
+        """
+        :type ble_device: blatann.device.BleDevice
+        :type connected_peer: blatann.peer.Peer
+        """
+        super(DisconnectionWaitable, self).__init__()
+        if connected_peer.conn_handle == peer.BLE_CONN_HANDLE_INVALID:
+            raise InvalidStateException("Peer already disconnected")
+        connected_peer.on_disconnect.register(self._on_disconnect)
+
+    def _on_disconnect(self, disconnected_peer):
+        disconnected_peer.on_disconnect.deregister(self._on_disconnect)
+        self._notify(disconnected_peer)
+

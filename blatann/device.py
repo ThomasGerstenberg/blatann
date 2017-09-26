@@ -14,13 +14,15 @@ class BleDevice(NrfDriverObserver):
         # TODO: BLE Configuration
         self.ble_driver.ble_enable()
 
-        self.client = peer.Peer()
-        self.peripherals = []
+        self.client = peer.Client(self)
+        self.connected_peripherals = []
+        self.connecting_peripherals = []
 
         self.uuid_manager = uuid.UuidManager(self.ble_driver)
         self.advertiser = advertising.Advertiser(self, self.client)
         self.scanner = scanning.Scanner(self)
         self._db = gatts.GattsDatabase(self, self.client)
+        self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
 
     def __del__(self):
         self.ble_driver.observer_unregister(self)
@@ -29,6 +31,12 @@ class BleDevice(NrfDriverObserver):
     @property
     def database(self):
         return self._db
+
+    def connect(self, peer_address):
+        pass
+
+    def set_default_peripheral_connection_params(self, min_interval_ms, max_interval_ms, timeout_ms, slave_latency=0):
+        self._default_conn_params = peer.ConnectionParameters(min_interval_ms, max_interval_ms, timeout_ms, slave_latency)
 
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
@@ -39,6 +47,3 @@ class BleDevice(NrfDriverObserver):
         if isinstance(event, nrf_events.GapEvtConnected):
             if event.role == nrf_events.BLEGapRoles.periph:
                 self.client.peer_connected(event.conn_handle, event.peer_addr)
-        elif isinstance(event, nrf_events.GapEvtDisconnected):
-            if event.conn_handle == self.client.conn_handle:
-                self.client.peer_disconnected()
