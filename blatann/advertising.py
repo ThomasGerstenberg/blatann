@@ -1,7 +1,7 @@
 import logging
 from enum import IntEnum
 from blatann.nrf import nrf_events, nrf_types
-from blatann import uuid
+from blatann import uuid, exceptions
 from blatann.waitables.connection_waitable import ConnectionWaitable
 from blatann.event_type import Event, EventSource
 
@@ -26,7 +26,7 @@ class AdvertisingData(object):
     def __init__(self, flags=None, local_name=None, local_name_complete=True,
                  service_uuid16s=None, service_uuid128s=None,
                  has_more_uuid16_services=False, has_more_uuid128_services=False,
-                 service_data=None, manufacturer_data=None, **kwargs):
+                 service_data=None, manufacturer_data=None, **other_flags):
         self.flags = flags
         self.local_name = local_name
         self.local_name_complete = local_name_complete
@@ -36,7 +36,7 @@ class AdvertisingData(object):
         self.has_more_uuid128_services = has_more_uuid128_services
         self.service_data = service_data
         self.manufacturer_data = manufacturer_data
-        self.other_records = {self.Types[k]: v for k, v in kwargs.items()}
+        self.other_flags = {self.Types[k]: v for k, v in other_flags.items()}
         if not isinstance(self.service_uuid16s, (list, tuple)):
             self.service_uuid16s = [self.service_uuid16s]
         if not isinstance(self.service_uuid128s, (list, tuple)):
@@ -44,15 +44,34 @@ class AdvertisingData(object):
 
     @property
     def service_uuids(self):
+        """
+        Gets all of the 16-bit and 128-bit service UUIDs specified in the advertising data
+
+        :return: list of the service UUIDs present in the advertising data
+        :rtype: list[uuid.Uuid]
+        """
         return self.service_uuid16s + self.service_uuid128s
 
     def check_encoded_length(self):
+        """
+        Checks if the encoded length of this advertising data payload meets the maximum allowed
+        length specified by the Bluetooth spec
+
+        :return: a tuple of the encoded length and a bool result of whether or not it meets requirements
+        :rtype: tuple[int, bool]
+        """
         ble_adv_data = self.to_ble_adv_data()
         encoded_data = ble_adv_data.to_list()
         return len(encoded_data), len(encoded_data) <= self.MAX_ENCODED_LENGTH
 
     def to_ble_adv_data(self):
-        records = self.other_records.copy()
+        """
+        Converts the advertising data to a BLEAdvData object that can be used by the nRF Driver
+
+        :return: the BLEAdvData object which represents this advertising data
+        :rtype: nrf_types.BLEAdvData
+        """
+        records = self.other_flags.copy()
         if self.flags:
             records[self.Types.flags] = [int(self.flags)]
         if self.local_name:
@@ -82,6 +101,14 @@ class AdvertisingData(object):
 
     @classmethod
     def from_ble_adv_records(cls, advertise_records):
+        """
+        Converts a dictionary of AdvertisingData.Type: value keypairs into an object of this class
+
+        :param advertise_records:
+        :type advertise_records: dict
+        :return: the AdvertisingData from the records given
+        :rtype: AdvertisingData
+        """
         flags = advertise_records.pop(cls.Types.flags, None)
         if flags:
             flags = flags[0]
@@ -128,7 +155,7 @@ class AdvertisingData(object):
             for i in range(0, len(uuid128_data), 16):
                 uuid128 = uuid128_data[i:i+16][::-1]
                 service_uuid128s.append(uuid.Uuid128(uuid128))
-        record_string_keys = {k.name: v for k, v in advertise_records.items()}
+        record_string_keys = {k.name: bytearray(v) for k, v in advertise_records.items()}
         return AdvertisingData(flags=flags, local_name=local_name, local_name_complete=local_name_complete,
                                service_uuid16s=service_uuid16s, service_uuid128s=service_uuid128s,
                                has_more_uuid16_services=more_16bit_services, has_more_uuid128_services=more_128bit_services,
@@ -179,13 +206,48 @@ class Advertiser(object):
 
     @property
     def on_advertising_timeout(self):
+        """
+        Event generated whenever advertising times out and finishes with no connections made
+        Handler args: (None)
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: Event
+        """
         return self._on_advertising_timeout
 
-    def set_advertise_data(self, advertise_data=AdvertisingData(), scan_data=AdvertisingData()):
-        self.ble_device.ble_driver.ble_gap_adv_data_set(advertise_data.to_ble_adv_data(), scan_data.to_ble_adv_data())
+    def set_advertise_data(self, advertise_data=AdvertisingData(), scan_response=AdvertisingData()):
+        """
+        Sets the advertising and scan response data which will be broadcasted to peers during advertising
 
-    def set_default_advertise_params(self, advertise_interval, timeout_seconds):
-        self._advertise_interval = advertise_interval
+        Note: BLE Restricts advertise and scan response data to an encoded length of 31 bytes each.
+        Use AdvertisingData.check_encoded_length() to determine if the
+
+        :param advertise_data: The advertise data to use
+        :type advertise_data: AdvertisingData
+        :param scan_response: The scan response data to use
+        :type scan_response: AdvertisingData
+        """
+        adv_len, adv_pass = advertise_data.check_encoded_length()
+        scan_len, scan_pass = advertise_data.check_encoded_length()
+
+        if not adv_pass:
+            raise exceptions.InvalidOperationException("Encoded Advertising data length is too long ({} bytes). "
+                                                       "Max: {} bytes".format(adv_len, advertise_data.MAX_ENCODED_LENGTH))
+
+        if not scan_pass:
+            raise exceptions.InvalidOperationException("Encoded Scan Response data length is too long ({} bytes). "
+                                                       "Max: {} bytes".format(scan_len, advertise_data.MAX_ENCODED_LENGTH))
+
+        self.ble_device.ble_driver.ble_gap_adv_data_set(advertise_data.to_ble_adv_data(), scan_response.to_ble_adv_data())
+
+    def set_default_advertise_params(self, advertise_interval_ms, timeout_seconds):
+        """
+        Sets the default advertising parameters so they do not need to be specified on each start
+
+        :param advertise_interval_ms: The advertising interval, in milliseconds
+        :param timeout_seconds: How long to advertise for before timing out, in seconds
+        """
+        self._advertise_interval = advertise_interval_ms
         self._timeout = timeout_seconds
 
     def start(self, adv_interval_ms=None, timeout_sec=None, auto_restart=False):
@@ -198,6 +260,7 @@ class Advertiser(object):
                              when the client disconnects
         :return: A waitable that will expire either when the timeout occurs, or a client connects.
                  Waitable Returns a peer.Client() object
+        :rtype: ConnectionWaitable
         """
         if self.advertising:
             self._stop()
@@ -215,6 +278,13 @@ class Advertiser(object):
         self.advertising = True
         return ConnectionWaitable(self.ble_device, self.client)
 
+    def stop(self):
+        """
+        Stops advertising and disables the auto-restart functionality (if enabled)
+        """
+        self._auto_restart = False
+        self._stop()
+
     def _stop(self):
         if not self.advertising:
             return
@@ -223,10 +293,6 @@ class Advertiser(object):
             self.ble_device.ble_driver.ble_gap_adv_stop()
         except Exception:
             pass
-
-    def stop(self):
-        self._auto_restart = False
-        self._stop()
 
     def _handle_adv_timeout(self, driver, event):
         """

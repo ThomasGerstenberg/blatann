@@ -12,7 +12,8 @@ def main(serial_port):
     scan_report = ble_device.scanner.start_scan().wait()
     print("")
     logger.info("Finished scanning. Scan reports:")
-    for peer, report in scan_report.scans_by_peer_address.items():
+
+    for report in scan_report.advertising_peers_found:
         logger.info(report)
 
 

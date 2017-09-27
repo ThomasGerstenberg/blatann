@@ -15,6 +15,10 @@ class PeerState(enum.Enum):
     CONNECTED = 2
 
 
+class PeerAddress(nrf_events.BLEGapAddr):
+    pass
+
+
 class ConnectionParameters(nrf_events.BLEGapConnParams):
     def __init__(self, min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency=0):
         super(ConnectionParameters, self).__init__(min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency)

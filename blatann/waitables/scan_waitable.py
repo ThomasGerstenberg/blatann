@@ -19,3 +19,8 @@ class ScanFinishedWaitable(Waitable):
         if event.src == BLEGapTimeoutSrc.scan:
             self._event_occurred(ble_driver)
 
+    def wait(self, timeout=None, exception_on_timeout=True):
+        """
+        :rtype: blatann.scanning.ScanReportCollection
+        """
+        return super(ScanFinishedWaitable, self).wait(timeout, exception_on_timeout)

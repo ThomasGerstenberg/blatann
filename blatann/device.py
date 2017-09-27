@@ -34,9 +34,28 @@ class BleDevice(NrfDriverObserver):
 
     @property
     def database(self):
+        """
+        Gets the local database instance that is accessed by connected clients
+
+        :return: The local database
+        :rtype: gatts.GattsDatabase
+        """
         return self._db
 
     def connect(self, peer_address, connection_params=None):
+        """
+        Initiates a connection to a peripheral peer with the specified connection parameters, or uses the default
+        connection parameters if not specified. The connection will not be complete until the returned waitable
+        either times out or reports the newly connected peer
+
+        :param peer_address: The address of the peer to connect to
+        :type peer_address: peer.PeerAddress
+        :param connection_params: Optional connection parameters to use. If not specified, uses the set default
+        :type connection_params: peer.ConnectionParameters
+        :return: A Waitable which can be used to wait until the connection is successful or times out. Waitable returns
+                 a peer.Peripheral object
+        :rtype: ConnectionWaitable
+        """
         if peer_address in self.connected_peripherals.keys():
             raise exceptions.InvalidStateException("Already connected to {}".format(peer_address))
         if self.connecting_peripheral is not None:
@@ -50,6 +69,15 @@ class BleDevice(NrfDriverObserver):
         return ConnectionWaitable(self, self.connecting_peripheral, nrf_events.BLEGapRoles.central)
 
     def set_default_peripheral_connection_params(self, min_interval_ms, max_interval_ms, timeout_ms, slave_latency=0):
+        """
+        Sets the default connection parameters for all subsequent connection attempts to peripherals.
+        Refer to the Bluetooth specifications for the valid ranges
+
+        :param min_interval_ms: The minimum desired connection interval, in milliseconds
+        :param max_interval_ms: The maximum desired connection interval, in milliseconds
+        :param timeout_ms: The connection timeout period, in milliseconds
+        :param slave_latency: The connection slave latency
+        """
         self._default_conn_params = peer.ConnectionParameters(min_interval_ms, max_interval_ms,
                                                               timeout_ms, slave_latency)
 

@@ -10,11 +10,9 @@ def find_target_device(ble_device, name):
     scan_report = ble_device.scanner.start_scan().wait()
 
     target_address = None
-    for peer_address, scan_report in scan_report.scans_by_peer_address.items():
+    for scan_report in scan_report.advertising_peers_found:
         if scan_report.advertise_data.local_name == name:
-            target_address = peer_address
-            break
-    return target_address
+            return scan_report.peer_address
 
 
 def main(serial_port):
