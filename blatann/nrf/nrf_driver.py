@@ -89,6 +89,7 @@ class NrfDriver(object):
         self._event_observers = {}
         self._event_observer_lock = Lock()
         self._log_driver_comms = log_driver_comms
+        self._serial_port = serial_port
 
         phy_layer = driver.sd_rpc_physical_layer_create_uart(serial_port,
                                                              baud_rate,
@@ -130,7 +131,7 @@ class NrfDriver(object):
                                       self._log_message_handler)
 
         if err_code == driver.NRF_SUCCESS:
-            self._event_thread = Thread(target=self._event_handler)
+            self._event_thread = Thread(target=self._event_handler, name="{}_Event".format(self._serial_port))
             # Note: We create a daemon thread and then register an exit handler
             #       to make sure this thread stops. This ensures that scripts that
             #       stop because of ctrl-c interrupt, compile errors or other problems

@@ -1,7 +1,10 @@
+import logging
 from blatann.nrf import nrf_events, nrf_types
 from blatann.event_type import Event, EventSource
 from blatann.waitables import scan_waitable
 from blatann import uuid, advertising, exceptions
+
+logger = logging.getLogger(__name__)
 
 
 class ScanParameters(nrf_types.BLEGapScanParams):
@@ -63,6 +66,7 @@ class Scanner(object):
         self._default_scan_params = ScanParameters(200, 150, 10)
         self.scanning = False
         ble_device.ble_driver.event_subscribe(self._on_advertise_report_event, nrf_events.GapEvtAdvReport)
+        ble_device.ble_driver.event_subscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
         self.scan_report = AdvertisingReportCollection()
 
     def set_default_scan_params(self, interval_ms=200, window_ms=150, timeout_seconds=10):
@@ -92,3 +96,10 @@ class Scanner(object):
         :type event: nrf_events.GapEvtAdvReport
         """
         self.scan_report.add(event)
+
+    def _on_timeout_event(self, driver, event):
+        """
+        :type event: nrf_events.GapEvtTimeout
+        """
+        if event.src == nrf_events.BLEGapTimeoutSrc.scan:
+            self.scanning = False

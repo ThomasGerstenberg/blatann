@@ -1,9 +1,12 @@
-from types import NoneType
+import logging
 from enum import IntEnum
 from blatann.nrf import nrf_events, nrf_types
 from blatann import uuid
 from blatann.waitables.connection_waitable import ConnectionWaitable
 from blatann.event_type import Event, EventSource
+
+
+logger = logging.getLogger(__name__)
 
 
 class AdvertisingFlags(IntEnum):
@@ -125,11 +128,11 @@ class AdvertisingData(object):
             for i in range(0, len(uuid128_data), 16):
                 uuid128 = uuid128_data[i:i+16][::-1]
                 service_uuid128s.append(uuid.Uuid128(uuid128))
-
+        record_string_keys = {k.name: v for k, v in advertise_records.items()}
         return AdvertisingData(flags=flags, local_name=local_name, local_name_complete=local_name_complete,
                                service_uuid16s=service_uuid16s, service_uuid128s=service_uuid128s,
                                has_more_uuid16_services=more_16bit_services, has_more_uuid128_services=more_128bit_services,
-                               service_data=service_data, manufacturer_data=manufacturer_data, **advertise_records)
+                               service_data=service_data, manufacturer_data=manufacturer_data, **record_string_keys)
 
     def __repr__(self):
         params = []
@@ -170,7 +173,7 @@ class Advertiser(object):
         self.client = client
         self.ble_device.ble_driver.event_subscribe(self._handle_adv_timeout, nrf_events.GapEvtTimeout)
         self.ble_device.ble_driver.event_subscribe(self._handle_disconnect, nrf_events.GapEvtDisconnected)
-        self._on_advertising_timeout = EventSource("Advertising Timeout")
+        self._on_advertising_timeout = EventSource("Advertising Timeout", logger)
         self._advertise_interval = 100
         self._timeout = self.ADVERTISE_FOREVER
 
@@ -197,7 +200,7 @@ class Advertiser(object):
                  Waitable Returns a peer.Client() object
         """
         if self.advertising:
-            self.stop()
+            self._stop()
         if adv_interval_ms is None:
             adv_interval_ms = self._advertise_interval
         if timeout_sec is None:
@@ -207,16 +210,23 @@ class Advertiser(object):
 
         params = nrf_types.BLEGapAdvParams(adv_interval_ms, timeout_sec)
         self._auto_restart = auto_restart
+        logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, auto_restart))
         self.ble_device.ble_driver.ble_gap_adv_start(params)
         self.advertising = True
         return ConnectionWaitable(self.ble_device, self.client)
 
-    def stop(self):
+    def _stop(self):
         if not self.advertising:
             return
         self.advertising = False
+        try:
+            self.ble_device.ble_driver.ble_gap_adv_stop()
+        except Exception:
+            pass
+
+    def stop(self):
         self._auto_restart = False
-        self.ble_device.ble_driver.ble_gap_adv_stop()
+        self._stop()
 
     def _handle_adv_timeout(self, driver, event):
         """
@@ -226,12 +236,11 @@ class Advertiser(object):
             self.advertising = False
             self._on_advertising_timeout.notify()
             if self._auto_restart:
-                print("Restarting")
                 self.start()
 
     def _handle_disconnect(self, driver, event):
         """
         :type event: nrf_events.GapEvtDisconnected
         """
-        if event.conn_handle == self.client.conn_handle and self._auto_restart:
+        if event.conn_handle == self.client.conn_handle or not self.client.connected and self._auto_restart:
             self.start()

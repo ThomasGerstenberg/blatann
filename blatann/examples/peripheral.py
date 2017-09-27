@@ -7,6 +7,9 @@ from blatann.uuid import Uuid128
 from blatann.nrf.nrf_events import GapEvtDisconnected
 from blatann.nrf.nrf_event_sync import EventSync
 from blatann import gatt, advertising
+from blatann.examples import example_utils
+
+logger = example_utils.setup_logger(level="DEBUG")
 
 
 def on_connect(peer):
@@ -14,9 +17,13 @@ def on_connect(peer):
     :type peer: blatann.peer.Peer or None
     """
     if peer:
-        print("Connected to peer")
+        logger.info("Connected to peer")
     else:
-        print("Connection timed out")
+        logger.warning("Connection timed out")
+
+
+def on_disconnect(peer, reason):
+    logger.info("Disconnected from peer, reason: {}".format(reason))
 
 
 def on_gatts_characteristic_write(characteristic, value):
@@ -24,8 +31,8 @@ def on_gatts_characteristic_write(characteristic, value):
     :type characteristic: blatann.gatts.GattsCharacteristic
     :type value: bytearray
     """
-    print("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
-                                                                             str(value).encode("hex")))
+    logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
+                                                                                   str(value).encode("hex")))
     new_value = "Hello, {}".format(str(value).encode("hex"))
     characteristic.set_value(new_value, True)
 
@@ -35,7 +42,7 @@ def on_gatts_subscription_state_changed(characteristic, new_state):
     :type characteristic: blatann.gatts.GattsCharacteristic
     :type new_state: blatann.gatt.SubscriptionState
     """
-    print("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, new_state))
+    logger.info("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, new_state))
 
 
 def on_time_char_read(characteristic):
@@ -105,14 +112,14 @@ def main(serial_port):
     scan_data = advertising.AdvertisingData(service_uuid128s=time_service_uuid, has_more_uuid128_services=True)
     ble_device.advertiser.set_advertise_data(adv_data, scan_data)
 
-    print("Advertising")
-    peer = ble_device.advertiser.start(timeout_sec=300).then(on_connect).wait(300, False)
-    if not peer:
-        return
-    with EventSync(ble_device.ble_driver, GapEvtDisconnected) as sync:
+    logger.info("Advertising")
+    ble_device.client.on_connect.register(on_connect)
+    ble_device.client.on_disconnect.register(on_disconnect)
+    ble_device.advertiser.start(timeout_sec=0, auto_restart=True)
+    with EventSync(ble_device.ble_driver, int) as sync:
         event = sync.get(timeout=600)
     counting_char_thread.join()
-    print("Done")
+    logger.info("Done")
     
 
 if __name__ == '__main__':

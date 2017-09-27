@@ -51,7 +51,7 @@ class DisconnectionWaitable(Waitable):
             raise InvalidStateException("Peer already disconnected")
         connected_peer.on_disconnect.register(self._on_disconnect)
 
-    def _on_disconnect(self, disconnected_peer):
+    def _on_disconnect(self, disconnected_peer, disconnect_reason):
         disconnected_peer.on_disconnect.deregister(self._on_disconnect)
         self._notify(disconnected_peer)
 

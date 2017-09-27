@@ -41,7 +41,7 @@ class GattsCharacteristic(gatt.Characteristic):
         # Events
         self._on_write = EventSource("Write Event", logger)
         self._on_read = EventSource("Read Event", logger)
-        self._on_sub_change = EventSource("Subscription Change Event")
+        self._on_sub_change = EventSource("Subscription Change Event", logger)
         # Subscribed events
         self.ble_device.ble_driver.event_subscribe(self._on_gatts_write, nrf_events.GattsEvtWrite)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request, nrf_events.GattsEvtReadWriteAuthorizeRequest)
@@ -177,14 +177,14 @@ class GattsCharacteristic(gatt.Characteristic):
     def _execute_queued_write(self, write_op):
         self._write_queued = False
         if write_op == nrf_events.BLEGattsWriteOperation.exec_write_req_cancel:
-            print("Cancelling write request")
+            logger.info("Cancelling write request")
         else:
-            print("Executing write request")
+            logger.info("Executing write request")
             # TODO Assume that it was assembled properly. Error handling should go here
             new_value = bytearray()
             for chunk in self._queued_write_chunks:
                 new_value += bytearray(chunk.data)
-            print("New value: 0x{}".format(str(new_value).encode("hex")))
+            logger.debug("New value: 0x{}".format(str(new_value).encode("hex")))
             self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
                                                            nrf_types.BLEGattsValue(new_value))
             self._value = new_value
@@ -268,14 +268,14 @@ class GattsCharacteristic(gatt.Characteristic):
 
     def _on_rw_auth_request(self, driver, event):
         if not self.peer:
-            print("Got RW request when peer not connected: {}".format(event.conn_handle))
+            logger.warning("Got RW request when peer not connected: {}".format(event.conn_handle))
             return
         if event.read:
             self._on_read_auth_request(event.read)
         elif event.write:
             self._on_write_auth_request(event.write)
         else:
-            print("auth request was not read or write???")
+            logging.error("auth request was not read or write???")
 
 
 class GattsService(gatt.Service):

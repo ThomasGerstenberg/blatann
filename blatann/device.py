@@ -1,9 +1,12 @@
+import logging
 from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
 from blatann.nrf import nrf_events, nrf_event_sync
 
 from blatann import uuid, advertising, scanning, peer, gatts, exceptions
 from blatann.waitables.connection_waitable import ConnectionWaitable
+
+logger = logging.getLogger(__name__)
 
 
 class BleDevice(NrfDriverObserver):
@@ -47,28 +50,36 @@ class BleDevice(NrfDriverObserver):
         return ConnectionWaitable(self, self.connecting_peripheral, nrf_events.BLEGapRoles.central)
 
     def set_default_peripheral_connection_params(self, min_interval_ms, max_interval_ms, timeout_ms, slave_latency=0):
-        self._default_conn_params = peer.ConnectionParameters(min_interval_ms, max_interval_ms, timeout_ms, slave_latency)
+        self._default_conn_params = peer.ConnectionParameters(min_interval_ms, max_interval_ms,
+                                                              timeout_ms, slave_latency)
 
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
         self.ble_driver.ble_user_mem_reply(event.conn_handle)
 
     def on_driver_event(self, nrf_driver, event):
-        print("Got driver event: {}".format(event))
+        logger.debug("Got driver event: {}".format(event))
         if isinstance(event, nrf_events.GapEvtConnected):
+            conn_params = peer.ConnectionParameters(event.conn_params.min_conn_interval_ms,
+                                                    event.conn_params.max_conn_interval_ms,
+                                                    event.conn_params.conn_sup_timeout_ms,
+                                                    event.conn_params.slave_latency)
             if event.role == nrf_events.BLEGapRoles.periph:
-                self.client.peer_connected(event.conn_handle, event.peer_addr)
+                self.client.peer_connected(event.conn_handle, event.peer_addr, conn_params)
             else:
                 if self.connecting_peripheral.peer_address != event.peer_addr:
-                    print("Mismatching address between connecting peripheral and peer event: "
-                          "{} vs {}".format(self.connecting_peripheral.address, event.peer_addr))
+                    logger.warning("Mismatching address between connecting peripheral and peer event: "
+                                   "{} vs {}".format(self.connecting_peripheral.address, event.peer_addr))
                 else:
                     self.connected_peripherals[self.connecting_peripheral.peer_address] = self.connecting_peripheral
-                    self.connecting_peripheral.peer_connected(event.conn_handle, event.peer_addr)
+                    self.connecting_peripheral.peer_connected(event.conn_handle, event.peer_addr, conn_params)
                 self.connecting_peripheral = None
-
         if isinstance(event, nrf_events.GapEvtTimeout):
             if event.src == nrf_events.BLEGapTimeoutSrc.conn:
                 self.connecting_peripheral = None
-
+        if isinstance(event, nrf_events.GapEvtDisconnected):
+            for peer_address, p in self.connected_peripherals.items():
+                if p.conn_handle == event.conn_handle:
+                    del self.connected_peripherals[peer_address]
+                    return
 

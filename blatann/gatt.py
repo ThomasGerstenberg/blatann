@@ -1,5 +1,9 @@
 import enum
+import logging
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
+
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityLevel(enum.Enum):
