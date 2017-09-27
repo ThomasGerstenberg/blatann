@@ -4,6 +4,7 @@ from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.nrf import nrf_events
 from blatann.event_type import Event, EventSource
 from blatann.waitables import connection_waitable
+from blatann import gattc, service_discovery
 
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,15 @@ class Peripheral(Peer):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
+        self._db = gattc.GattcDatabase(ble_device, self)
+        self._discoverer = service_discovery.ServiceDiscoverer(ble_device, self)
+
+    @property
+    def database(self):
+        return self._db
+
+    def discover_services(self, service_uuid=None):
+        self._discoverer.discover_services(service_uuid)
 
 
 class Client(Peer):

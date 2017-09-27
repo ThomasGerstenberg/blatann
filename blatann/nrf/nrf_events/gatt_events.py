@@ -203,6 +203,27 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
                                                                              self.status, self.descriptions)
 
 
+class GattcEvtAttrInfoDiscoveryResponse(GattcEvt):
+    evt_id = driver.BLE_GATTC_EVT_ATTR_INFO_DISC_RSP
+
+    def __init__(self, conn_handle, attr_info16=None, attr_info128=None):
+        super(GattcEvtAttrInfoDiscoveryResponse, self).__init__(conn_handle)
+        self.attr_info16 = attr_info16
+        self.attr_info128 = attr_info128
+
+    @classmethod
+    def from_c(cls, event):
+        attr_info_rsp = event.evt.gattc_evt.params.attr_info_disc_rsp
+        if attr_info_rsp.format == driver.BLE_GATTC_ATTR_INFO_FORMAT_16BIT:
+            attr16 = util.attr_info16_array_to_list(attr_info_rsp.attr_info16, attr_info_rsp.count)
+            attr128 = None
+        else:
+            attr16 = None
+            attr128 = util.attr_info128_array_to_list(attr_info_rsp.attr_info128, attr_info_rsp.count)
+
+        return cls(event.evt.gattc_evt.conn_handle, attr16, attr128)
+
+
 """
 GATTS Events
 """

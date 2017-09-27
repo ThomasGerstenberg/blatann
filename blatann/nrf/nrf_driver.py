@@ -506,6 +506,14 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
+    def ble_gattc_attr_info_disc(self, conn_handle, start_handle, end_handle):
+        handle_range = driver.ble_gattc_handle_range_t()
+        handle_range.start_handle = start_handle
+        handle_range.end_handle = end_handle
+        return driver.sd_ble_gattc_attr_info_discover(self.rpc_adapter, conn_handle, handle_range)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
     def ble_gattc_read(self, conn_handle, read_handle, offset=0):
         return driver.sd_ble_gattc_read(self.rpc_adapter, conn_handle, read_handle, offset)
 

@@ -105,6 +105,20 @@ def desc_array_to_list(array_pointer, length):
     return data_list
 
 
+def ble_gattc_attr_info16_array_to_list(array_pointer, length):
+    """Convert ble_gattc_attr_info16_array to python list"""
+    data_array = driver.ble_gattc_attr_info16_array.frompointer(array_pointer)
+    data_list = _populate_array(data_array, length)
+    return data_list
+
+
+def ble_gattc_attr_info128_array_to_list(array_pointer, length):
+    """Convert ble_gattc_attr_info128_array to python list"""
+    data_array = driver.ble_gattc_attr_info128_array.frompointer(array_pointer)
+    data_list = _populate_array(data_array, length)
+    return data_list
+
+
 def handle_value_array_to_list(array_pointer, length):
     """Convert ble_gattc_handle_value_array to python list."""
     data_array = driver.ble_gattc_handle_value_array.frompointer(array_pointer)
