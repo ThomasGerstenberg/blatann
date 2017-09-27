@@ -30,7 +30,7 @@ class Peer(object):
         :type ble_device: blatann.device.BleDevice
         """
         self.conn_handle = BLE_CONN_HANDLE_INVALID
-        self.address = "",
+        self.peer_address = "",
         self.connection_state = PeerState.DISCONNECTED
         self._on_disconnect = EventSource("On Disconnect")
         self._ble_device = ble_device
@@ -54,7 +54,7 @@ class Peer(object):
 
     def peer_connected(self, conn_handle, peer_address):
         self.conn_handle = conn_handle
-        self.address = peer_address
+        self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTED
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
 
@@ -78,8 +78,10 @@ class Peer(object):
 
 
 class Peripheral(Peer):
-    def __init__(self, ble_device, connection_params=DEFAULT_CONNECTION_PARAMS):
+    def __init__(self, ble_device, peer_address, connection_params=DEFAULT_CONNECTION_PARAMS):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params)
+        self.peer_address = peer_address
+        self.connection_state = PeerState.CONNECTING
 
 
 class Client(Peer):
