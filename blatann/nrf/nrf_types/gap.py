@@ -206,8 +206,8 @@ class BLEAdvData(object):
         for k in kwargs:
             self.records[BLEAdvData.Types[k]] = kwargs[k]
 
-    def to_c(self):
-        data_list = list()
+    def to_list(self):
+        data_list = []
         for k in self.records:
             data_list.append(len(self.records[k]) + 1)  # add type length
             data_list.append(k.value)
@@ -219,7 +219,10 @@ class BLEAdvData(object):
 
             else:
                 raise NordicSemiException('Unsupported value type: 0x{:02X}'.format(type(self.records[k])))
+        return data_list
 
+    def to_c(self):
+        data_list = self.to_list()
         data_len = len(data_list)
         if data_len == 0:
             return data_len, None

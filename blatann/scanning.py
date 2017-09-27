@@ -1,7 +1,7 @@
 from blatann.nrf import nrf_events, nrf_types
 from blatann.event_type import Event, EventSource
 from blatann.waitables import scan_waitable
-from blatann import uuid
+from blatann import uuid, advertising, exceptions
 
 
 class ScanParameters(nrf_types.BLEGapScanParams):
@@ -14,26 +14,21 @@ class ScanEntry(object):
         :type adv_report: nrf_events.GapEvtAdvReport
         """
         self.peer_address = adv_report.peer_addr
-        self.advertise_data = adv_report.adv_data.records.copy()
-        self._update_device_name()
+        self._current_advertise_data = adv_report.adv_data.records.copy()
+        self.advertise_data = advertising.AdvertisingData.from_ble_adv_records(self._current_advertise_data)
 
-    def _update_device_name(self):
-        if nrf_types.BLEAdvData.Types.complete_local_name in self.advertise_data:
-            self.device_name = str(bytearray(self.advertise_data[nrf_types.BLEAdvData.Types.complete_local_name]))
-        elif nrf_types.BLEAdvData.Types.short_local_name in self.advertise_data:
-            self.device_name = str(bytearray(self.advertise_data[nrf_types.BLEAdvData.Types.short_local_name]))
-        else:
-            self.device_name = str(self.peer_address)
+    @property
+    def device_name(self):
+        return self.advertise_data.local_name or str(self.peer_address)
 
     def update(self, adv_report):
         """
         :type adv_report: nrf_events.GapEvtAdvReport
         """
         if adv_report.peer_addr != self.peer_address:
-            print("Peer address doesn't match")
-            return
-        self.advertise_data.update(adv_report.adv_data.records)
-        self._update_device_name()
+            raise exceptions.InvalidOperationException("Peer address doesn't match")
+        self._current_advertise_data.update(adv_report.adv_data.records)
+        self.advertise_data = advertising.AdvertisingData.from_ble_adv_records(self._current_advertise_data.copy())
 
     def __repr__(self):
         return "{!r}: {}".format(self.device_name, self.advertise_data)

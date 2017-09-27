@@ -100,7 +100,10 @@ def main(serial_port):
     time_char = time_service.add_characteristic(time_char_uuid, time_char_props, "Time")
     time_char.on_read.register(on_time_char_read)
 
-    ble_device.advertiser.set_advertise_data(advertising.AdvertisingData(complete_local_name='Periph Test'))
+    adv_data = advertising.AdvertisingData(local_name='Periph Test',
+                                           flags=0x06)
+    scan_data = advertising.AdvertisingData(service_uuid128s=time_service_uuid, has_more_uuid128_services=True)
+    ble_device.advertiser.set_advertise_data(adv_data, scan_data)
 
     print("Advertising")
     peer = ble_device.advertiser.start(timeout_sec=300).then(on_connect).wait(300, False)

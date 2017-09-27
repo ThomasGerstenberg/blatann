@@ -87,14 +87,13 @@ class Uuid128(Uuid):
         uuid_base = Uuid128(uuid128_base)
         return uuid_base.new_uuid_from_base(uuid16)
 
-
     def __str__(self):
         return self.uuid_str
 
 
 class Uuid16(Uuid):
     def __init__(self, uuid):
-        if not isinstance(uuid, int) or uuid > 0xFFFF:
+        if not isinstance(uuid, (int, long)) or uuid > 0xFFFF:
             raise ValueError("UUID Must be a valid 16-bit integer")
         super(Uuid16, self).__init__(BLEUUID(uuid))
         self.uuid = uuid

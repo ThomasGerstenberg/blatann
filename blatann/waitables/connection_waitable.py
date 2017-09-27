@@ -1,20 +1,16 @@
 from blatann.waitables.waitable import Waitable
-from blatann import peer
 from blatann.nrf.nrf_events import GapEvtConnected, GapEvtTimeout, BLEGapRoles, BLEGapTimeoutSrc, GapEvtDisconnected
 from blatann.exceptions import InvalidStateException
 
 
 class ConnectionWaitable(Waitable):
-    def __init__(self, ble_device, current_peer=None, role=BLEGapRoles.periph):
+    def __init__(self, ble_device, current_peer, role=BLEGapRoles.periph):
         """
         :type ble_driver: blatann.device.BleDevice
-        :param current_peer:
+        :type current_peer: blatann.peer.Peer
         """
         super(ConnectionWaitable, self).__init__()
-        if current_peer is None:
-            self._peer = peer.Peer(ble_device)
-        else:
-            self._peer = current_peer
+        self._peer = current_peer
         self._role = role
         ble_device.ble_driver.event_subscribe(self._on_connected_event, GapEvtConnected)
         ble_device.ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
@@ -51,7 +47,7 @@ class DisconnectionWaitable(Waitable):
         :type connected_peer: blatann.peer.Peer
         """
         super(DisconnectionWaitable, self).__init__()
-        if connected_peer.conn_handle == peer.BLE_CONN_HANDLE_INVALID:
+        if not connected_peer:
             raise InvalidStateException("Peer already disconnected")
         connected_peer.on_disconnect.register(self._on_disconnect)
 
