@@ -34,12 +34,18 @@ class _DiscoveryState(object):
 
     @property
     def current_characteristic(self):
+        """
+        :rtype: nrf_events.BLEGattCharacteristic
+        """
         if self.iterate_by_chars:
             return self.characteristics[self.char_index]
         return self.current_service.chars[self.char_index]
 
     @property
     def current_service(self):
+        """
+        :rtype: nrf_events.BLEGattService
+        """
         return self.services[self.service_index]
 
 
@@ -136,6 +142,7 @@ class ServiceDiscoverer(Discoverer):
             nrf_uuid = nrf_events.BLEUUID.from_array(event.data)
             self.ble_device.uuid_manager.register_uuid(nrf_uuid)
             logger.info("Discovered UUID: {}".format(nrf_uuid))
+            self._state.current_service.uuid = nrf_uuid
 
         self._state.service_index += 1
         self._discover_uuids()
@@ -244,6 +251,7 @@ class CharacteristicDiscoverer(Discoverer):
             nrf_uuid = nrf_events.BLEUUID.from_array(uuid_bytes)
             self.ble_device.uuid_manager.register_uuid(nrf_uuid)
             logger.info("Discovered UUID: {}".format(nrf_uuid))
+            char.uuid = nrf_uuid
 
         self._state.char_index += 1
         if self._state.end_of_characteristics:
@@ -332,6 +340,13 @@ class DatabaseDiscoverer(object):
         self._characteristic_discoverer = CharacteristicDiscoverer(ble_device, peer)
         self._descriptor_discoverer = DescriptorDiscoverer(ble_device, peer)
 
+    @property
+    def on_discovery_complete(self):
+        """
+        :rtype: Event
+        """
+        return self._on_discovery_complete
+
     def _on_service_discovery_complete(self, services, status):
         """
         :type services: list[gattc.GattcService]
@@ -363,17 +378,19 @@ class DatabaseDiscoverer(object):
         """
         # TODO: Build gattc Services and Characteristics
         logger.info("Descriptor Discovery complete")
+
         self._on_complete(services, status)
 
     def _on_complete(self, services, status):
-        self._service_discoverer.on_complete.register(self._on_service_discovery_complete)
-        self._characteristic_discoverer.on_complete.register(self._on_characteristic_discovery_complete)
-        self._descriptor_discoverer.on_complete.register(self._on_descriptor_discovery_complete)
+        self._service_discoverer.on_complete.deregister(self._on_service_discovery_complete)
+        self._characteristic_discoverer.on_complete.deregister(self._on_characteristic_discovery_complete)
+        self._descriptor_discoverer.on_complete.deregister(self._on_descriptor_discovery_complete)
+        self.peer.database.add_discovered_services(services)
+        self._on_discovery_complete.notify(services, status)
         logger.info("Database Discovery complete!!")
 
-    def discover_services(self):
+    def start(self):
         self._service_discoverer.on_complete.register(self._on_service_discovery_complete)
         self._characteristic_discoverer.on_complete.register(self._on_characteristic_discovery_complete)
         self._descriptor_discoverer.on_complete.register(self._on_descriptor_discovery_complete)
         self._service_discoverer.start()
-

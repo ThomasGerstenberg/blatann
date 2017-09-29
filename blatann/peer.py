@@ -3,7 +3,7 @@ import logging
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.nrf import nrf_events
 from blatann.event_type import Event, EventSource
-from blatann.waitables import connection_waitable
+from blatann.waitables import connection_waitable, event_waitable
 from blatann import gattc, service_discovery
 
 
@@ -123,7 +123,8 @@ class Peripheral(Peer):
         return self._db
 
     def discover_services(self):
-        self._discoverer.discover_services()
+        self._discoverer.start()
+        return event_waitable.EventWaitable(self._discoverer.on_discovery_complete)
 
 
 class Client(Peer):

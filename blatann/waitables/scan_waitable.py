@@ -7,10 +7,14 @@ class ScanFinishedWaitable(Waitable):
         super(ScanFinishedWaitable, self).__init__()
         self.scanner = ble_device.scanner
         ble_device.ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
+        self.ble_driver = ble_device.ble_driver
 
     def _event_occurred(self, ble_driver):
         ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
         self._notify(self.scanner.scan_report)
+
+    def _on_timeout(self):
+        self.ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
 
     def _on_timeout_event(self, ble_driver, event):
         """

@@ -26,17 +26,35 @@ class SubscriptionState(enum.Enum):
 
 class CharacteristicProperties(object):
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
-                 security_level=SecurityLevel.OPEN, max_length=20, variable_length=True, prefer_indications=True):
+                 write_no_response=False, signed_write=False):
         self.read = read
         self.write = write
         self.notify = notify
         self.indicate = indicate
         self.broadcast = broadcast
-        self.security_level = security_level
-        self.max_len = max_length
-        self.variable_length = variable_length
-        self.prefer_indications = prefer_indications
+        self.write_no_response = write_no_response
+        self.signed_write = signed_write
 
+    @classmethod
+    def from_nrf_properties(cls, nrf_props):
+        """
+        :type nrf_props: blatann.nrf.nrf_types.BLEGattCharacteristicProperties
+        """
+        return CharacteristicProperties(nrf_props.read, nrf_props.write, nrf_props.notify, nrf_props.indicate,
+                                        nrf_props.broadcast, nrf_props.write_wo_resp, nrf_props.auth_signed_wr)
+
+    def __repr__(self):
+        props = [
+            [self.read, "r"],
+            [self.write, "w"],
+            [self.notify, "n"],
+            [self.indicate, "i"],
+            [self.broadcast, "b"],
+            [self.write_no_response, "wn"],
+            [self.signed_write, "sw"],
+        ]
+        props = [c for is_set, c in props if is_set]
+        return "CharProps({})".format(",".join(props))
 
 class CharacteristicDescriptor(object):
     class Type(enum.Enum):
@@ -53,10 +71,12 @@ class CharacteristicDescriptor(object):
 
 
 class Characteristic(object):
-    def __init__(self, ble_device, peer, uuid):
+    def __init__(self, ble_device, peer, uuid, properties):
         """
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peer
+        :type uuid: blatann.uuid.Uuid
+        :type properties: CharacteristicProperties
         """
         self.ble_device = ble_device
         self.peer = peer
@@ -65,6 +85,11 @@ class Characteristic(object):
         self.value_handle = BLE_GATT_HANDLE_INVALID
         self.cccd_handle = BLE_GATT_HANDLE_INVALID
         self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
+        self._properties = properties
+
+    def __repr__(self):
+
+        return "Characteristic({}, {}".format(self.uuid, self._properties)
 
 
 class Service(object):
@@ -86,6 +111,9 @@ class Service(object):
             end_handle = start_handle
         self.end_handle = end_handle
 
+    def __repr__(self):
+        return "Service({}, characteristics: [{}])".format(self.uuid, "\n    ".join(str(c) for c in self.characteristics))
+
 
 class GattDatabase(object):
     def __init__(self, ble_device, peer):
@@ -96,3 +124,6 @@ class GattDatabase(object):
         self.ble_device = ble_device
         self.peer = peer
         self.services = []
+
+    def __repr__(self):
+        return "Database(peer {}, services: [{}])".format(self.peer.conn_handle, "\n  ".join(str(s) for s in self.services))

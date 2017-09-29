@@ -1,10 +1,10 @@
 import logging
 from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
-from blatann.nrf import nrf_events, nrf_event_sync
+from blatann.nrf import nrf_events
 
 from blatann import uuid, advertising, scanning, peer, gatts, exceptions
-from blatann.waitables.connection_waitable import ConnectionWaitable
+from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class BleDevice(NrfDriverObserver):
         :type connection_params: peer.ConnectionParameters
         :return: A Waitable which can be used to wait until the connection is successful or times out. Waitable returns
                  a peer.Peripheral object
-        :rtype: ConnectionWaitable
+        :rtype: PeripheralConnectionWaitable
         """
         if peer_address in self.connected_peripherals.keys():
             raise exceptions.InvalidStateException("Already connected to {}".format(peer_address))
@@ -65,8 +65,9 @@ class BleDevice(NrfDriverObserver):
             connection_params = self._default_conn_params
 
         self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params)
+        periph_connection_waitable = PeripheralConnectionWaitable(self, self.connecting_peripheral)
         self.ble_driver.ble_gap_connect(peer_address)
-        return ConnectionWaitable(self, self.connecting_peripheral, nrf_events.BLEGapRoles.central)
+        return periph_connection_waitable
 
     def set_default_peripheral_connection_params(self, min_interval_ms, max_interval_ms, timeout_ms, slave_latency=0):
         """

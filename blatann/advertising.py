@@ -2,7 +2,7 @@ import logging
 from enum import IntEnum
 from blatann.nrf import nrf_events, nrf_types
 from blatann import uuid, exceptions
-from blatann.waitables.connection_waitable import ConnectionWaitable
+from blatann.waitables.connection_waitable import ClientConnectionWaitable
 from blatann.event_type import Event, EventSource
 
 
@@ -260,7 +260,7 @@ class Advertiser(object):
                              when the client disconnects
         :return: A waitable that will expire either when the timeout occurs, or a client connects.
                  Waitable Returns a peer.Client() object
-        :rtype: ConnectionWaitable
+        :rtype: ClientConnectionWaitable
         """
         if self.advertising:
             self._stop()
@@ -276,7 +276,7 @@ class Advertiser(object):
         logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, auto_restart))
         self.ble_device.ble_driver.ble_gap_adv_start(params)
         self.advertising = True
-        return ConnectionWaitable(self.ble_device, self.client)
+        return ClientConnectionWaitable(self.ble_device, self.client)
 
     def stop(self):
         """

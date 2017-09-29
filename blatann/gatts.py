@@ -14,8 +14,19 @@ _security_mapping = {
     gatt.SecurityLevel.OPEN: nrf_types.BLEGapSecModeType.OPEN,
     gatt.SecurityLevel.JUST_WORKS: nrf_types.BLEGapSecModeType.ENCRYPTION,
     gatt.SecurityLevel.MITM: nrf_types.BLEGapSecModeType.MITM,
-
 }
+
+
+class GattsCharacteristicProperties(gatt.CharacteristicProperties):
+    def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
+                 write_no_response=False, signed_write=False,
+                 security_level=gatt.SecurityLevel.OPEN, max_length=20, variable_length=True, prefer_indications=True):
+        super(GattsCharacteristicProperties, self).__init__(read, write, notify, indicate, broadcast,
+                                                            write_no_response, signed_write)
+        self.security_level = security_level
+        self.max_len = max_length
+        self.variable_length = variable_length
+        self.prefer_indications = prefer_indications
 
 
 class GattsCharacteristic(gatt.Characteristic):
@@ -30,12 +41,11 @@ class GattsCharacteristic(gatt.Characteristic):
         :param ble_device:
         :param peer:
         :param uuid:
-        :type properties: gatt.CharacteristicProperties
+        :type properties: gatt.GattsCharacteristicProperties
         :param value:
         :param prefer_indications:
         """
-        super(GattsCharacteristic, self).__init__(ble_device, peer, uuid)
-        self._properties = properties
+        super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties)
         self._value = value
         self.prefer_indications = prefer_indications
         # Events

@@ -6,7 +6,7 @@ from blatann import BleDevice
 from blatann.uuid import Uuid128
 from blatann.nrf.nrf_events import GapEvtDisconnected
 from blatann.nrf.nrf_event_sync import EventSync
-from blatann import gatt, advertising
+from blatann import gatt, gatts, advertising
 from blatann.examples import example_utils
 
 logger = example_utils.setup_logger(level="DEBUG")
@@ -92,18 +92,19 @@ def main(serial_port):
 
     service = ble_device.database.add_service(service_uuid)
 
-    char1_props = gatt.CharacteristicProperties(read=True, notify=True, indicate=True, write=True, max_length=30,
-                                                variable_length=True)
+    char1_props = gatts.GattsCharacteristicProperties(read=True, notify=True, indicate=True, write=True, max_length=30,
+                                                      variable_length=True)
     char1 = service.add_characteristic(char1_uuid, char1_props, "Test Data")
     char1.on_write.register(on_gatts_characteristic_write)
     char1.on_subscription_change.register(on_gatts_subscription_state_changed)
 
-    counting_char_props = gatt.CharacteristicProperties(read=False, notify=True, max_length=4, variable_length=False)
+    counting_char_props = gatts.GattsCharacteristicProperties(read=False, notify=True, max_length=4,
+                                                              variable_length=False)
     counting_char = service.add_characteristic(counting_char_uuid, counting_char_props, [0]*4)
     counting_char_thread = CountingCharacteristicThread(counting_char)
 
     time_service = ble_device.database.add_service(time_service_uuid)
-    time_char_props = gatt.CharacteristicProperties(read=True, max_length=30, variable_length=True)
+    time_char_props = gatts.GattsCharacteristicProperties(read=True, max_length=30, variable_length=True)
     time_char = time_service.add_characteristic(time_char_uuid, time_char_props, "Time")
     time_char.on_read.register(on_time_char_read)
 

@@ -3,7 +3,7 @@ import time
 from blatann import BleDevice
 from blatann.examples import example_utils
 
-logger = example_utils.setup_logger(level="DEBUG")
+logger = example_utils.setup_logger(level="INFO")
 
 
 def find_target_device(ble_device, name):
@@ -38,8 +38,11 @@ def main(serial_port):
             logger.warning("Timed out connecting to device")
             continue
         logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
-        peer.discover_services()
-        time.sleep(1000)
+        services, status = peer.discover_services().wait(10)
+        logger.info("Service discovery complete! status: {}".format(status))
+        for service in peer.database.services:
+            logger.info(service)
+
         logger.info("Disconnecting...")
         peer.disconnect().wait()
         logger.info("Disconnected")

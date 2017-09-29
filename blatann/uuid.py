@@ -27,8 +27,10 @@ class UuidManager(object):
             uuid.nrf_uuid = BLEUUID(uuid.uuid16, base)
         elif isinstance(uuid, BLEUUID):
             self.ble_driver.ble_vs_uuid_add(uuid.base)
+            self.registered_vs_uuids.append(uuid.base)
         elif isinstance(uuid, BLEUUIDBase):
             self.ble_driver.ble_vs_uuid_add(uuid)
+            self.registered_vs_uuids.append(uuid.base)
         else:
             raise ValueError("uuid must be a 16-bit or 128-bit UUID")
 
@@ -41,7 +43,14 @@ class UuidManager(object):
             raise ValueError("UUID Not registered: {}".format(nrf_uuid))
         if nrf_uuid.base.type == BLEUUIDBase.BLE_UUID_TYPE_BLE:
             return Uuid16(nrf_uuid.get_value())
-        return Uuid128.combine_with_base(nrf_uuid.value, nrf_uuid.base.base)
+        base = None
+        for uuid_base in self.registered_vs_uuids:
+            if nrf_uuid.base.type == uuid_base.type:
+                base = uuid_base
+
+        if base is None:
+            raise ValueError("Unable to find registered 128-bit uuid: {}".format(nrf_uuid))
+        return Uuid128.combine_with_base(nrf_uuid.value, base.base)
 
 
 class Uuid(object):
