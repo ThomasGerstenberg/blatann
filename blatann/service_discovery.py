@@ -1,7 +1,8 @@
 import logging
 from blatann.event_type import EventSource, Event
 from blatann.nrf import nrf_events
-from blatann import gatt, gattc, uuid
+from blatann import gattc
+from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,7 @@ class ServiceDiscoverer(Discoverer):
                                                    nrf_events.GattcEvtPrimaryServiceDiscoveryResponse)
         self.ble_device.ble_driver.event_subscribe(self._on_service_uuid_read,
                                                    nrf_events.GattcEvtReadResponse)
+        return EventWaitable(self.on_complete)
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
         self.ble_device.ble_driver.event_unsubscribe(self._on_primary_service_discovery,
@@ -166,6 +168,7 @@ class CharacteristicDiscoverer(Discoverer):
                                                    nrf_events.GattcEvtReadResponse)
 
         self._discover_characteristics()
+        return EventWaitable(self.on_complete)
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
         self.ble_device.ble_driver.event_unsubscribe(self._on_characteristic_discovery,
@@ -276,10 +279,12 @@ class DescriptorDiscoverer(Discoverer):
         map(self._state.characteristics.extend, [s.chars for s in services])
         self.ble_device.ble_driver.event_subscribe(self._on_descriptor_discovery,
                                                    nrf_events.GattcEvtDescriptorDiscoveryResponse)
+        on_complete_waitable = EventWaitable(self.on_complete)
         if not self._state.characteristics:
             self._on_complete()
         else:
             self._discover_descriptors()
+        return on_complete_waitable
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
         self.ble_device.ble_driver.event_unsubscribe(self._on_descriptor_discovery,
@@ -357,7 +362,7 @@ class DatabaseDiscoverer(object):
             logger.error("Error discovering services: {}".format(status))
             self._on_database_discovery_complete.notify([], status)
         else:
-            self._characteristic_discoverer.start(services)
+            self._characteristic_discoverer.start(services).then(self._on_characteristic_discovery_complete)
 
     def _on_characteristic_discovery_complete(self, services, status):
         """
@@ -369,28 +374,21 @@ class DatabaseDiscoverer(object):
             logger.error("Error discovering characteristics: {}".format(status))
             self._on_database_discovery_complete.notify([], status)
         else:
-            self._descriptor_discoverer.start(services)
+            self._descriptor_discoverer.start(services).then(self._on_descriptor_discovery_complete)
 
     def _on_descriptor_discovery_complete(self, services, status):
         """
         :type services: list[gattc.GattcService]
         :type status: nrf_events.BLEGattStatusCode
         """
-        # TODO: Build gattc Services and Characteristics
         logger.info("Descriptor Discovery complete")
-
         self._on_complete(services, status)
 
     def _on_complete(self, services, status):
-        self._service_discoverer.on_complete.deregister(self._on_service_discovery_complete)
-        self._characteristic_discoverer.on_complete.deregister(self._on_characteristic_discovery_complete)
-        self._descriptor_discoverer.on_complete.deregister(self._on_descriptor_discovery_complete)
         self.peer.database.add_discovered_services(services)
         self._on_discovery_complete.notify(services, status)
         logger.info("Database Discovery complete!!")
 
     def start(self):
-        self._service_discoverer.on_complete.register(self._on_service_discovery_complete)
-        self._characteristic_discoverer.on_complete.register(self._on_characteristic_discovery_complete)
-        self._descriptor_discoverer.on_complete.register(self._on_descriptor_discovery_complete)
-        self._service_discoverer.start()
+        logger.info("Starting discovery..")
+        self._service_discoverer.start().then(self._on_service_discovery_complete)

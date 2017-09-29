@@ -1,4 +1,5 @@
 import queue
+from blatann.exceptions import TimeoutError
 
 
 class Waitable(object):
@@ -8,11 +9,17 @@ class Waitable(object):
 
     def wait(self, timeout=None, exception_on_timeout=True):
         try:
-            return self._queue.get(timeout=timeout)
+            results = self._queue.get(timeout=timeout)
+            if len(results) == 1:
+                return results[0]
+            return results
         except queue.Empty:
             self._on_timeout()
             if exception_on_timeout:
-                raise
+                raise TimeoutError("Timed out waiting for event to occur. "
+                                   "Waitable type: {}".format(self.__class__.__name__))
+        # TODO: This will fail if the waitable implementation normally returns more than one value and
+        #       the caller tries to unpack
         return None
 
     def then(self, func_to_execute):
@@ -22,9 +29,7 @@ class Waitable(object):
     def _on_timeout(self):
         pass
 
-    def _notify(self, result):
-        self._queue.put(result)
+    def _notify(self, *results):
+        self._queue.put(results)
         if self._callback:
-            self._callback(result)
-
-
+            self._callback(*results)

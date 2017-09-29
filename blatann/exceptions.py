@@ -8,3 +8,7 @@ class InvalidStateException(BlatannException):
 
 class InvalidOperationException(BlatannException):
     pass
+
+
+class TimeoutError(BlatannException):
+    pass

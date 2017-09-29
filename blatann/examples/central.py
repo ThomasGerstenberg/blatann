@@ -38,7 +38,7 @@ def main(serial_port):
             logger.warning("Timed out connecting to device")
             continue
         logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
-        services, status = peer.discover_services().wait(10)
+        services, status = peer.discover_services().wait(10, exception_on_timeout=False)
         logger.info("Service discovery complete! status: {}".format(status))
         for service in peer.database.services:
             logger.info(service)

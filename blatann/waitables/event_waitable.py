@@ -12,7 +12,7 @@ class EventWaitable(Waitable):
 
     def _on_event(self, *args):
         self._event.deregister(self._on_event)
-        self._notify(args)
+        self._notify(*args)
 
     def _on_timeout(self):
         self._event.deregister(self._on_event)
