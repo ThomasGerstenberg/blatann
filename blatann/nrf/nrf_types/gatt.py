@@ -3,7 +3,7 @@ import logging
 from types import NoneType
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
-from blatann.nrf.nrf_types.generic import BLEUUID
+from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
 from blatann.nrf.nrf_types.smp import *
 from blatann.nrf.nrf_types.enums import *
 
@@ -155,6 +155,36 @@ class BLEGattcDescriptor(object):
     def from_c(cls, gattc_desc):
         return cls(uuid=BLEUUID.from_c(gattc_desc.uuid),
                    handle=gattc_desc.handle)
+
+
+class BLEGattcAttrInfo16(object):
+    def __init__(self, handle, uuid):
+        self.handle = handle
+        self.uuid = uuid
+
+    @classmethod
+    def from_c(cls, attr_info16):
+        handle = attr_info16.handle
+        uuid = BLEUUID.from_c(attr_info16.uuid)
+        return cls(handle, uuid)
+
+    def __repr__(self):
+        return "{}(handle={!r}, uuid={})".format(self.__class__.__name__, self.handle, self.uuid)
+
+
+class BLEGattcAttrInfo128(object):
+    def __init__(self, attr_handle, uuid):
+        self.handle = attr_handle
+        self.uuid = uuid
+
+    @classmethod
+    def from_c(cls, attr_info128):
+        uuid = BLEUUID.from_uuid128(attr_info128.uuid)
+        attr_handle = attr_info128.handle
+        return cls(attr_handle, uuid)
+
+    def __repr__(self):
+        return "{}(handle={!r}, uuid={})".format(self.__class__.__name__, self.handle, self.uuid)
 
 
 """

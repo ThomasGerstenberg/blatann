@@ -28,6 +28,17 @@ class UuidManager(object):
         else:
             raise ValueError("uuid must be a 16-bit or 128-bit UUID")
 
+    def nrf_uuid_to_uuid(self, nrf_uuid):
+        """
+        :type nrf_uuid: BLEUUID
+        :rtype: Uuid
+        """
+        if nrf_uuid.base.type == 0:
+            raise ValueError("UUID Not registered: {}".format(nrf_uuid))
+        if nrf_uuid.base.type == BLEUUIDBase.BLE_UUID_TYPE_BLE:
+            return Uuid16(nrf_uuid.get_value())
+        return Uuid128.combine_with_base(nrf_uuid.value, nrf_uuid.base.base)
+
 
 class Uuid(object):
     def __init__(self, nrf_uuid=None):
@@ -75,7 +86,7 @@ class Uuid128(Uuid):
     def new_uuid_from_base(self, uuid16):
         if isinstance(uuid16, str):
             uuid16 = int(uuid16, 16)
-        if not isinstance(uuid16, int) or uuid16 > 0xFFFF:
+        if not isinstance(uuid16, (int, long)) or uuid16 > 0xFFFF:
             raise ValueError("UUID must be specified as a 16-bit number (0 - 0xFFFF) or a 4 character hex-string")
         uuid = self.uuid_base
         uuid[2] = uuid16 >> 8 & 0xFF

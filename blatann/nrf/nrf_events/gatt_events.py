@@ -206,22 +206,31 @@ class GattcEvtDescriptorDiscoveryResponse(GattcEvt):
 class GattcEvtAttrInfoDiscoveryResponse(GattcEvt):
     evt_id = driver.BLE_GATTC_EVT_ATTR_INFO_DISC_RSP
 
-    def __init__(self, conn_handle, attr_info16=None, attr_info128=None):
+    def __init__(self, conn_handle, status, attr_info16=None, attr_info128=None):
         super(GattcEvtAttrInfoDiscoveryResponse, self).__init__(conn_handle)
+        self.status = status
         self.attr_info16 = attr_info16
         self.attr_info128 = attr_info128
 
     @classmethod
     def from_c(cls, event):
+        status = event.evt.gattc_evt.gatt_status
         attr_info_rsp = event.evt.gattc_evt.params.attr_info_disc_rsp
         if attr_info_rsp.format == driver.BLE_GATTC_ATTR_INFO_FORMAT_16BIT:
-            attr16 = util.attr_info16_array_to_list(attr_info_rsp.attr_info16, attr_info_rsp.count)
+            attr16_array = util.attr_info16_array_to_list(attr_info_rsp.info.attr_info16, attr_info_rsp.count)
+            attr16 = [BLEGattcAttrInfo16.from_c(a) for a in attr16_array]
             attr128 = None
         else:
             attr16 = None
-            attr128 = util.attr_info128_array_to_list(attr_info_rsp.attr_info128, attr_info_rsp.count)
+            attr128_array = util.attr_info128_array_to_list(attr_info_rsp.info.attr_info128, attr_info_rsp.count)
+            attr128 = [BLEGattcAttrInfo128.from_c(a) for a in attr128_array]
 
-        return cls(event.evt.gattc_evt.conn_handle, attr16, attr128)
+        return cls(event.evt.gattc_evt.conn_handle, status, attr16, attr128)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, status: {!r} uuid_info:{})".format(self.__class__.__name__,
+                                                                        self.conn_handle, self.status,
+                                                                        self.attr_info16 or self.attr_info128)
 
 
 """

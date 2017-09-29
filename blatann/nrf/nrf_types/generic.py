@@ -10,6 +10,8 @@ BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
 
 
 class BLEUUIDBase(object):
+    BLE_UUID_TYPE_BLE = driver.BLE_UUID_TYPE_BLE
+
     def __init__(self, vs_uuid_base=None, uuid_type=None):
         assert isinstance(vs_uuid_base, (list, NoneType)), 'Invalid argument type'
         assert isinstance(uuid_type, (int, long, NoneType)), 'Invalid argument type'
@@ -21,10 +23,10 @@ class BLEUUIDBase(object):
             self.base = vs_uuid_base
             self.def_base = False
 
-        if uuid_type is None:
+        if uuid_type is None and self.def_base:
             self.type = driver.BLE_UUID_TYPE_BLE
         else:
-            self.type = uuid_type
+            self.type = uuid_type if uuid_type is not None else 0
 
     def __eq__(self, other):
         if not isinstance(other, BLEUUIDBase):
@@ -44,6 +46,11 @@ class BLEUUIDBase(object):
             return cls(uuid_type=uuid.type)
         else:
             return cls([0] * 16, uuid_type=uuid.type)  # TODO: Hmmmm? [] or [None]*16? what?
+
+    @classmethod
+    def from_uuid128_array(cls, uuid128_array):
+        msb_list = uuid128_array[::-1]
+        return cls(msb_list)
 
     def to_c(self):
         lsb_list = self.base[::-1]
@@ -108,9 +115,17 @@ class BLEUUID(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __hash__(self):
+        return hash(str(self))
+
     @classmethod
     def from_c(cls, uuid):
         return cls(value=uuid.uuid, base=BLEUUIDBase.from_c(uuid))  # TODO: Is this correct?
+
+    @classmethod
+    def from_uuid128(cls, uuid128):
+        uuid = util.uint8_array_to_list(uuid128.uuid, 16)
+        return cls.from_array(uuid)
 
     def to_c(self):
         assert self.base.type is not None, 'Vendor specific UUID not registered'

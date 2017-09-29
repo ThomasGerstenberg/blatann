@@ -116,7 +116,7 @@ class Peripheral(Peer):
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
         self._db = gattc.GattcDatabase(ble_device, self)
-        self._discoverer = service_discovery.ServiceDiscoverer(ble_device, self)
+        self._discoverer = service_discovery.DatabaseDiscoverer(ble_device, self)
 
     @property
     def database(self):
