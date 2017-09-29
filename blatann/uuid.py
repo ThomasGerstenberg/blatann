@@ -25,6 +25,10 @@ class UuidManager(object):
             self.ble_driver.ble_vs_uuid_add(base)
             self.registered_vs_uuids.append(base)
             uuid.nrf_uuid = BLEUUID(uuid.uuid16, base)
+        elif isinstance(uuid, BLEUUID):
+            self.ble_driver.ble_vs_uuid_add(uuid.base)
+        elif isinstance(uuid, BLEUUIDBase):
+            self.ble_driver.ble_vs_uuid_add(uuid)
         else:
             raise ValueError("uuid must be a 16-bit or 128-bit UUID")
 

@@ -122,8 +122,8 @@ class Peripheral(Peer):
     def database(self):
         return self._db
 
-    def discover_services(self, service_uuid=None):
-        self._discoverer.discover_services(service_uuid)
+    def discover_services(self):
+        self._discoverer.discover_services()
 
 
 class Client(Peer):
