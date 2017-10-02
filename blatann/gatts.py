@@ -290,8 +290,9 @@ class GattsCharacteristic(gatt.Characteristic):
     def _on_disconnect(self, peer, reason):
         if self.cccd_handle and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED:
             self.cccd_state = gatt.SubscriptionState.NOT_SUBSCRIBED
-            self.ble_device.ble_driver.ble_gatts_value_set(nrf_types.BLE_CONN_HANDLE_INVALID, self.cccd_handle,
-                                                           nrf_types.BLEGattsValue(gatt.SubscriptionState.to_buffer(self.cccd_state)))
+            # TODO: Not working goodly
+            # self.ble_device.ble_driver.ble_gatts_value_set(nrf_types.BLE_CONN_HANDLE_INVALID, self.cccd_handle,
+            #                                                nrf_types.BLEGattsValue(gatt.SubscriptionState.to_buffer(self.cccd_state)))
 
 
 class GattsService(gatt.Service):

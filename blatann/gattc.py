@@ -99,15 +99,16 @@ class GattcWriter(object):
 class GattcCharacteristic(gatt.Characteristic):
     def __init__(self, ble_device, peer, uuid, properties, declaration_handle, value_handle, cccd_handle=None):
         super(GattcCharacteristic, self).__init__(ble_device, peer, uuid, properties)
-        self._on_notification = EventSource("On Notification", logger)
+        self._on_notification_event = EventSource("On Notification", logger)
         self.declaration_handle = declaration_handle
         self.value_handle = value_handle
         self.cccd_handle = cccd_handle
         self.writer = GattcWriter(ble_device, peer)
         self._on_write_complete_event = EventSource("Write Complete", logger)
         self._on_ccd_write_complete_event = EventSource("CCCD Write Complete", logger)
-        self.writer.on_write_complete.register(self._write_complete)
         self._value = ""
+        self.writer.on_write_complete.register(self._write_complete)
+        self.ble_device.ble_driver.event_subscribe(self._on_indication_notification, nrf_events.GattcEvtHvx)
 
     @property
     def subscribable(self):
@@ -120,7 +121,7 @@ class GattcCharacteristic(gatt.Characteristic):
             value = gatt.SubscriptionState.INDICATION
         else:
             value = gatt.SubscriptionState.NOTIFY
-        self._on_notification.register(on_notification_handler)
+        self._on_notification_event.register(on_notification_handler)
         self.writer.write(self.cccd_handle, gatt.SubscriptionState.to_buffer(value))
         return EventWaitable(self._on_ccd_write_complete_event)
 
@@ -141,6 +142,16 @@ class GattcCharacteristic(gatt.Characteristic):
             if status == nrf_types.BLEGattStatusCode.success:
                 self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(data))
             self._on_ccd_write_complete_event.notify(self, status, self.cccd_state)
+
+    def _on_indication_notification(self, driver, event):
+        """
+        :type event: nrf_events.GattcEvtHvx
+        """
+        if event.conn_handle != self.peer.conn_handle or event.attr_handle != self.value_handle:
+            return
+        if event.hvx_type == nrf_events.BLEGattHVXType.indication:
+            pass  # TODO: Indication reply
+        self._on_notification_event.notify(self, bytearray(event.data))
 
     @classmethod
     def from_discovered_characteristic(cls, ble_device, peer, nrf_characteristic):

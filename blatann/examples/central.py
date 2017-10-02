@@ -1,5 +1,5 @@
 import time
-
+import struct
 from blatann import BleDevice, uuid
 from blatann.examples import example_utils
 from blatann.nrf import nrf_events
@@ -14,8 +14,10 @@ def find_target_device(ble_device, name):
         if scan_report.advertise_data.local_name == name:
             return scan_report.peer_address
 
+
 def on_counting_char_notification(characteristic, value):
-    pass
+    current_count = struct.unpack("<I", value)[0]
+    logger.info("Counting char notification. Curent count: {}".format(current_count))
 
 
 def main(serial_port):
