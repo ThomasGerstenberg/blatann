@@ -1,5 +1,6 @@
 import enum
 import logging
+import struct
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 
 
@@ -18,10 +19,19 @@ class ServiceType(enum.Enum):
     SECONDARY = 2
 
 
-class SubscriptionState(enum.Enum):
+class SubscriptionState(enum.IntEnum):
     NOT_SUBSCRIBED = 0
     NOTIFY = 1
     INDICATION = 2
+
+    @classmethod
+    def to_buffer(cls, value):
+        return struct.pack("<H", value)
+
+    @classmethod
+    def from_buffer(cls, buffer):
+        return cls(struct.unpack("<H", buffer)[0])
+
 
 
 class CharacteristicProperties(object):
@@ -57,15 +67,6 @@ class CharacteristicProperties(object):
         return "CharProps({})".format(",".join(props))
 
 
-class CharacteristicDescriptorUuid(enum.Enum):
-    EXTENDED_PROPERTY = 0x2900
-    USER_DESCRIPTION = 0x2901
-    CLIENT_CHAR_CONFIG = 0x2902
-    SERVER_CHAR_CONFIG = 0x2903
-    PRESENTATION_FORMAT = 0x2904
-    AGGREGATE_FORMAT = 0x2905
-
-
 class Characteristic(object):
     def __init__(self, ble_device, peer, uuid, properties):
         """
@@ -98,7 +99,7 @@ class Service(object):
         self.peer = peer
         self.uuid = uuid
         self.service_type = service_type
-        self.characteristics = []
+        self._characteristics = []
         self.start_handle = start_handle
         # If a valid starting handle is given and not a valid ending handle, then the ending handle
         # is the starting handle
@@ -107,7 +108,8 @@ class Service(object):
         self.end_handle = end_handle
 
     def __repr__(self):
-        return "Service({}, characteristics: [{}])".format(self.uuid, "\n    ".join(str(c) for c in self.characteristics))
+        return "Service({}, characteristics: [{}])".format(self.uuid,
+                                                           "\n    ".join(str(c) for c in self._characteristics))
 
 
 class GattDatabase(object):
@@ -118,8 +120,9 @@ class GattDatabase(object):
         """
         self.ble_device = ble_device
         self.peer = peer
-        self.services = []
+        self._services = []
 
     def __repr__(self):
-        return "Database(peer {}, services: [{}])".format(self.peer.conn_handle, "\n  ".join(str(s) for s in self.services))
+        return "Database(peer {}, services: [{}])".format(self.peer.conn_handle,
+                                                          "\n  ".join(str(s) for s in self._services))
 

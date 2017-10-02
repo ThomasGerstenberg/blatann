@@ -1,6 +1,6 @@
 import time
 
-from blatann import BleDevice
+from blatann import BleDevice, uuid
 from blatann.examples import example_utils
 from blatann.nrf import nrf_events
 
@@ -13,6 +13,9 @@ def find_target_device(ble_device, name):
     for scan_report in scan_report.advertising_peers_found:
         if scan_report.advertise_data.local_name == name:
             return scan_report.peer_address
+
+def on_counting_char_notification(characteristic, value):
+    pass
 
 
 def main(serial_port):
@@ -38,13 +41,25 @@ def main(serial_port):
             logger.warning("Timed out connecting to device")
             continue
         logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
-        services, status = peer.discover_services().wait(10, exception_on_timeout=False)
+        services, status = peer.discover_services().wait(1000, exception_on_timeout=False)
         logger.info("Service discovery complete! status: {}".format(status))
         for service in peer.database.services:
             logger.info(service)
 
+        # Find the counting characteristic
+        counting_char_uuid = uuid.Uuid128("dead1234-0011-2345-6679-ab12ccd4f550")
+        counting_char = None
+        for c in peer.database.iter_characteristics():
+            if c.uuid == counting_char_uuid:
+                counting_char = c
+                break
 
-
+        if counting_char:
+            logger.info("Subscribing..")
+            datastuffs = counting_char.subscribe(on_counting_char_notification).wait(300, False)
+            logger.info("Subscribed")
+        else:
+            logger.warning("Failed to find counting characteristic")
         time.sleep(10)
         logger.info("Disconnecting...")
         peer.disconnect().wait()

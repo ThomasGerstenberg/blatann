@@ -75,7 +75,10 @@ class CountingCharacteristicThread(object):
             time.sleep(1)
             self.current_value += 1
             value = struct.pack("<I", self.current_value)
-            self.characteristic.set_value(value, notify_client=True)
+            try:
+                self.characteristic.set_value(value, notify_client=True)
+            except Exception as e:
+                logger.error(e)
         self._stopped.set()
 
 
@@ -101,6 +104,7 @@ def main(serial_port):
     counting_char_props = gatts.GattsCharacteristicProperties(read=False, notify=True, max_length=4,
                                                               variable_length=False)
     counting_char = service.add_characteristic(counting_char_uuid, counting_char_props, [0]*4)
+    counting_char.on_subscription_change.register(on_gatts_subscription_state_changed)
     counting_char_thread = CountingCharacteristicThread(counting_char)
 
     time_service = ble_device.database.add_service(time_service_uuid)

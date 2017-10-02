@@ -57,6 +57,9 @@ class Uuid(object):
     def __init__(self, nrf_uuid=None):
         self.nrf_uuid = nrf_uuid
 
+    def __eq__(self, other):
+        return str(self) == str(other)
+
 
 class Uuid128(Uuid):
     def __init__(self, uuid):

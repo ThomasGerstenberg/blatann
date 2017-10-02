@@ -58,6 +58,7 @@ class GattsCharacteristic(gatt.Characteristic):
         self._write_queued = False
         self._read_in_process = False
         self._queued_write_chunks = []
+        self.peer.on_disconnect.register(self._on_disconnect)
 
     """
     Public Methods
@@ -204,7 +205,7 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         :type event: nrf_events.GattsEvtWrite
         """
-        self.cccd_state = gatt.SubscriptionState(event.data[0])
+        self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(event.data))
         self._on_sub_change.notify(self, self.cccd_state)
 
     def _on_gatts_write(self, driver, event):
@@ -286,8 +287,21 @@ class GattsCharacteristic(gatt.Characteristic):
         else:
             logging.error("auth request was not read or write???")
 
+    def _on_disconnect(self, peer, reason):
+        if self.cccd_handle and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED:
+            self.cccd_state = gatt.SubscriptionState.NOT_SUBSCRIBED
+            self.ble_device.ble_driver.ble_gatts_value_set(nrf_types.BLE_CONN_HANDLE_INVALID, self.cccd_handle,
+                                                           nrf_types.BLEGattsValue(gatt.SubscriptionState.to_buffer(self.cccd_state)))
+
 
 class GattsService(gatt.Service):
+    @property
+    def characteristics(self):
+        """
+        :rtype: list of GattsCharacteristic
+        """
+        return self._characteristics
+
     def add_characteristic(self, uuid, properties, initial_value=""):
         """
         :type uuid: blatann.uuid.Uuid
@@ -335,6 +349,18 @@ class GattsDatabase(gatt.GattDatabase):
         super(GattsDatabase, self).__init__(ble_device, peer)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request,
                                                    nrf_events.GattsEvtReadWriteAuthorizeRequest)
+
+    @property
+    def services(self):
+        """
+        :rtype: list of GattsService
+        """
+        return self._services
+
+    def iter_services(self):
+        for s in self.services:
+            for c in s.characteristics:
+                yield c
 
     def add_service(self, uuid, service_type=gatt.ServiceType.PRIMARY):
         """

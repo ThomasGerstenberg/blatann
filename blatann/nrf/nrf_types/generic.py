@@ -104,6 +104,8 @@ class BLEUUID(object):
             return '0x{}'.format(''.join(['{:02X}'.format(i) for i in base_and_value]))
 
     def __eq__(self, other):
+        if isinstance(other, BLEUUID.Standard):
+            return self.get_value() == other.value
         if not isinstance(other, BLEUUID):
             return False
         if not self.base == other.base:
