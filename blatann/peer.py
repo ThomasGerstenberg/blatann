@@ -43,6 +43,7 @@ class Peer(object):
         self._ble_device = ble_device
         self._ideal_connection_params = connection_params
         self._current_connection_params = DEFAULT_CONNECTION_PARAMS
+        self._mtu_size = 23  # TODO: MTU Exchange procedure
 
     @property
     def connected(self):
@@ -51,6 +52,10 @@ class Peer(object):
     @property
     def on_disconnect(self):
         return self._on_disconnect
+
+    @property
+    def mtu_size(self):
+        return self._mtu_size
 
     def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection):
         if self.connection_state != PeerState.CONNECTED:

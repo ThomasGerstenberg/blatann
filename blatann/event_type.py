@@ -42,6 +42,10 @@ class EventSource(Event):
         super(EventSource, self).__init__(name)
         self._logger = logger
 
+    def clear_handlers(self):
+        with self._handler_lock:
+            self._handlers = []
+
     def notify(self, *args, **kwargs):
         """
         Notifies all clients with the given arguments and keyword-arguments

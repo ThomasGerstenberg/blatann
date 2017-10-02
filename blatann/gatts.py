@@ -20,13 +20,12 @@ _security_mapping = {
 class GattsCharacteristicProperties(gatt.CharacteristicProperties):
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  write_no_response=False, signed_write=False,
-                 security_level=gatt.SecurityLevel.OPEN, max_length=20, variable_length=True, prefer_indications=True):
+                 security_level=gatt.SecurityLevel.OPEN, max_length=20, variable_length=True):
         super(GattsCharacteristicProperties, self).__init__(read, write, notify, indicate, broadcast,
                                                             write_no_response, signed_write)
         self.security_level = security_level
         self.max_len = max_length
         self.variable_length = variable_length
-        self.prefer_indications = prefer_indications
 
 
 class GattsCharacteristic(gatt.Characteristic):

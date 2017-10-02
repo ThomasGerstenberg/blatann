@@ -43,6 +43,8 @@ def main(serial_port):
         for service in peer.database.services:
             logger.info(service)
 
+
+
         time.sleep(10)
         logger.info("Disconnecting...")
         peer.disconnect().wait()

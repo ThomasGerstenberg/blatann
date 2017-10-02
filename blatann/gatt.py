@@ -56,18 +56,14 @@ class CharacteristicProperties(object):
         props = [c for is_set, c in props if is_set]
         return "CharProps({})".format(",".join(props))
 
-class CharacteristicDescriptor(object):
-    class Type(enum.Enum):
-        EXTENDED_PROPERTY = 0x2900
-        USER_DESCRIPTION = 0x2901
-        CLIENT_CHAR_CONFIG = 0x2902
-        SERVER_CHAR_CONFIG = 0x2903
-        PRESENTATION_FORMAT = 0x2904
-        AGGREGATE_FORMAT = 0x2905
 
-    def __init__(self, uuid, handle):
-        self.uuid = uuid
-        self.handle = handle
+class CharacteristicDescriptorUuid(enum.Enum):
+    EXTENDED_PROPERTY = 0x2900
+    USER_DESCRIPTION = 0x2901
+    CLIENT_CHAR_CONFIG = 0x2902
+    SERVER_CHAR_CONFIG = 0x2903
+    PRESENTATION_FORMAT = 0x2904
+    AGGREGATE_FORMAT = 0x2905
 
 
 class Characteristic(object):
@@ -88,7 +84,6 @@ class Characteristic(object):
         self._properties = properties
 
     def __repr__(self):
-
         return "Characteristic({}, {}".format(self.uuid, self._properties)
 
 
@@ -127,3 +122,4 @@ class GattDatabase(object):
 
     def __repr__(self):
         return "Database(peer {}, services: [{}])".format(self.peer.conn_handle, "\n  ".join(str(s) for s in self.services))
+
