@@ -563,7 +563,7 @@ class NrfDriver(object):
                 logger.warn('unknown ble_event %r (discarded)', ble_event.header.evt_id)
                 continue
 
-            logger.debug('ble_event.header.evt_id %r ----  %r', ble_event.header.evt_id, event)
+            # logger.debug('ble_event.header.evt_id %r ----  %r', ble_event.header.evt_id, event)
 
             # Get a copy of the observers and event observers in case its modified during this execution
             with self._event_observer_lock:

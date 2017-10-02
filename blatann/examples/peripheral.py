@@ -118,7 +118,7 @@ def main(serial_port):
     ble_device.client.on_disconnect.register(on_disconnect)
     ble_device.advertiser.start(timeout_sec=0, auto_restart=True)
     with EventSync(ble_device.ble_driver, int) as sync:
-        event = sync.get(timeout=600)
+        event = sync.get(timeout=60*30)  # Advertise for 30 mins
     counting_char_thread.join()
     logger.info("Done")
     

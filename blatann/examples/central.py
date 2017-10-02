@@ -2,24 +2,24 @@ import time
 
 from blatann import BleDevice
 from blatann.examples import example_utils
+from blatann.nrf import nrf_events
 
-logger = example_utils.setup_logger(level="INFO")
+logger = example_utils.setup_logger(level="DEBUG")
 
 
 def find_target_device(ble_device, name):
     scan_report = ble_device.scanner.start_scan().wait()
 
-    target_address = None
     for scan_report in scan_report.advertising_peers_found:
         if scan_report.advertise_data.local_name == name:
             return scan_report.peer_address
 
 
 def main(serial_port):
-
     target_device_name = "Periph Test"
 
     ble_device = BleDevice(serial_port)
+    ble_device.event_logger.suppress(nrf_events.GapEvtAdvReport)
 
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
 
@@ -43,6 +43,7 @@ def main(serial_port):
         for service in peer.database.services:
             logger.info(service)
 
+        time.sleep(10)
         logger.info("Disconnecting...")
         peer.disconnect().wait()
         logger.info("Disconnected")

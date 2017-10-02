@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
 from blatann.nrf import nrf_events
@@ -9,9 +10,28 @@ from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
 logger = logging.getLogger(__name__)
 
 
+class _EventLogger(NrfDriverObserver):
+    def __init__(self, ble_driver):
+        ble_driver.observer_register(self)
+        self._suppressed_events = []
+        self._lock = Lock()
+
+    def suppress(self, *nrf_event_types):
+        with self._lock:
+            for e in nrf_event_types:
+                if e not in self._suppressed_events:
+                    self._suppressed_events.append(e)
+
+    def on_driver_event(self, nrf_driver, event):
+        with self._lock:
+            if type(event) not in self._suppressed_events:
+                logger.debug("Got NRF Driver event: {}".format(event))
+
+
 class BleDevice(NrfDriverObserver):
     def __init__(self, comport="COM1"):
         self.ble_driver = NrfDriver(comport)
+        self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
         self.ble_driver.open()
@@ -87,7 +107,6 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.ble_user_mem_reply(event.conn_handle)
 
     def on_driver_event(self, nrf_driver, event):
-        logger.debug("Got driver event: {}".format(event))
         if isinstance(event, nrf_events.GapEvtConnected):
             conn_params = peer.ConnectionParameters(event.conn_params.min_conn_interval_ms,
                                                     event.conn_params.max_conn_interval_ms,
