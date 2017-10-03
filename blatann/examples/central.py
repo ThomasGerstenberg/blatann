@@ -61,12 +61,15 @@ def main(serial_port):
         char1 = peer.database.find_characteristic(constants.CHAR1_UUID)
         if char1:
             logger.info("Testing writes")
-            data = bytearray(range(48))
+            data = bytearray(ord('A') + i for i in range(48))
             for i in range(48):
                 data_to_send = data[:i+1]
-                if not char1.write(data_to_send).wait(100, False):
+                if not char1.write(data_to_send).wait(10, False):
                     logger.error("Failed to write data, i={}".format(i))
                     break
+
+                char, status, data_read = char1.read().wait(10, False)
+                logger.info("Read data: '{}'".format(data_read))
         else:
             logger.warning("Failed to find char1")
 

@@ -10,7 +10,7 @@ CHAR1_UUID = SERVICE1_UUID.new_uuid_from_base(0xbeaa)
 COUNTING_CHAR_UUID = SERVICE1_UUID.new_uuid_from_base("1234")
 
 # Miscellaneous service characteristic properties
-CHAR1_PROPERTIES = gatts.GattsCharacteristicProperties(read=True, notify=True, indicate=True, write=True, max_length=64,
+CHAR1_PROPERTIES = gatts.GattsCharacteristicProperties(read=True, notify=True, indicate=True, write=True, max_length=96,
                                                        variable_length=True)
 COUNTING_CHAR_PROPERTIES = gatts.GattsCharacteristicProperties(read=False, notify=True, max_length=4,
                                                                variable_length=False)

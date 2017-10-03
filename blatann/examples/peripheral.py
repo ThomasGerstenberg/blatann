@@ -33,7 +33,7 @@ def on_gatts_characteristic_write(characteristic, value):
     """
     logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
                                                                                    str(value).encode("hex")))
-    new_value = "Hello, {}".format(str(value).encode("hex"))
+    new_value = "{}".format(str(value).encode("hex"))
     characteristic.set_value(new_value[:characteristic.max_length], True)
 
 
