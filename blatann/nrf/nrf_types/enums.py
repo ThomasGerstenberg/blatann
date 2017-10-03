@@ -97,7 +97,7 @@ Gap Enums
 BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
 
 
-class BLEGapAdvType(Enum):
+class BLEGapAdvType(IntEnum):
     connectable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_IND
     connectable_directed = driver.BLE_GAP_ADV_TYPE_ADV_DIRECT_IND
     scanable_undirected = driver.BLE_GAP_ADV_TYPE_ADV_SCAN_IND
@@ -105,13 +105,13 @@ class BLEGapAdvType(Enum):
     scsan_response = 4
 
 
-class BLEGapRoles(Enum):
+class BLEGapRoles(IntEnum):
     invalid = driver.BLE_GAP_ROLE_INVALID
     periph = driver.BLE_GAP_ROLE_PERIPH
     central = driver.BLE_GAP_ROLE_CENTRAL
 
 
-class BLEGapTimeoutSrc(Enum):
+class BLEGapTimeoutSrc(IntEnum):
     advertising = driver.BLE_GAP_TIMEOUT_SRC_ADVERTISING
     security_req = driver.BLE_GAP_TIMEOUT_SRC_SECURITY_REQUEST
     scan = driver.BLE_GAP_TIMEOUT_SRC_SCAN
@@ -137,7 +137,7 @@ class BLEGapAuthKeyType(IntEnum):
     PASSKEY = driver.BLE_GAP_AUTH_KEY_TYPE_PASSKEY
 
 
-class BLEGapSecStatus(Enum):
+class BLEGapSecStatus(IntEnum):
     success = driver.BLE_GAP_SEC_STATUS_SUCCESS
     timeout = driver.BLE_GAP_SEC_STATUS_TIMEOUT
     pdu_invalid = driver.BLE_GAP_SEC_STATUS_PDU_INVALID

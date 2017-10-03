@@ -3,6 +3,7 @@ import logging
 import enum
 
 from blatann.event_type import EventSource
+from blatann.gap import smp
 from blatann.gatt import gattc, service_discovery
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
@@ -28,23 +29,26 @@ class ConnectionParameters(nrf_events.BLEGapConnParams):
 
 
 DEFAULT_CONNECTION_PARAMS = ConnectionParameters(15, 30, 4000, 0)
+DEFAULT_SECURITY_PARAMS = smp.SecurityParameters(reject_pairing_requests=True)
 
 
 class Peer(object):
     BLE_CONN_HANDLE_INVALID = BLE_CONN_HANDLE_INVALID
 
-    def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS):
+    def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS,
+                 security_params=DEFAULT_SECURITY_PARAMS):
         """
         :type ble_device: blatann.device.BleDevice
         """
+        self._ble_device = ble_device
+        self._role = role
+        self._ideal_connection_params = connection_params
+        self._current_connection_params = DEFAULT_CONNECTION_PARAMS
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.peer_address = "",
         self.connection_state = PeerState.DISCONNECTED
-        self._role = role
+        self.security = smp.SecurityManager(self._ble_device, self, security_params)
         self._on_disconnect = EventSource("On Disconnect", logger)
-        self._ble_device = ble_device
-        self._ideal_connection_params = connection_params
-        self._current_connection_params = DEFAULT_CONNECTION_PARAMS
         self._mtu_size = 23  # TODO: MTU Exchange procedure
 
     @property
@@ -58,6 +62,14 @@ class Peer(object):
     @property
     def mtu_size(self):
         return self._mtu_size
+
+    @property
+    def is_peripheral(self):
+        return isinstance(self, Peripheral)
+
+    @property
+    def is_client(self):
+        return isinstance(self, Client)
 
     def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection):
         if self.connection_state != PeerState.CONNECTED:

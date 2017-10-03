@@ -87,7 +87,7 @@ class GapEvtAuthStatus(GapEvtSec):
     def from_c(cls, event):
         auth_status = event.evt.gap_evt.params.auth_status
         return cls(conn_handle=event.evt.gap_evt.conn_handle,
-                   auth_status=auth_status.auth_status,
+                   auth_status=BLEGapSecStatus(auth_status.auth_status),
                    error_src=auth_status.error_src,
                    bonded=auth_status.bonded,
                    sm1_levels=BLEGapSecLevels.from_c(auth_status.sm1_levels),

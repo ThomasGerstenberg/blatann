@@ -5,7 +5,7 @@ import time
 
 from blatann import BleDevice
 from blatann.examples import example_utils, constants
-from blatann.gap import advertising
+from blatann.gap import advertising, smp
 from blatann.nrf.nrf_event_sync import EventSync
 
 logger = example_utils.setup_logger(level="DEBUG")
@@ -54,6 +54,14 @@ def on_time_char_read(characteristic):
     characteristic.set_value(msg)
 
 
+def on_client_pairing_complete(peer, status):
+    logger.info("Client Pairing complete, status: {}".format(status))
+
+
+def on_passkey_display(peer, passkey, match):
+    logger.info("Passkey display: {}, match: {}".format(passkey, match))
+
+
 class CountingCharacteristicThread(object):
     def __init__(self, characteristic):
         self.current_value = 0
@@ -83,6 +91,11 @@ class CountingCharacteristicThread(object):
 
 def main(serial_port):
     ble_device = BleDevice(serial_port)
+
+    # Set up desired security parameters
+    ble_device.client.security.set_security_params(True, smp.IoCapabilities.DISPLAY_ONLY, False, False)
+    ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
+    ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
 
     service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
 
