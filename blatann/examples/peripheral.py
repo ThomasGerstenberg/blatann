@@ -85,9 +85,9 @@ class CountingCharacteristicThread(object):
 def main(serial_port):
     ble_device = BleDevice(serial_port)
 
-    service = ble_device.database.add_service(constants.SERVICE1_UUID)
+    service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
 
-    char1 = service.add_characteristic(constants.CHAR1_UUID, constants.CHAR1_PROPERTIES, "Test Data")
+    char1 = service.add_characteristic(constants.HEX_CONVERT_CHAR_UUID, constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data")
     char1.on_write.register(on_gatts_characteristic_write)
     char1.on_subscription_change.register(on_gatts_subscription_state_changed)
 

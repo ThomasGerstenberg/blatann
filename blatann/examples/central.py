@@ -53,22 +53,22 @@ def main(serial_port):
 
         if counting_char:
             logger.info("Subscribing to the counting characteristic..")
-            # counting_char.subscribe(on_counting_char_notification).wait(5, False)
+            counting_char.subscribe(on_counting_char_notification).wait(5, False)
             logger.info("Subscribed")
         else:
             logger.warning("Failed to find counting characteristic")
 
-        char1 = peer.database.find_characteristic(constants.CHAR1_UUID)
-        if char1:
+        hex_convert_char = peer.database.find_characteristic(constants.HEX_CONVERT_CHAR_UUID)
+        if hex_convert_char:
             logger.info("Testing writes")
-            data = bytearray(ord('A') + i for i in range(48))
-            for i in range(48):
-                data_to_send = data[:i+1]
-                if not char1.write(data_to_send).wait(10, False):
+            data_to_convert = bytearray(ord('A') + i for i in range(48))
+            for i in range(constants.HEX_CONVERT_CHAR_PROPERTIES.max_len/2):
+                data_to_send = data_to_convert[:i+1]
+                if not hex_convert_char.write(data_to_send).wait(10, False):
                     logger.error("Failed to write data, i={}".format(i))
                     break
 
-                char, status, data_read = char1.read().wait(10, False)
+                char, status, data_read = hex_convert_char.read().wait(10, False)
                 logger.info("Read data: '{}'".format(data_read))
         else:
             logger.warning("Failed to find char1")
