@@ -1,7 +1,8 @@
 import logging
+
 from blatann.event_type import EventSource, Event
+from blatann.gatt import gattc
 from blatann.nrf import nrf_events
-from blatann import gattc
 from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)

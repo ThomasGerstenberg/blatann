@@ -33,7 +33,6 @@ class SubscriptionState(enum.IntEnum):
         return cls(struct.unpack("<H", buffer)[0])
 
 
-
 class CharacteristicProperties(object):
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  write_no_response=False, signed_write=False):

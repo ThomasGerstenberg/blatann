@@ -1,8 +1,9 @@
 import logging
+
+from blatann import exceptions
+from blatann.gap import advertising
 from blatann.nrf import nrf_events, nrf_types
-from blatann.event_type import Event, EventSource
 from blatann.waitables import scan_waitable
-from blatann import uuid, advertising, exceptions
 
 logger = logging.getLogger(__name__)
 

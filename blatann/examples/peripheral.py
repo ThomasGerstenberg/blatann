@@ -1,13 +1,12 @@
 import atexit
-import time
-import threading
 import struct
+import threading
+import time
+
 from blatann import BleDevice
-from blatann.uuid import Uuid128
-from blatann.nrf.nrf_events import GapEvtDisconnected
-from blatann.nrf.nrf_event_sync import EventSync
-from blatann import gatt, gatts, advertising
 from blatann.examples import example_utils, constants
+from blatann.gap import advertising
+from blatann.nrf.nrf_event_sync import EventSync
 
 logger = example_utils.setup_logger(level="DEBUG")
 

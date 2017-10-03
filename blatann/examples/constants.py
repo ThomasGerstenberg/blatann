@@ -1,5 +1,5 @@
+from blatann.gatt import gatts
 from blatann.uuid import Uuid128
-from blatann import gatts
 
 PERIPHERAL_NAME = "Periph Test"
 

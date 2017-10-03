@@ -1,11 +1,12 @@
-import enum
 import logging
-from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
-from blatann.nrf import nrf_events
-from blatann.event_type import Event, EventSource
-from blatann.waitables import connection_waitable, event_waitable
-from blatann import gattc, service_discovery
 
+import enum
+
+from blatann.event_type import EventSource
+from blatann.gatt import gattc, service_discovery
+from blatann.nrf import nrf_events
+from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
+from blatann.waitables import connection_waitable, event_waitable
 
 logger = logging.getLogger(__name__)
 

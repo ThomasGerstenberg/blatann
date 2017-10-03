@@ -1,10 +1,12 @@
 import logging
 from threading import Lock
+
+from blatann import uuid, peer, exceptions
+from blatann.gap import advertising, scanning
+from blatann.gatt import gatts
+from blatann.nrf import nrf_events
 from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
-from blatann.nrf import nrf_events
-
-from blatann import uuid, advertising, scanning, peer, gatts, exceptions
 from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
 
 logger = logging.getLogger(__name__)
