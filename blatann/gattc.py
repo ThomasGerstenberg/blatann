@@ -73,7 +73,9 @@ class GattcWriter(object):
         """
         :type event: nrf_events.GattcEvtWriteResponse
         """
-        if event.conn_handle != self.peer.conn_handle or event.attr_handle != self._handle:
+        if event.conn_handle != self.peer.conn_handle:
+            return
+        if event.attr_handle != self._handle and event.write_op != nrf_types.BLEGattWriteOperation.execute_write_req:
             return
         if event.status != nrf_events.BLEGattStatusCode.success:
             self._complete(event.status)
@@ -97,16 +99,18 @@ class GattcWriter(object):
 
 
 class GattcCharacteristic(gatt.Characteristic):
-    def __init__(self, ble_device, peer, uuid, properties, declaration_handle, value_handle, cccd_handle=None):
+    def __init__(self, ble_device, peer, writer, uuid, properties, declaration_handle, value_handle, cccd_handle=None):
         super(GattcCharacteristic, self).__init__(ble_device, peer, uuid, properties)
-        self._on_notification_event = EventSource("On Notification", logger)
         self.declaration_handle = declaration_handle
         self.value_handle = value_handle
         self.cccd_handle = cccd_handle
-        self.writer = GattcWriter(ble_device, peer)
-        self._on_write_complete_event = EventSource("Write Complete", logger)
-        self._on_ccd_write_complete_event = EventSource("CCCD Write Complete", logger)
+        self.writer = writer
         self._value = ""
+
+        self._on_notification_event = EventSource("On Notification", logger)
+        self._on_write_complete_event = EventSource("Write Complete", logger)
+        self._on_cccd_write_complete_event = EventSource("CCCD Write Complete", logger)
+
         self.writer.on_write_complete.register(self._write_complete)
         self.ble_device.ble_driver.event_subscribe(self._on_indication_notification, nrf_events.GattcEvtHvx)
 
@@ -123,14 +127,18 @@ class GattcCharacteristic(gatt.Characteristic):
             value = gatt.SubscriptionState.NOTIFY
         self._on_notification_event.register(on_notification_handler)
         self.writer.write(self.cccd_handle, gatt.SubscriptionState.to_buffer(value))
-        return EventWaitable(self._on_ccd_write_complete_event)
+        return EventWaitable(self._on_cccd_write_complete_event)
 
     def unsubscribe(self):
         if not self.subscribable:
             raise InvalidOperationException("Characteristic {} is not subscribable".format(self.uuid))
         value = gatt.SubscriptionState.NOT_SUBSCRIBED
         self.writer.write(self.cccd_handle, gatt.SubscriptionState.to_buffer(value))
-        return EventWaitable(self._on_ccd_write_complete_event)
+        return EventWaitable(self._on_cccd_write_complete_event)
+
+    def write(self, data):
+        self.writer.write(self.value_handle, data)
+        return EventWaitable(self._on_write_complete_event)
 
     def _write_complete(self, handle, status, data):
         # Success, update the local value
@@ -141,7 +149,7 @@ class GattcCharacteristic(gatt.Characteristic):
         elif handle == self.cccd_handle:
             if status == nrf_types.BLEGattStatusCode.success:
                 self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(data))
-            self._on_ccd_write_complete_event.notify(self, status, self.cccd_state)
+            self._on_cccd_write_complete_event.notify(self, status, self.cccd_state)
 
     def _on_indication_notification(self, driver, event):
         """
@@ -154,7 +162,7 @@ class GattcCharacteristic(gatt.Characteristic):
         self._on_notification_event.notify(self, bytearray(event.data))
 
     @classmethod
-    def from_discovered_characteristic(cls, ble_device, peer, nrf_characteristic):
+    def from_discovered_characteristic(cls, ble_device, peer, writer, nrf_characteristic):
         """
         :type nrf_characteristic: nrf_types.BLEGattCharacteristic
         """
@@ -163,7 +171,7 @@ class GattcCharacteristic(gatt.Characteristic):
         cccd_handle_list = [d.handle for d in nrf_characteristic.descs
                             if d.uuid == nrf_types.BLEUUID.Standard.cccd]
         cccd_handle = cccd_handle_list[0] if cccd_handle_list else None
-        return GattcCharacteristic(ble_device, peer, char_uuid, properties,
+        return GattcCharacteristic(ble_device, peer, writer, char_uuid, properties,
                                    nrf_characteristic.handle_decl, nrf_characteristic.handle_value, cccd_handle)
 
 
@@ -175,24 +183,32 @@ class GattcService(gatt.Service):
         """
         return self._characteristics
 
+    def find_characteristic(self, characteristic_uuid):
+        for c in self.characteristics:
+            if c.uuid == characteristic_uuid:
+                return c
+
     @classmethod
-    def from_discovered_service(cls, ble_device, peer, nrf_service):
+    def from_discovered_service(cls, ble_device, peer, writer, nrf_service):
         """
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peripheral
+        :type writer: GattcWriter
         :type nrf_service: nrf_types.BLEGattService
         """
         service_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_service.uuid)
         service = GattcService(ble_device, peer, service_uuid, gatt.ServiceType.PRIMARY,
                                nrf_service.start_handle, nrf_service.end_handle)
         for c in nrf_service.chars:
-            service.characteristics.append(GattcCharacteristic.from_discovered_characteristic(ble_device, peer, c))
+            char = GattcCharacteristic.from_discovered_characteristic(ble_device, peer, writer, c)
+            service.characteristics.append(char)
         return service
 
 
 class GattcDatabase(gatt.GattDatabase):
     def __init__(self, ble_device, peer):
         super(GattcDatabase, self).__init__(ble_device, peer)
+        self._writer = GattcWriter(ble_device, peer)
 
     @property
     def services(self):
@@ -200,6 +216,16 @@ class GattcDatabase(gatt.GattDatabase):
         :rtype: list of GattcService
         """
         return self._services
+
+    def find_service(self, service_uuid):
+        for s in self.services:
+            if s.uuid == service_uuid:
+                return s
+
+    def find_characteristic(self, characteristic_uuid):
+        for c in self.iter_characteristics():
+            if c.uuid == characteristic_uuid:
+                return c
 
     def iter_characteristics(self):
         for s in self.services:
@@ -211,4 +237,4 @@ class GattcDatabase(gatt.GattDatabase):
         :type nrf_services: list of nrf_types.BLEGattService
         """
         for service in nrf_services:
-            self.services.append(GattcService.from_discovered_service(self.ble_device, self.peer, service))
+            self.services.append(GattcService.from_discovered_service(self.ble_device, self.peer, self._writer, service))

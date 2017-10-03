@@ -340,7 +340,6 @@ class DatabaseDiscoverer(object):
         self._on_discovery_complete = EventSource("Service Discovery Complete", logger)
         self._on_database_discovery_complete = EventSource("Service Discovery Complete", logger)
         self._state = _DiscoveryState()
-        self.db = gattc.GattcDatabase(ble_device, peer)
         self._service_discoverer = ServiceDiscoverer(ble_device, peer)
         self._characteristic_discoverer = CharacteristicDiscoverer(ble_device, peer)
         self._descriptor_discoverer = DescriptorDiscoverer(ble_device, peer)

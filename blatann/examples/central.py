@@ -1,7 +1,7 @@
 import time
 import struct
 from blatann import BleDevice, uuid
-from blatann.examples import example_utils
+from blatann.examples import example_utils, constants
 from blatann.nrf import nrf_events
 
 logger = example_utils.setup_logger(level="DEBUG")
@@ -49,19 +49,27 @@ def main(serial_port):
             logger.info(service)
 
         # Find the counting characteristic
-        counting_char_uuid = uuid.Uuid128("dead1234-0011-2345-6679-ab12ccd4f550")
-        counting_char = None
-        for c in peer.database.iter_characteristics():
-            if c.uuid == counting_char_uuid:
-                counting_char = c
-                break
+        counting_char = peer.database.find_characteristic(constants.COUNTING_CHAR_UUID)
 
         if counting_char:
-            logger.info("Subscribing..")
-            datastuffs = counting_char.subscribe(on_counting_char_notification).wait(300, False)
+            logger.info("Subscribing to the counting characteristic..")
+            # counting_char.subscribe(on_counting_char_notification).wait(5, False)
             logger.info("Subscribed")
         else:
             logger.warning("Failed to find counting characteristic")
+
+        char1 = peer.database.find_characteristic(constants.CHAR1_UUID)
+        if char1:
+            logger.info("Testing writes")
+            data = bytearray(range(48))
+            for i in range(48):
+                data_to_send = data[:i+1]
+                if not char1.write(data_to_send).wait(100, False):
+                    logger.error("Failed to write data, i={}".format(i))
+                    break
+        else:
+            logger.warning("Failed to find char1")
+
         time.sleep(10)
         logger.info("Disconnecting...")
         peer.disconnect().wait()

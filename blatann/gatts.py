@@ -185,11 +185,14 @@ class GattsCharacteristic(gatt.Characteristic):
         return attribute_handle in [self.value_handle, self.cccd_handle]
 
     def _execute_queued_write(self, write_op):
+        if not self._write_queued:
+            return
+
         self._write_queued = False
         if write_op == nrf_events.BLEGattsWriteOperation.exec_write_req_cancel:
-            logger.info("Cancelling write request")
+            logger.info("Cancelling write request, char: {}".format(self.uuid))
         else:
-            logger.info("Executing write request")
+            logger.info("Executing write request, char: {}".format(self.uuid))
             # TODO Assume that it was assembled properly. Error handling should go here
             new_value = bytearray()
             for chunk in self._queued_write_chunks:
@@ -225,7 +228,7 @@ class GattsCharacteristic(gatt.Characteristic):
         :type write_event: nrf_events.GattsEvtWrite
         """
         if write_event.write_op in [nrf_events.BLEGattsWriteOperation.exec_write_req_cancel,
-                                    nrf_events.BLEGattsWriteOperation.exec_write_req_now] and self._write_queued:
+                                    nrf_events.BLEGattsWriteOperation.exec_write_req_now]:
             self._execute_queued_write(write_event.write_op)
             # Reply should already be handled in database since this can span multiple characteristics and services
             return
@@ -245,7 +248,10 @@ class GattsCharacteristic(gatt.Characteristic):
             self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
         else:
             # Send reply before processing write, in case user sets data in gatts_write handler
-            self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
+            try:
+                self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
+            except Exception as e:
+                pass
             if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
                 self._write_queued = True
                 self._queued_write_chunks.append(self._QueuedChunk(write_event.offset, write_event.data))

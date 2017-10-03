@@ -7,7 +7,7 @@ from blatann.uuid import Uuid128
 from blatann.nrf.nrf_events import GapEvtDisconnected
 from blatann.nrf.nrf_event_sync import EventSync
 from blatann import gatt, gatts, advertising
-from blatann.examples import example_utils
+from blatann.examples import example_utils, constants
 
 logger = example_utils.setup_logger(level="DEBUG")
 
@@ -34,7 +34,7 @@ def on_gatts_characteristic_write(characteristic, value):
     logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
                                                                                    str(value).encode("hex")))
     new_value = "Hello, {}".format(str(value).encode("hex"))
-    characteristic.set_value(new_value, True)
+    characteristic.set_value(new_value[:characteristic.max_length], True)
 
 
 def on_gatts_subscription_state_changed(characteristic, new_state):
@@ -85,36 +85,22 @@ class CountingCharacteristicThread(object):
 def main(serial_port):
     ble_device = BleDevice(serial_port)
 
-    service_uuid = Uuid128("deadbeef-0011-2345-6679-ab12ccd4f550")
-    char1_uuid = service_uuid.new_uuid_from_base(0xbeaa)
-    counting_char_uuid = service_uuid.new_uuid_from_base("1234")
+    service = ble_device.database.add_service(constants.SERVICE1_UUID)
 
-    time_service_base_uuid = "beef0000-0123-4567-89ab-cdef01234567"
-    time_service_uuid = Uuid128.combine_with_base("dead", time_service_base_uuid)
-    time_char_uuid = time_service_uuid.new_uuid_from_base("dddd")
-
-    service = ble_device.database.add_service(service_uuid)
-
-    char1_props = gatts.GattsCharacteristicProperties(read=True, notify=True, indicate=True, write=True, max_length=30,
-                                                      variable_length=True)
-    char1 = service.add_characteristic(char1_uuid, char1_props, "Test Data")
+    char1 = service.add_characteristic(constants.CHAR1_UUID, constants.CHAR1_PROPERTIES, "Test Data")
     char1.on_write.register(on_gatts_characteristic_write)
     char1.on_subscription_change.register(on_gatts_subscription_state_changed)
 
-    counting_char_props = gatts.GattsCharacteristicProperties(read=False, notify=True, max_length=4,
-                                                              variable_length=False)
-    counting_char = service.add_characteristic(counting_char_uuid, counting_char_props, [0]*4)
+    counting_char = service.add_characteristic(constants.COUNTING_CHAR_UUID, constants.COUNTING_CHAR_PROPERTIES, [0]*4)
     counting_char.on_subscription_change.register(on_gatts_subscription_state_changed)
     counting_char_thread = CountingCharacteristicThread(counting_char)
 
-    time_service = ble_device.database.add_service(time_service_uuid)
-    time_char_props = gatts.GattsCharacteristicProperties(read=True, max_length=30, variable_length=True)
-    time_char = time_service.add_characteristic(time_char_uuid, time_char_props, "Time")
+    time_service = ble_device.database.add_service(constants.TIME_SERVICE_UUID)
+    time_char = time_service.add_characteristic(constants.TIME_CHAR_UUID, constants.TIME_CHAR_PROPERTIES, "Time")
     time_char.on_read.register(on_time_char_read)
 
-    adv_data = advertising.AdvertisingData(local_name='Periph Test',
-                                           flags=0x06)
-    scan_data = advertising.AdvertisingData(service_uuid128s=time_service_uuid, has_more_uuid128_services=True)
+    adv_data = advertising.AdvertisingData(local_name=constants.PERIPHERAL_NAME, flags=0x06)
+    scan_data = advertising.AdvertisingData(service_uuid128s=constants.TIME_SERVICE_UUID, has_more_uuid128_services=True)
     ble_device.advertiser.set_advertise_data(adv_data, scan_data)
 
     logger.info("Advertising")
