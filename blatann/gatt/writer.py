@@ -41,7 +41,7 @@ class GattcWriter(object):
         self._offset = 0
         self._handle = handle
         self._data = data
-        logger.info("Starting write to handle {}, len: {}".format(self._handle, len(self._data)))
+        logger.debug("Starting write to handle {}, len: {}".format(self._handle, len(self._data)))
         self._write_next_chunk()
         self._busy = True
         return EventWaitable(self.on_write_complete)
@@ -63,8 +63,8 @@ class GattcWriter(object):
         data_to_write = self._data[self._offset:self._offset+self._len_bytes_written]
         write_params = nrf_types.BLEGattcWriteParams(write_operation, flags,
                                                      self._handle, data_to_write, self._offset)
-        logger.info("Writing chunk: handle: {}, offset: {}, len: {}, op: {}".format(self._handle, self._offset,
-                                                                                    len(data_to_write), write_operation))
+        logger.debug("Writing chunk: handle: {}, offset: {}, len: {}, op: {}".format(self._handle, self._offset,
+                                                                                     len(data_to_write), write_operation))
         self.ble_device.ble_driver.ble_gattc_write(self.peer.conn_handle, write_params)
 
     def _on_write_response(self, driver, event):

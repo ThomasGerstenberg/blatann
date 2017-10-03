@@ -38,7 +38,7 @@ class GattcReader(object):
         self._handle = handle
         self._offset = 0
         self._data = bytearray()
-        logger.info("Starting read from handle {}".format(handle))
+        logger.debug("Starting read from handle {}".format(handle))
         self._read_next_chunk()
         self._busy = True
         return EventWaitable(self.on_read_complete)

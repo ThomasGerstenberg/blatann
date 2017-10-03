@@ -23,6 +23,7 @@ class PeerAddress(nrf_events.BLEGapAddr):
 
 class ConnectionParameters(nrf_events.BLEGapConnParams):
     def __init__(self, min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency=0):
+        # TODO: Parameter validation
         super(ConnectionParameters, self).__init__(min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency)
 
 
@@ -64,9 +65,10 @@ class Peer(object):
         self._ble_device.ble_driver.ble_gap_disconnect(self.conn_handle, status_code)
         return self._disconnect_waitable
 
-    def set_connection_parameters(self, connection_params=None):
-        if connection_params:
-            self._ideal_connection_params = connection_params
+    def set_connection_parameters(self, min_connection_interval_ms, max_connection_interval_ms, connection_timeout_ms,
+                                  slave_latency=0):
+        self._ideal_connection_params = ConnectionParameters(min_connection_interval_ms, max_connection_interval_ms,
+                                                             connection_timeout_ms, slave_latency)
         if not self.connected:
             return
         # Do stuff to set the connection parameters
