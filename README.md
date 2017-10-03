@@ -12,9 +12,9 @@ Roadmap:
 
 - [ ] GAP
     - [ ] BLE Enable parameters
-    - [ ] BLE Connection parameters
+    - [X] BLE Connection parameters
     - [x] Advertising
-    - [ ] Scanning (working, not happy with API)
+    - [ ] Scanning (functional, needs some refactoring)
     - [ ] Documentation
 - [ ] SMP
     - [ ] Encryption/Authentication process
@@ -40,7 +40,12 @@ Roadmap:
 - [ ] License
 - [ ] Unit Tests
 - [ ] Integration Tests
-    
+- [ ] Examples
+    - [ ] Advertiser
+    - [X] Scanner
+    - [X] Central
+    - [X] Peripheral
+    - [ ] Pairing/Bonding
 
 
 The library aims to support both event-driven and procedural program styles. Initially the library
