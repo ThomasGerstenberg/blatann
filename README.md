@@ -14,11 +14,13 @@ Roadmap:
     - [ ] BLE Enable parameters
     - [ ] BLE Connection parameters
     - [x] Advertising
-    - [ ] Scanning (in progress)
+    - [ ] Scanning (working, not happy with API)
+    - [ ] Documentation
 - [ ] SMP
     - [ ] Encryption/Authentication process
     - [ ] MITM/Passcode pairing support
     - [ ] Store bonding info
+    - [ ] Documentation
 - [ ] GATT Server
     - [x] Characteristic Reads
     - [x] Characteristic Writes
@@ -26,12 +28,20 @@ Roadmap:
     - [x] Long reads/writes
     - [ ] Characteristic User Description/Presentation format
     - [ ] CCCD Caching
+    - [ ] Documentation (partial)
 - [ ] GATT Client
-    - [ ] Database Discovery procedure
-    - [ ] Client reads
-    - [ ] Client writes
-    - [ ] Client long writes
-    - [ ] Notifications/Indications
+    - [X] Database Discovery procedure
+    - [X] Client reads
+    - [X] Client writes
+    - [X] Client long writes
+    - [X] Notifications/Indications
+    - [ ] CCCD Caching
+    - [ ] Documentation
+- [ ] License
+- [ ] Unit Tests
+- [ ] Integration Tests
+    
+
 
 The library aims to support both event-driven and procedural program styles. Initially the library
 will primarily support procedural, with some hooks to make it event-driven.
