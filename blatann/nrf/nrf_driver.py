@@ -525,6 +525,11 @@ class NrfDriver(object):
                                                         conn_handle,
                                                         self.ble_enable_params.att_mtu)
 
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gattc_hv_confirm(self, conn_handle, attr_handle):
+        return driver.sd_ble_gattc_hv_confirm(self.rpc_adapter, conn_handle, attr_handle)
+
     """
     Driver handlers
     """

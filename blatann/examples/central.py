@@ -11,9 +11,9 @@ logger = example_utils.setup_logger(level="DEBUG")
 def find_target_device(ble_device, name):
     scan_report = ble_device.scanner.start_scan().wait()
 
-    for scan_report in scan_report.advertising_peers_found:
-        if scan_report.advertise_data.local_name == name:
-            return scan_report.peer_address
+    for report in scan_report.advertising_peers_found:
+        if report.advertise_data.local_name == name:
+            return report.peer_address
 
 
 def on_counting_char_notification(characteristic, value):

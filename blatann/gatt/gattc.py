@@ -95,7 +95,7 @@ class GattcCharacteristic(gatt.Characteristic):
         if event.conn_handle != self.peer.conn_handle or event.attr_handle != self.value_handle:
             return
         if event.hvx_type == nrf_events.BLEGattHVXType.indication:
-            pass  # TODO: Indication reply
+            self.ble_device.ble_driver.ble_gattc_hv_confirm(event.conn_handle, event.attr_handle)
         self._on_notification_event.notify(self, bytearray(event.data))
 
     @classmethod
