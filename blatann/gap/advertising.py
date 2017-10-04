@@ -19,9 +19,12 @@ class AdvertisingFlags(IntEnum):
 
 
 class AdvertisingData(object):
-    MAX_ENCODED_LENGTH = 31
+    """
+    Class which represents data that can be advertised
+    """
+    MAX_ENCODED_LENGTH = 31  # Bluetooth-defined max length that the encoded data can be
 
-    Types = nrf_types.BLEAdvData.Types
+    Types = nrf_types.BLEAdvData.Types  # Enum representing the different advertising data types
 
     def __init__(self, flags=None, local_name=None, local_name_complete=True,
                  service_uuid16s=None, service_uuid128s=None,
@@ -104,7 +107,7 @@ class AdvertisingData(object):
         """
         Converts a dictionary of AdvertisingData.Type: value keypairs into an object of this class
 
-        :param advertise_records:
+        :param advertise_records: a dictionary mapping the advertise data types to their corresponding values
         :type advertise_records: dict
         :return: the AdvertisingData from the records given
         :rtype: AdvertisingData
@@ -155,6 +158,7 @@ class AdvertisingData(object):
             for i in range(0, len(uuid128_data), 16):
                 uuid128 = uuid128_data[i:i+16][::-1]
                 service_uuid128s.append(uuid.Uuid128(uuid128))
+
         record_string_keys = {k.name: bytearray(v) for k, v in advertise_records.items()}
         return AdvertisingData(flags=flags, local_name=local_name, local_name_complete=local_name_complete,
                                service_uuid16s=service_uuid16s, service_uuid128s=service_uuid128s,
@@ -187,6 +191,8 @@ class AdvertisingData(object):
 
 
 class Advertiser(object):
+    # Constant used to indicate that the BLE device should advertise indefinitely, until
+    # connected to or stopped manually
     ADVERTISE_FOREVER = 0
 
     def __init__(self, ble_device, client):

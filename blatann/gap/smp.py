@@ -6,12 +6,20 @@ from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)
 
+# Enum used to report IO Capabilities for the pairing process
 IoCapabilities = nrf_types.BLEGapIoCaps
+
+# Enum of the status codes emitted during security procedures
 SecurityStatus = nrf_types.BLEGapSecStatus
+
+# Enum of the different Pairing passkeys to be entered by the user (passcode, out-of-band, etc.)
 AuthenticationKeyType = nrf_types.BLEGapAuthKeyType
 
 
 class SecurityParameters(object):
+    """
+    Class representing the desired security parameters for a given connection
+    """
     def __init__(self, passcode_pairing=False, io_capabilities=IoCapabilities.KEYBOARD_DISPLAY,
                  bond=False, out_of_band=False, reject_pairing_requests=False):
         self.passcode_pairing = passcode_pairing
