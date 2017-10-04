@@ -8,8 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class GattcWriter(object):
-    _WRITE_OVERHEAD = 3
-    _LONG_WRITE_OVERHEAD = 5
+    """
+    Class which implements the state machine for writing a value to a peripheral's attribute
+    """
+    _WRITE_OVERHEAD = 3       # Number of bytes per MTU that are overhead for the write operation
+    _LONG_WRITE_OVERHEAD = 5  # Number of bytes per MTU that are overhead for the long write operations
 
     def __init__(self, ble_device, peer):
         """
@@ -29,11 +32,25 @@ class GattcWriter(object):
     @property
     def on_write_complete(self):
         """
+        Event that is emitted when a write completes on an attribute handler
+
+        Handler args: (int attribute_handle, gatt.GattStatusCode, bytearray data_written)
+
+        :return: an Event which can have handlers registered to and deregistered from
         :rtype: Event
         """
         return self._on_write_complete
 
     def write(self, handle, data):
+        """
+        Writes data to the attribute at the handle provided. Can only write to a single attribute at a time.
+        If a write is in progress, raises an InvalidStateException
+
+        :param handle: The attribute handle to write
+        :param data: The data to write
+        :return: A Waitable that will fire when the write finishes. see on_write_complete for the values returned from the waitable
+        :rtype: EventWaitable
+        """
         if self._busy:
             raise InvalidStateException("Gattc Writer is busy")
         if len(data) == 0:
@@ -69,6 +86,8 @@ class GattcWriter(object):
 
     def _on_write_response(self, driver, event):
         """
+        Handler fro GattcEvtWriteResponse
+
         :type event: nrf_events.GattcEvtWriteResponse
         """
         if event.conn_handle != self.peer.conn_handle:

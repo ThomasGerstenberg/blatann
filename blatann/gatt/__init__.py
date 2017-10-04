@@ -2,12 +2,26 @@ import enum
 import logging
 import struct
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
+from blatann.nrf import nrf_types
 
 
 logger = logging.getLogger(__name__)
 
+"""
+Status codes that can be returned during GATT Operations (reads, writes, etc.)
+"""
+GattStatusCode = nrf_types.BLEGattStatusCode
+
+"""
+The two notification types (notification, indication) used when a characteristic is notified from a peripheral
+"""
+GattNotificationType = nrf_types.BLEGattHVXType
+
 
 class SecurityLevel(enum.Enum):
+    """
+    Security levels used for defining GATT server characteristics
+    """
     NO_ACCESS = 0
     OPEN = 1
     JUST_WORKS = 2
@@ -20,17 +34,26 @@ class ServiceType(enum.Enum):
 
 
 class SubscriptionState(enum.IntEnum):
+    """
+    Defines the different subscription states/types for a characteristic
+    """
     NOT_SUBSCRIBED = 0
     NOTIFY = 1
     INDICATION = 2
 
     @classmethod
     def to_buffer(cls, value):
+        """
+        Converts to a little-endian uint16 buffer to be written over BLE
+        """
         return struct.pack("<H", value)
 
     @classmethod
-    def from_buffer(cls, buffer):
-        return cls(struct.unpack("<H", buffer)[0])
+    def from_buffer(cls, buf):
+        """
+        Converts from a little-endian uint16 buffer received over BLE to the subscription state
+        """
+        return cls(struct.unpack("<H", buf)[0])
 
 
 class CharacteristicProperties(object):
@@ -67,6 +90,9 @@ class CharacteristicProperties(object):
 
 
 class Characteristic(object):
+    """
+    Abstract class that represents a BLE characteristic (both remote and local)
+    """
     def __init__(self, ble_device, peer, uuid, properties):
         """
         :type ble_device: blatann.device.BleDevice
@@ -88,6 +114,9 @@ class Characteristic(object):
 
 
 class Service(object):
+    """
+    Abstract class that represents a BLE Service (both remote and local)
+    """
     def __init__(self, ble_device, peer, uuid, service_type,
                  start_handle=BLE_GATT_HANDLE_INVALID, end_handle=BLE_GATT_HANDLE_INVALID):
         """
@@ -112,6 +141,9 @@ class Service(object):
 
 
 class GattDatabase(object):
+    """
+    Abstract class that represents a BLE Database (both remote and local)
+    """
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice

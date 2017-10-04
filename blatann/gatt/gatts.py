@@ -18,6 +18,9 @@ _security_mapping = {
 
 
 class GattsCharacteristicProperties(gatt.CharacteristicProperties):
+    """
+    Properties for Gatt Server characeristics
+    """
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  write_no_response=False, signed_write=False,
                  security_level=gatt.SecurityLevel.OPEN, max_length=20, variable_length=True):
@@ -302,18 +305,29 @@ class GattsCharacteristic(gatt.Characteristic):
 
 
 class GattsService(gatt.Service):
+    """
+    Represents a registered GATT service that lives locally on the device
+    """
     @property
     def characteristics(self):
         """
+        Gets the list of characteristics in this service
+
         :rtype: list of GattsCharacteristic
         """
         return self._characteristics
 
     def add_characteristic(self, uuid, properties, initial_value=""):
         """
+        Adds a new characteristic to the service
+
+        :param: The UUID of the characteristic to add
         :type uuid: blatann.uuid.Uuid
-        :type properties: gatt.CharacteristicProperties
+        :param properties: The characteristic's properties
+        :type properties: GattsCharacteristicProperties
+        :param initial_value: The initial value of the characteristic. May be a string, bytearray, or list of ints
         :type initial_value: str or list or bytearray
+        :return: The characteristic just added to the service
         :rtype: GattsCharacteristic
         """
         c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, initial_value)
@@ -352,6 +366,9 @@ class GattsService(gatt.Service):
 
 
 class GattsDatabase(gatt.GattDatabase):
+    """
+    Represents the entire GATT server that lives locally on the device which clients read from and write to
+    """
     def __init__(self, ble_device, peer):
         super(GattsDatabase, self).__init__(ble_device, peer)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request,
@@ -360,14 +377,22 @@ class GattsDatabase(gatt.GattDatabase):
     @property
     def services(self):
         """
+        Gets the list of services registered in the database
+
+        :return: list of services in the database
         :rtype: list of GattsService
         """
         return self._services
 
     def iter_services(self):
+        """
+        Iterates through all of the registered services in the database
+
+        :return: Generator of the database's services
+        :rtype: collections.Iterable[GattsService]
+        """
         for s in self.services:
-            for c in s.characteristics:
-                yield c
+            yield s
 
     def add_service(self, uuid, service_type=gatt.ServiceType.PRIMARY):
         """
@@ -390,6 +415,9 @@ class GattsDatabase(gatt.GattDatabase):
         return service
 
     def _on_rw_auth_request(self, driver, event):
+        """
+        :type event: nrf_events.GattsEvtReadWriteAuthorizeRequest
+        """
         if not event.write:
             return
         # execute writes can span multiple services and characteristics. Should only reply at the top-level here

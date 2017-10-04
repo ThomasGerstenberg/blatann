@@ -8,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class GattcReader(object):
-    _READ_OVERHEAD = 1
+    """
+    Class which implements the state machine for completely reading a peripheral's attribute
+    """
+    _READ_OVERHEAD = 1  # Number of bytes per MTU that are overhead for the read operation
 
     def __init__(self, ble_device, peer):
         """
@@ -27,12 +30,24 @@ class GattcReader(object):
     @property
     def on_read_complete(self):
         """
+        Event that is emitted when a read completes on an attribute handle.
 
+        Handler args: (int attribute_handle, gatt.GattStatusCode, bytearray data_read)
+
+        :return: an Event which can have handlers registered to and deregistered from
         :rtype: Event
         """
         return self._on_read_complete_event
 
     def read(self, handle):
+        """
+        Reads the attribute value from the handle provided. Can only read from a single attribute at a time. If a
+        read is in progress, raises an InvalidStateException
+
+        :param handle: the attribute handle to read
+        :return: A waitable that will fire when the read finishes. See on_read_complete for the values returned from the waitable
+        :rtype: EventWaitable
+        """
         if self._busy:
             raise InvalidStateException("Gattc Reader is busy")
         self._handle = handle
@@ -48,6 +63,8 @@ class GattcReader(object):
 
     def _on_read_response(self, driver, event):
         """
+        Handler for GattcEvtReadResponse
+
         :type event: nrf_events.GattcEvtReadResponse
         """
         if event.conn_handle != self.peer.conn_handle or event.attr_handle != self._handle:
