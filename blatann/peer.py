@@ -1,5 +1,5 @@
 import logging
-
+import threading
 import enum
 
 from blatann.event_type import EventSource
@@ -47,13 +47,20 @@ class Peer(object):
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.peer_address = "",
         self.connection_state = PeerState.DISCONNECTED
-        self.security = smp.SecurityManager(self._ble_device, self, security_params)
+        self._on_connect = EventSource("On Connect", logger)
         self._on_disconnect = EventSource("On Disconnect", logger)
         self._mtu_size = 23  # TODO: MTU Exchange procedure
+        self._connection_based_driver_event_handlers = {}
+        self._connection_handler_lock = threading.Lock()
+        self.security = smp.SecurityManager(self._ble_device, self, security_params)
 
     @property
     def connected(self):
         return self.connection_state == PeerState.CONNECTED
+
+    @property
+    def on_connect(self):
+        return self._on_connect
 
     @property
     def on_disconnect(self):
@@ -92,9 +99,37 @@ class Peer(object):
         self._disconnect_waitable = connection_waitable.DisconnectionWaitable(self)
         self.connection_state = PeerState.CONNECTED
         self._current_connection_params = connection_params
+
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
         self._ble_device.ble_driver.event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate,
                                                     nrf_events.GapEvtConnParamUpdateRequest)
+        self._on_connect.notify(self)
+
+    def _check_driver_event_connection_handle_wrapper(self, func):
+        def f(driver, event):
+            """
+            :param driver:
+            :type event: blatann.nrf.nrf_events.BLEEvent
+            """
+            logger.info("Got event: {} for peer {}".format(event, self.conn_handle))
+            if self.connected and self.conn_handle == event.conn_handle:
+                func(driver, event)
+        return f
+
+    def driver_event_subscribe(self, handler, *event_types):
+        wrapped_handler = self._check_driver_event_connection_handle_wrapper(handler)
+        with self._connection_handler_lock:
+            if handler not in self._connection_based_driver_event_handlers:
+                self._connection_based_driver_event_handlers[handler] = wrapped_handler
+                self._ble_device.ble_driver.event_subscribe(wrapped_handler, *event_types)
+
+    def driver_event_unsubscribe(self, handler, *event_types):
+        with self._connection_handler_lock:
+            wrapped_handler = self._connection_based_driver_event_handlers.get(handler, None)
+            logger.info("Unsubscribing {} ({})".format(handler, wrapped_handler))
+            if wrapped_handler:
+                self._ble_device.ble_driver.event_unsubscribe(wrapped_handler, *event_types)
+                del self._connection_based_driver_event_handlers[handler]
 
     def _on_disconnect_event(self, driver, event):
         """
@@ -104,11 +139,14 @@ class Peer(object):
             return
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.connection_state = PeerState.DISCONNECTED
-        self._ble_device.ble_driver.event_unsubscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
-        self._ble_device.ble_driver.event_unsubscribe(self._on_connection_param_update,
-                                                      nrf_events.GapEvtConnParamUpdate,
-                                                      nrf_events.GapEvtConnParamUpdateRequest)
         self._on_disconnect.notify(self, event.reason)
+
+        with self._connection_handler_lock:
+            for handler in self._connection_based_driver_event_handlers.values():
+                self._ble_device.ble_driver.event_unsubscribe_all(handler)
+            self._connection_based_driver_event_handlers = {}
+        self._ble_device.ble_driver.event_unsubscribe(self._on_disconnect_event)
+        self._ble_device.ble_driver.event_unsubscribe(self._on_connection_param_update)
 
     def _on_connection_param_update(self, driver, event):
         """
@@ -150,12 +188,3 @@ class Peripheral(Peer):
 class Client(Peer):
     def __init__(self, ble_device, connection_params=DEFAULT_CONNECTION_PARAMS):
         super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params)
-        self._on_connect = EventSource("On Connect", logger)
-
-    @property
-    def on_connect(self):
-        return self._on_connect
-
-    def peer_connected(self, conn_handle, peer_address, connection_params):
-        super(Client, self).peer_connected(conn_handle, peer_address, connection_params)
-        self._on_connect.notify(self)

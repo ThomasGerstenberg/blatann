@@ -71,7 +71,7 @@ def main(serial_port):
         hex_convert_char = peer.database.find_characteristic(constants.HEX_CONVERT_CHAR_UUID)
         if hex_convert_char:
             logger.info("Testing writes")
-            data_to_convert = bytearray(ord('A') + i for i in range(48))
+            data_to_convert = bytearray(ord('A') + i for i in range(12))
             for i in range(constants.HEX_CONVERT_CHAR_PROPERTIES.max_len/2):
                 data_to_send = data_to_convert[:i+1]
                 logger.info("Converting to hex data: '{}'".format(data_to_send))

@@ -26,7 +26,7 @@ class GattcWriter(object):
         self._data = ""
         self._handle = 0x0000
         self._offset = 0
-        self.ble_device.ble_driver.event_subscribe(self._on_write_response, nrf_events.GattcEvtWriteResponse)
+        self.peer.driver_event_subscribe(self._on_write_response, nrf_events.GattcEvtWriteResponse)
         self._len_bytes_written = 0
 
     @property

@@ -25,7 +25,7 @@ class GattcReader(object):
         self._data = bytearray()
         self._handle = 0x0000
         self._offset = 0
-        self.ble_device.ble_driver.event_subscribe(self._on_read_response, nrf_events.GattcEvtReadResponse)
+        self.peer.driver_event_subscribe(self._on_read_response, nrf_events.GattcEvtReadResponse)
 
     @property
     def on_read_complete(self):

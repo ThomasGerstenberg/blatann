@@ -51,8 +51,12 @@ class _DiscoveryState(object):
         return self.services[self.service_index]
 
 
-class Discoverer(object):
+class _Discoverer(object):
     def __init__(self, name, ble_device, peer):
+        """
+        :type ble_device: blatann.BleDevice
+        :type peer: blatann.peer.Peripheral
+        """
         self.ble_device = ble_device
         self.peer = peer
         self._state = _DiscoveryState()
@@ -69,9 +73,9 @@ class Discoverer(object):
         return self._on_complete_event
 
 
-class ServiceDiscoverer(Discoverer):
+class _ServiceDiscoverer(_Discoverer):
     def __init__(self, ble_device, peer):
-        super(ServiceDiscoverer, self).__init__("Service Discovery", ble_device, peer)
+        super(_ServiceDiscoverer, self).__init__("Service Discovery", ble_device, peer)
 
     def start(self, services=None):
         self._state.reset()
@@ -79,17 +83,13 @@ class ServiceDiscoverer(Discoverer):
         self.ble_device.ble_driver.ble_gattc_prim_srvc_disc(self.peer.conn_handle, None,
                                                             self._state.current_handle)
 
-        self.ble_device.ble_driver.event_subscribe(self._on_primary_service_discovery,
-                                                   nrf_events.GattcEvtPrimaryServiceDiscoveryResponse)
-        self.ble_device.ble_driver.event_subscribe(self._on_service_uuid_read,
-                                                   nrf_events.GattcEvtReadResponse)
+        self.peer.driver_event_subscribe(self._on_primary_service_discovery, nrf_events.GattcEvtPrimaryServiceDiscoveryResponse)
+        self.peer.driver_event_subscribe(self._on_service_uuid_read, nrf_events.GattcEvtReadResponse)
         return EventWaitable(self.on_complete)
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
-        self.ble_device.ble_driver.event_unsubscribe(self._on_primary_service_discovery,
-                                                     nrf_events.GattcEvtPrimaryServiceDiscoveryResponse)
-        self.ble_device.ble_driver.event_unsubscribe(self._on_service_uuid_read,
-                                                     nrf_events.GattcEvtReadResponse)
+        self.peer.driver_event_unsubscribe(self._on_primary_service_discovery)
+        self.peer.driver_event_unsubscribe(self._on_service_uuid_read)
         self._on_complete_event.notify(self._state.services, status)
 
     def _on_primary_service_discovery(self, driver, event):
@@ -151,31 +151,27 @@ class ServiceDiscoverer(Discoverer):
         self._discover_uuids()
 
 
-class CharacteristicDiscoverer(Discoverer):
+class _CharacteristicDiscoverer(_Discoverer):
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peripheral
         """
-        super(CharacteristicDiscoverer, self).__init__("Characteristic Discovery", ble_device, peer)
+        super(_CharacteristicDiscoverer, self).__init__("Characteristic Discovery", ble_device, peer)
 
     def start(self, services):
         self._state.reset()
         self._state.services = services
 
-        self.ble_device.ble_driver.event_subscribe(self._on_characteristic_discovery,
-                                                   nrf_events.GattcEvtCharacteristicDiscoveryResponse)
-        self.ble_device.ble_driver.event_subscribe(self._on_char_uuid_read,
-                                                   nrf_events.GattcEvtReadResponse)
+        self.peer.driver_event_subscribe(self._on_characteristic_discovery, nrf_events.GattcEvtCharacteristicDiscoveryResponse)
+        self.peer.driver_event_subscribe(self._on_char_uuid_read, nrf_events.GattcEvtReadResponse)
 
         self._discover_characteristics()
         return EventWaitable(self.on_complete)
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
-        self.ble_device.ble_driver.event_unsubscribe(self._on_characteristic_discovery,
-                                                     nrf_events.GattcEvtCharacteristicDiscoveryResponse)
-        self.ble_device.ble_driver.event_unsubscribe(self._on_char_uuid_read,
-                                                     nrf_events.GattcEvtReadResponse)
+        self.peer.driver_event_unsubscribe(self._on_characteristic_discovery)
+        self.peer.driver_event_unsubscribe(self._on_char_uuid_read)
         self._on_complete_event.notify(self._state.services, status)
 
     def _discover_characteristics(self):
@@ -264,13 +260,13 @@ class CharacteristicDiscoverer(Discoverer):
         self._discover_uuids()
 
 
-class DescriptorDiscoverer(Discoverer):
+class _DescriptorDiscoverer(_Discoverer):
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peripheral
         """
-        super(DescriptorDiscoverer, self).__init__("Descriptor Discovery", ble_device, peer)
+        super(_DescriptorDiscoverer, self).__init__("Descriptor Discovery", ble_device, peer)
         self._state.iterate_by_chars = True
 
     def start(self, services):
@@ -278,8 +274,7 @@ class DescriptorDiscoverer(Discoverer):
         self._state.services = services
         # Compile the characteristics into a single list so its easier to iterate
         map(self._state.characteristics.extend, [s.chars for s in services])
-        self.ble_device.ble_driver.event_subscribe(self._on_descriptor_discovery,
-                                                   nrf_events.GattcEvtDescriptorDiscoveryResponse)
+        self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
         on_complete_waitable = EventWaitable(self.on_complete)
         if not self._state.characteristics:
             self._on_complete()
@@ -288,16 +283,14 @@ class DescriptorDiscoverer(Discoverer):
         return on_complete_waitable
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
-        self.ble_device.ble_driver.event_unsubscribe(self._on_descriptor_discovery,
-                                                     nrf_events.GattcEvtDescriptorDiscoveryResponse)
+        self.peer.driver_event_unsubscribe(self._on_descriptor_discovery)
         self._on_complete_event.notify(self._state.services, status)
 
     def _discover_descriptors(self, starting_handle=None):
         char = self._state.current_characteristic
         if starting_handle is None:
             starting_handle = char.handle_value
-        self.ble_device.ble_driver.event_subscribe(self._on_descriptor_discovery,
-                                                   nrf_events.GattcEvtDescriptorDiscoveryResponse)
+        self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
         self.ble_device.ble_driver.ble_gattc_desc_disc(self.peer.conn_handle, starting_handle, char.end_handle)
 
     def _on_descriptor_discovery(self, driver, event):
@@ -341,9 +334,9 @@ class DatabaseDiscoverer(object):
         self._on_discovery_complete = EventSource("Service Discovery Complete", logger)
         self._on_database_discovery_complete = EventSource("Service Discovery Complete", logger)
         self._state = _DiscoveryState()
-        self._service_discoverer = ServiceDiscoverer(ble_device, peer)
-        self._characteristic_discoverer = CharacteristicDiscoverer(ble_device, peer)
-        self._descriptor_discoverer = DescriptorDiscoverer(ble_device, peer)
+        self._service_discoverer = _ServiceDiscoverer(ble_device, peer)
+        self._characteristic_discoverer = _CharacteristicDiscoverer(ble_device, peer)
+        self._descriptor_discoverer = _DescriptorDiscoverer(ble_device, peer)
 
     @property
     def on_discovery_complete(self):

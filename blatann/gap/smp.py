@@ -43,10 +43,7 @@ class SecurityManager(object):
         self._on_authentication_complete_event = EventSource("On Authentication Complete", logger)
         self._on_passkey_display_event = EventSource("On Passkey Display", logger)
         self._on_passkey_entry_event = EventSource("On Passkey Entry")
-        self.ble_device.ble_driver.event_subscribe(self._on_security_params_request, nrf_events.GapEvtSecParamsRequest)
-        self.ble_device.ble_driver.event_subscribe(self._on_authentication_status, nrf_events.GapEvtAuthStatus)
-        self.ble_device.ble_driver.event_subscribe(self._on_auth_key_request, nrf_events.GapEvtAuthKeyRequest)
-        self.ble_device.ble_driver.event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
+        self.peer.on_connect.register(self._on_peer_connected)
 
     @property
     def on_pairing_complete(self):
@@ -77,6 +74,12 @@ class SecurityManager(object):
 
     def _event_for_peer(self, event):
         return self.peer.connected and self.peer.conn_handle == event.conn_handle
+
+    def _on_peer_connected(self, peer):
+        self.peer.driver_event_subscribe(self._on_security_params_request, nrf_events.GapEvtSecParamsRequest)
+        self.peer.driver_event_subscribe(self._on_authentication_status, nrf_events.GapEvtAuthStatus)
+        self.peer.driver_event_subscribe(self._on_auth_key_request, nrf_events.GapEvtAuthKeyRequest)
+        self.peer.driver_event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
 
     def _get_security_params(self):
         keyset_own = nrf_types.BLEGapSecKeyDist()

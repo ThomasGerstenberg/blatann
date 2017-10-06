@@ -172,9 +172,19 @@ class NrfDriver(object):
                     handlers.append(handler)
 
     def event_unsubscribe(self, handler, *event_types):
+        if not event_types:
+            self.event_unsubscribe_all(handler)
+            return
+
         with self._event_observer_lock:
             for event_type in event_types:
                 handlers = self._event_observers.get(event_type, [])
+                if handler in handlers:
+                    handlers.remove(handler)
+
+    def event_unsubscribe_all(self, handler):
+        with self._event_observer_lock:
+            for event_type, handlers in self._event_observers.items():
                 if handler in handlers:
                     handlers.remove(handler)
 

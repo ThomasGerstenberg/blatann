@@ -85,7 +85,7 @@ class CountingCharacteristicThread(object):
             try:
                 self.characteristic.set_value(value, notify_client=True)
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
         self._stopped.set()
 
 

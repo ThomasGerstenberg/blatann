@@ -39,7 +39,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
         self.writer.on_write_complete.register(self._write_complete)
         self.reader.on_read_complete.register(self._read_complete)
-        self.ble_device.ble_driver.event_subscribe(self._on_indication_notification, nrf_events.GattcEvtHvx)
+        self.peer.driver_event_subscribe(self._on_indication_notification, nrf_events.GattcEvtHvx)
 
     """
     Properties
