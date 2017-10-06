@@ -152,6 +152,9 @@ class NrfDriver(object):
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def close(self):
+        with self._event_observer_lock:
+            self._event_observers = []
+            self.observers = []
         self._event_thread_join()
         return driver.sd_rpc_close(self.rpc_adapter)
 
@@ -177,7 +180,8 @@ class NrfDriver(object):
 
     def observer_register(self, observer):
         with self._event_observer_lock:
-            self.observers.append(observer)
+            if observer not in self.observers:
+                self.observers.append(observer)
 
     def observer_unregister(self, observer):
         with self._event_observer_lock:

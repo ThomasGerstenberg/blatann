@@ -50,9 +50,12 @@ class BleDevice(NrfDriverObserver):
         self._db = gatts.GattsDatabase(self, self.client)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
 
-    def __del__(self):
+    def close(self):
         self.ble_driver.observer_unregister(self)
         self.ble_driver.close()
+
+    def __del__(self):
+        self.close()
 
     @property
     def database(self):
