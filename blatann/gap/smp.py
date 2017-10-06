@@ -1,4 +1,5 @@
 import logging
+import threading
 from blatann.nrf import nrf_types, nrf_events
 from blatann.exceptions import InvalidStateException, InvalidOperationException
 from blatann.event_type import EventSource, Event
@@ -44,6 +45,7 @@ class SecurityManager(object):
         self._on_passkey_display_event = EventSource("On Passkey Display", logger)
         self._on_passkey_entry_event = EventSource("On Passkey Entry")
         self.peer.on_connect.register(self._on_peer_connected)
+        self._auth_key_resolve_thread = threading.Thread()
 
     @property
     def on_pairing_complete(self):
@@ -72,10 +74,8 @@ class SecurityManager(object):
         self._busy = True
         return EventWaitable(self.on_pairing_complete)
 
-    def _event_for_peer(self, event):
-        return self.peer.connected and self.peer.conn_handle == event.conn_handle
-
     def _on_peer_connected(self, peer):
+        self._busy = False
         self.peer.driver_event_subscribe(self._on_security_params_request, nrf_events.GapEvtSecParamsRequest)
         self.peer.driver_event_subscribe(self._on_authentication_status, nrf_events.GapEvtAuthStatus)
         self.peer.driver_event_subscribe(self._on_auth_key_request, nrf_events.GapEvtAuthKeyRequest)
@@ -93,8 +93,6 @@ class SecurityManager(object):
         """
         :type event: nrf_events.GapEvtSecParamsRequest
         """
-        if not self._event_for_peer(event):
-            return
         # Security parameters are only provided for clients
         sec_params = self._get_security_params() if self.peer.is_client else None
         keyset = nrf_types.BLEGapSecKeyset()
@@ -117,8 +115,6 @@ class SecurityManager(object):
         """
         :type event: nrf_events.GapEvtAuthStatus
         """
-        if not self._event_for_peer(event):
-            return
         self._busy = False
         self._on_authentication_complete_event.notify(self.peer, event.auth_status)
 
@@ -126,8 +122,6 @@ class SecurityManager(object):
         """
         :type event: nrf_events.GapEvtPasskeyDisplay
         """
-        if not self._event_for_peer(event):
-            return
         # TODO: Better way to handle match request
         self._on_passkey_display_event.notify(self.peer, event.passkey, event.match_request)
 
@@ -135,22 +129,20 @@ class SecurityManager(object):
         """
         :type event: nrf_events.GapEvtAuthKeyRequest
         """
-        if not self._event_for_peer(event):
-            return
-
         def resolve(passkey):
             if not self._busy:
                 return
             self.ble_device.ble_driver.ble_gap_auth_key_reply(self.peer.conn_handle, event.key_type, passkey)
 
-        self._on_passkey_entry_event.notify(self.peer, event.key_type, resolve)
+        self._auth_key_resolve_thread = threading.Thread(name="{} Passkey Entry".format(self.peer.conn_handle),
+                                                         target=self._on_passkey_entry_event.notify,
+                                                         args=(self.peer, event.key_type, resolve))
+        self._auth_key_resolve_thread.start()
 
     def _on_timeout(self, driver, event):
         """
         :type event: nrf_events.GapEvtTimeout
         """
-        if not self._event_for_peer(event):
-            return
         if event.src != nrf_types.BLEGapTimeoutSrc.security_req:
             return
-        # TODO
+        self._on_authentication_complete_event.notify(self.peer, SecurityStatus.timeout)
