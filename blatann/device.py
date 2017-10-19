@@ -31,7 +31,7 @@ class _EventLogger(NrfDriverObserver):
                 logger.debug("Got NRF Driver event: {}".format(event))
 
 
-class UuidManager(object):
+class _UuidManager(object):
     def __init__(self, ble_driver):
         """
 
@@ -83,27 +83,35 @@ class UuidManager(object):
 
 
 class BleDevice(NrfDriverObserver):
-    def __init__(self, comport="COM1"):
-        self.ble_driver = NrfDriver(comport)
+    def __init__(self, comport="COM1", baud=115200):
+        self.ble_driver = NrfDriver(comport, baud)
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
-        self.ble_driver.open()
-        # TODO: BLE Configuration
-        self.ble_driver.ble_enable()
+        self._ble_configuration = self.ble_driver.ble_enable_params_setup()
 
         self.client = peer.Client(self)
         self.connected_peripherals = {}
         self.connecting_peripheral = None
 
-        self.uuid_manager = UuidManager(self.ble_driver)
+        self.uuid_manager = _UuidManager(self.ble_driver)
         self.advertiser = advertising.Advertiser(self, self.client)
         self.scanner = scanning.Scanner(self)
         self._db = gatts.GattsDatabase(self, self.client)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
 
+    def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
+                  max_connected_clients=1, max_secured_peripherals=1,
+                  attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT):
+        self._ble_configuration = nrf_types.BLEEnableParams(vendor_specific_uuid_count, service_changed,
+                                                            max_connected_clients, max_connected_peripherals,
+                                                            max_secured_peripherals, attribute_table_size)
+
+    def open(self):
+        self.ble_driver.open()
+        self.ble_driver.ble_enable(self._ble_configuration)
+
     def close(self):
-        self.ble_driver.observer_unregister(self)
         self.ble_driver.close()
 
     def __del__(self):

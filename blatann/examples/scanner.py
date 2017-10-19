@@ -6,6 +6,7 @@ logger = example_utils.setup_logger(level="INFO")
 
 def main(serial_port):
     ble_device = BleDevice(serial_port)
+    ble_device.open()
 
     logger.info("Scanning...")
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
@@ -15,6 +16,8 @@ def main(serial_port):
 
     for report in scan_report.advertising_peers_found:
         logger.info(report)
+
+    ble_device.close()
 
 
 if __name__ == '__main__':

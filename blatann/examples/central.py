@@ -26,6 +26,7 @@ def main(serial_port):
 
     ble_device = BleDevice(serial_port)
     ble_device.event_logger.suppress(nrf_events.GapEvtAdvReport)
+    ble_device.open()
 
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
 
@@ -86,6 +87,7 @@ def main(serial_port):
 
     logger.info("Disconnecting from peripheral")
     peer.disconnect().wait()
+    ble_device.close()
 
 
 if __name__ == '__main__':

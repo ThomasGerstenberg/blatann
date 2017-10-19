@@ -102,6 +102,7 @@ class CountingCharacteristicThread(object):
 
 def main(serial_port):
     ble_device = BleDevice(serial_port)
+    ble_device.open()
 
     # Set up desired security parameters
     ble_device.client.security.set_security_params(True, smp.IoCapabilities.DISPLAY_ONLY, False, False)
@@ -134,6 +135,7 @@ def main(serial_port):
         event = sync.get(timeout=60*30)  # Advertise for 30 mins
     counting_char_thread.join()
     logger.info("Done")
+    ble_device.close()
     
 
 if __name__ == '__main__':
