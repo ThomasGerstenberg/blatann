@@ -33,6 +33,9 @@ class SecurityParameters(object):
 
 
 class SecurityManager(object):
+    """
+    Handles performing security procedures with a connected peer
+    """
     def __init__(self, ble_device, peer, security_parameters):
         """
         :type ble_device: blatann.BleDevice
@@ -49,23 +52,74 @@ class SecurityManager(object):
         self.peer.on_connect.register(self._on_peer_connected)
         self._auth_key_resolve_thread = threading.Thread()
 
+    """
+    Events
+    """
+
     @property
     def on_pairing_complete(self):
+        """
+        Event that is triggered when pairing completes with the peer
+        EventArgs type: PairingCompleteEventArgs
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
         return self._on_authentication_complete_event
 
     @property
     def on_passkey_display_required(self):
+        """
+        Event that is triggered when a passkey needs to be displayed to the user
+        EventArgs type: PasskeyDisplayEventArgs
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
         return self._on_passkey_display_event
 
     @property
     def on_passkey_required(self):
+        """
+        Event that is triggered when a passkey needs to be entered by the user
+        EventArgs type: PasskeyEntryEventArgs
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
         return self._on_passkey_entry_event
 
+    """
+    Public Methods
+    """
+
     def set_security_params(self, passcode_pairing, io_capabilities, bond, out_of_band, reject_pairing_requests=False):
+        """
+        Sets the security parameters to use with the peer
+
+        :param passcode_pairing: Flag indicating that passcode pairing is required
+        :type passcode_pairing: bool
+        :param io_capabilities: The input/output capabilities of this device
+        :type io_capabilities: IoCapabilities
+        :param bond: Flag indicating that long-term bonding should be performed
+        :type bond: bool
+        :param out_of_band: Flag indicating if out-of-band pairing is supported
+        :type out_of_band: bool
+        :param reject_pairing_requests: Flag indicating that all security requests by the peer should be rejected
+        :type reject_pairing_requests: bool
+        """
         self.security_params = SecurityParameters(passcode_pairing, io_capabilities, bond, out_of_band,
                                                   reject_pairing_requests)
 
     def pair(self):
+        """
+        Starts the pairing process with the peer given the set security parameters
+        and returns a Waitable which will fire when the pairing process completes, whether successful or not.
+        Waitable returns two parameters: (Peer, PairingCompleteEventArgs)
+
+        :return: A waitiable that will fire when pairing is complete
+        :rtype: blatann.waitables.EventWaitable
+        """
         if self._busy:
             raise InvalidStateException("Security manager busy")
         if self.security_params.reject_pairing_requests:
@@ -75,6 +129,10 @@ class SecurityManager(object):
         self.ble_device.ble_driver.ble_gap_authenticate(self.peer.conn_handle, sec_params)
         self._busy = True
         return EventWaitable(self.on_pairing_complete)
+
+    """
+    Private Methods
+    """
 
     def _on_peer_connected(self, peer, event_args):
         self._busy = False
@@ -118,7 +176,7 @@ class SecurityManager(object):
         :type event: nrf_events.GapEvtAuthStatus
         """
         self._busy = False
-        self._on_authentication_complete_event.notify(self.peer, AuthenticationStatusEventArgs(event.auth_status))
+        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(event.auth_status))
 
     def _on_passkey_display(self, driver, event):
         """
@@ -147,4 +205,4 @@ class SecurityManager(object):
         """
         if event.src != nrf_types.BLEGapTimeoutSrc.security_req:
             return
-        self._on_authentication_complete_event.notify(self.peer, AuthenticationStatusEventArgs(SecurityStatus.timeout))
+        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(SecurityStatus.timeout))

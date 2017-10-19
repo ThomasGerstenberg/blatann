@@ -1,7 +1,7 @@
 from blatann import BleDevice
 from blatann.examples import example_utils
 
-logger = example_utils.setup_logger(level="DEBUG")
+logger = example_utils.setup_logger(level="INFO")
 
 
 def main(serial_port):

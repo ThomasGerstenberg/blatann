@@ -59,7 +59,7 @@ def on_time_char_read(characteristic, event_args):
 def on_client_pairing_complete(peer, event_args):
     """
     :param peer:
-    :type event_args: blatann.event_args.AuthenticationStatusEventArgs
+    :type event_args: blatann.event_args.PairingCompleteEventArgs
     """
     logger.info("Client Pairing complete, status: {}".format(event_args.status))
 

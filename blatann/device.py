@@ -1,12 +1,13 @@
 import logging
 from threading import Lock
 
-from blatann import uuid, peer, exceptions
+from blatann import peer, exceptions
 from blatann.gap import advertising, scanning
 from blatann.gatt import gatts
-from blatann.nrf import nrf_events
+from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver
 from blatann.nrf.nrf_observers import NrfDriverObserver
+from blatann.uuid import Uuid, Uuid16, Uuid128
 from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,57 @@ class _EventLogger(NrfDriverObserver):
                 logger.debug("Got NRF Driver event: {}".format(event))
 
 
+class UuidManager(object):
+    def __init__(self, ble_driver):
+        """
+
+        :type ble_driver: pc_ble_driver_py.nrf_driver.NrfDriver
+        """
+        self.ble_driver = ble_driver
+        self.registered_vs_uuids = []
+
+    def register_uuid(self, uuid):
+        if isinstance(uuid, Uuid16):
+            return  # Don't need to register standard 16-bit UUIDs
+        elif isinstance(uuid, Uuid128):
+            # Check if the base is already registered. If so, do nothing
+            for registered_base in self.registered_vs_uuids:
+                if uuid.uuid_base == registered_base.base:
+                    uuid.nrf_uuid = nrf_types.BLEUUID(uuid.uuid16, registered_base)
+                    return
+            # Not registered, create a base
+            base = nrf_types.BLEUUIDBase(uuid.uuid_base)
+            self.ble_driver.ble_vs_uuid_add(base)
+            self.registered_vs_uuids.append(base)
+            uuid.nrf_uuid = nrf_types.BLEUUID(uuid.uuid16, base)
+        elif isinstance(uuid, nrf_types.BLEUUID):
+            self.ble_driver.ble_vs_uuid_add(uuid.base)
+            self.registered_vs_uuids.append(uuid.base)
+        elif isinstance(uuid, nrf_types.BLEUUIDBase):
+            self.ble_driver.ble_vs_uuid_add(uuid)
+            self.registered_vs_uuids.append(uuid.base)
+        else:
+            raise ValueError("uuid must be a 16-bit or 128-bit UUID")
+
+    def nrf_uuid_to_uuid(self, nrf_uuid):
+        """
+        :type nrf_uuid: BLEUUID
+        :rtype: Uuid
+        """
+        if nrf_uuid.base.type == 0:
+            raise ValueError("UUID Not registered: {}".format(nrf_uuid))
+        if nrf_uuid.base.type == nrf_types.BLEUUIDBase.BLE_UUID_TYPE_BLE:
+            return Uuid16(nrf_uuid.get_value())
+        base = None
+        for uuid_base in self.registered_vs_uuids:
+            if nrf_uuid.base.type == uuid_base.type:
+                base = uuid_base
+
+        if base is None:
+            raise ValueError("Unable to find registered 128-bit uuid: {}".format(nrf_uuid))
+        return Uuid128.combine_with_base(nrf_uuid.value, base.base)
+
+
 class BleDevice(NrfDriverObserver):
     def __init__(self, comport="COM1"):
         self.ble_driver = NrfDriver(comport)
@@ -44,7 +96,7 @@ class BleDevice(NrfDriverObserver):
         self.connected_peripherals = {}
         self.connecting_peripheral = None
 
-        self.uuid_manager = uuid.UuidManager(self.ble_driver)
+        self.uuid_manager = UuidManager(self.ble_driver)
         self.advertiser = advertising.Advertiser(self, self.client)
         self.scanner = scanning.Scanner(self)
         self._db = gatts.GattsDatabase(self, self.client)

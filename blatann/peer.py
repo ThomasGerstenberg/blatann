@@ -34,6 +34,9 @@ DEFAULT_SECURITY_PARAMS = smp.SecurityParameters(reject_pairing_requests=True)
 
 
 class Peer(object):
+    """
+    Object that represents a BLE-connected (or disconnected) peer
+    """
     BLE_CONN_HANDLE_INVALID = BLE_CONN_HANDLE_INVALID
 
     def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS,
@@ -55,31 +58,81 @@ class Peer(object):
         self._connection_handler_lock = threading.Lock()
         self.security = smp.SecurityManager(self._ble_device, self, security_params)
 
+    """
+    Properties
+    """
+
     @property
     def connected(self):
+        """
+        Gets if this peer is currently connected
+
+        :return: True if connected, False if not
+        """
         return self.connection_state == PeerState.CONNECTED
 
     @property
-    def on_connect(self):
-        return self._on_connect
-
-    @property
-    def on_disconnect(self):
-        return self._on_disconnect
-
-    @property
     def mtu_size(self):
+        """
+        Gets the current size of the MTU for the peer
+
+        :return: The current MTU size
+        """
         return self._mtu_size
 
     @property
     def is_peripheral(self):
+        """
+        Gets if this peer is a Peripheral (the local device acting as a central/client)
+        """
         return isinstance(self, Peripheral)
 
     @property
     def is_client(self):
+        """
+        Gets if this peer is a Client (the local device acting as a peripheral/server)
+        """
         return isinstance(self, Client)
 
+    """
+    Events
+    """
+
+    @property
+    def on_connect(self):
+        """
+        Event generated when the peer connects to the local device
+
+        Event Args: None
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
+        return self._on_connect
+
+    @property
+    def on_disconnect(self):
+        """
+        Event generated when the peer disconnects from the local device
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
+        return self._on_disconnect
+
+    """
+    Public Methods
+    """
+
     def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection):
+        """
+        Disconnects from the peer, giving the optional status code.
+        Returns a waitable that will fire when the disconnection is complete
+
+        :param status_code: The HCI Status code to send back to the peer
+        :return: A waitable that will fire when the peer is disconnected
+        :rtype: connection_waitable.DisconnectionWaitable
+        """
         if self.connection_state != PeerState.CONNECTED:
             return
         self._ble_device.ble_driver.ble_gap_disconnect(self.conn_handle, status_code)
@@ -87,6 +140,14 @@ class Peer(object):
 
     def set_connection_parameters(self, min_connection_interval_ms, max_connection_interval_ms, connection_timeout_ms,
                                   slave_latency=0):
+        """
+        Sets the connection parameters for the peer and starts the connection parameter update process
+
+        :param min_connection_interval_ms: The minimum acceptable connection interval, in milliseconds
+        :param max_connection_interval_ms: The maximum acceptable connection interval, in milliseconds
+        :param connection_timeout_ms: The connection timeout, in milliseconds
+        :param slave_latency: The slave latency allowed
+        """
         self._ideal_connection_params = ConnectionParameters(min_connection_interval_ms, max_connection_interval_ms,
                                                              connection_timeout_ms, slave_latency)
         if not self.connected:
@@ -94,7 +155,14 @@ class Peer(object):
         # Do stuff to set the connection parameters
         self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._ideal_connection_params)
 
+    """
+    Internal Library Methods
+    """
+
     def peer_connected(self, conn_handle, peer_address, connection_params):
+        """
+        Internal method called when the peer connects to set up the object
+        """
         self.conn_handle = conn_handle
         self.peer_address = peer_address
         self._disconnect_waitable = connection_waitable.DisconnectionWaitable(self)
@@ -118,6 +186,13 @@ class Peer(object):
         return f
 
     def driver_event_subscribe(self, handler, *event_types):
+        """
+        Internal method that subscribes handlers to NRF Driver events directed at this peer.
+        Handlers are automatically unsubscribed once the peer disconnects
+
+        :param handler: The handler to subscribe
+        :param event_types: The NRF Driver event types to subscribe to
+        """
         wrapped_handler = self._check_driver_event_connection_handle_wrapper(handler)
         with self._connection_handler_lock:
             if handler not in self._connection_based_driver_event_handlers:
@@ -125,12 +200,22 @@ class Peer(object):
                 self._ble_device.ble_driver.event_subscribe(wrapped_handler, *event_types)
 
     def driver_event_unsubscribe(self, handler, *event_types):
+        """
+        Internal method that unsubscribes handlers from NRF Driver events
+
+        :param handler: The handler to unsubscribe
+        :param event_types: The event types to unsubscribe from
+        """
         with self._connection_handler_lock:
             wrapped_handler = self._connection_based_driver_event_handlers.get(handler, None)
             logger.info("Unsubscribing {} ({})".format(handler, wrapped_handler))
             if wrapped_handler:
                 self._ble_device.ble_driver.event_unsubscribe(wrapped_handler, *event_types)
                 del self._connection_based_driver_event_handlers[handler]
+
+    """
+    Private Methods
+    """
 
     def _on_disconnect_event(self, driver, event):
         """
@@ -170,6 +255,9 @@ class Peer(object):
 
 
 class Peripheral(Peer):
+    """
+    Object which represents a BLE-connected device that is acting as a peripheral/server (local device is client/central)
+    """
     def __init__(self, ble_device, peer_address, connection_params=DEFAULT_CONNECTION_PARAMS):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params)
         self.peer_address = peer_address
@@ -179,13 +267,32 @@ class Peripheral(Peer):
 
     @property
     def database(self):
+        """
+        Gets the database on the peripheral.
+        NOTE: This is not useful until services are discovered first
+
+        :return: The database instance
+        :rtype: gattc.GattcDatabase
+        """
         return self._db
 
     def discover_services(self):
+        """
+        Starts the database discovery process of the peripheral. This will discover all services, characteristics, and
+        descriptors on the remote database.
+        Returns an EventWaitable that will fire when the service discovery completes.
+        Waitable returns 2  parameters: (Peripheral this, DatabaseDiscoveryCompleteEventArgs event args)
+
+        :return: a Waitable that will fire when service discovery is complete
+        :rtype: event_waitable.EventWaitable
+        """
         self._discoverer.start()
         return event_waitable.EventWaitable(self._discoverer.on_discovery_complete)
 
 
 class Client(Peer):
+    """
+    Object which represents a BLE-connected device that is acting as a client/central (local device is peripheral/server)
+    """
     def __init__(self, ble_device, connection_params=DEFAULT_CONNECTION_PARAMS):
         super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params)

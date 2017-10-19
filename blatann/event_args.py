@@ -13,7 +13,7 @@ class DisconnectionEventArgs(EventArgs):
 
 # SMP Event Args
 
-class AuthenticationStatusEventArgs(EventArgs):
+class PairingCompleteEventArgs(EventArgs):
     def __init__(self, status):
         self.status = status
 

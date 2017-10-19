@@ -3,7 +3,9 @@ from threading import Lock
 
 class Event(object):
     """
-    Represents an event that can have handlers registered and deregistered
+    Represents an event that can have handlers registered and deregistered.
+    All handlers registered to an event should take in two parameters: the event sender and the event arguments.
+    Those familiar with the C#/.NET event architecture, this should look very similar.
     """
     def __init__(self, name):
         self.name = name

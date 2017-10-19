@@ -142,7 +142,7 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         Event generated whenever a client writes to this characteristic.
 
-        Handler args: (GattsCharacteristic this characteristic, bytearray value written)
+        EventArgs type: WriteEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
         :rtype: blatann.event_type.Event
@@ -159,9 +159,9 @@ class GattsCharacteristic(gatt.Characteristic):
         Instead of updating this characteristic every second, it can be "lazily" updated only when read from.
 
         NOTE: if there are multiple handlers subscribed to this and each set the value differently, it may cause
-        unintended behavior.
+        undefined behavior.
 
-        Handler args: (GattsCharacteristic this characteristic)
+        EventArgs type: None
 
         :return: an Event which can have handlers registered to and deregistered from
         :rtype: blatann.event_type.Event
@@ -174,7 +174,7 @@ class GattsCharacteristic(gatt.Characteristic):
         Event that is generated whenever a client changes its subscription state of the characteristic
         (notify, indicate, none).
 
-        Handler args: (GattsCharacteristic this characteristic, blatann.gatt.SubscriptionState new state)
+        EventArgs type: SubscriptionStateChangeEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
         :rtype: blatann.event_type.Event

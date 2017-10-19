@@ -57,10 +57,16 @@ class GattcCharacteristic(gatt.Characteristic):
 
     @property
     def readable(self):
+        """
+        Gets if the characteristic can be read from
+        """
         return self._properties.read
 
     @property
     def writable(self):
+        """
+        Gets if the characteristic can be written to
+        """
         return self._properties.write
 
     @property
@@ -86,14 +92,14 @@ class GattcCharacteristic(gatt.Characteristic):
         Subscribes to the characteristic's indications or notifications, depending on what's available and the
         prefer_indications setting. Returns a Waitable that executes when the subscription on the peripheral finishes.
 
-        The Waitable returns three parameters: (GattcCharacteristic this, gatt.GattStatusCode, gatt.SubscriptionState)
+        The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
 
         :param on_notification_handler: The handler to be called when an indication or notification is received from
         the peripheral. Must take three parameters: (GattcCharacteristic this, gatt.GattNotificationType, bytearray data)
         :param prefer_indications: If the peripheral supports both indications and notifications,
                                    will subscribe to indications instead of notifications
         :return: A Waitable that will fire when the subscription finishes
-        :rtype: blatann.waitables.Waitable
+        :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if the characteristic cannot be subscribed to (does not support indications or notifications
         """
         if not self.subscribable:
@@ -112,9 +118,10 @@ class GattcCharacteristic(gatt.Characteristic):
         for the characteristic's on_notification event handler. Returns a Waitable that executes when the unsubscription
         finishes.
 
-        The Waitable returns three parameters: (GattcCharacteristic this, gatt.GattStatusCode, gatt.SubscriptionState)
+        The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
 
-        :return:
+        :return: A Waitable that will fire when the unsubscription finishes
+        :rtype: blatann.waitables.EventWaitable
         """
         if not self.subscribable:
             raise InvalidOperationException("Characteristic {} is not subscribable".format(self.uuid))
@@ -129,10 +136,10 @@ class GattcCharacteristic(gatt.Characteristic):
         Initiates a read of the characteristic and returns a Waitable that executes when the read finishes with
         the data read.
 
-        The Waitable returns three parameters: (GattcCharacteristic this, gatt.GattStatusCode, bytearray data)
+        The Waitable returns two parameters: (GattcCharacteristic this, ReadCompleteEventArgs event args)
 
         :return: A waitable that will fire when the read finishes
-        :rtype: blatann.waitables.Waitable
+        :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if characteristic not readable
         """
         if not self.readable:
@@ -145,11 +152,11 @@ class GattcCharacteristic(gatt.Characteristic):
         Initiates a write of the data provided to the characteristic and returns a Waitable that executes
         when the write completes.
 
-        The Waitable returns three parameters: (GattcCharacteristic this, gatt.GattStatusCode status, bytearray data)
+        The Waitable returns two parameters: (GattcCharacteristic this, WriteCompleteEventArgs event args)
 
         :param data: The data to write. Can be a string, bytearray, or anything that can be converted to a bytearray
         :return: A waitable that returns when the write finishes
-        :rtype: blatann.waitables.Waitable
+        :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if characteristic is not writable
         """
         if not self.writable:
