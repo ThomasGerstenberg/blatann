@@ -1,4 +1,3 @@
-import time
 import struct
 from blatann import BleDevice, uuid
 from blatann.gap import smp
@@ -8,21 +7,13 @@ from blatann.nrf import nrf_events
 logger = example_utils.setup_logger(level="DEBUG")
 
 
-def find_target_device(ble_device, name):
-    scan_report = ble_device.scanner.start_scan().wait()
-
-    for report in scan_report.advertising_peers_found:
-        if report.advertise_data.local_name == name:
-            return report.peer_address
-
-
 def on_counting_char_notification(characteristic, event_args):
     current_count = struct.unpack("<I", event_args.value)[0]
     logger.info("Counting char notification. Curent count: {}".format(current_count))
 
 
 def main(serial_port):
-    target_device_name = "Periph Test"
+    target_device_name = constants.PERIPHERAL_NAME
 
     ble_device = BleDevice(serial_port)
     ble_device.event_logger.suppress(nrf_events.GapEvtAdvReport)
@@ -31,8 +22,7 @@ def main(serial_port):
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
 
     logger.info("Scanning for '{}'".format(target_device_name))
-    logger.info("Scanning...")
-    target_address = find_target_device(ble_device, target_device_name)
+    target_address = example_utils.find_target_device(ble_device, target_device_name)
 
     if not target_address:
         logger.info("Did not find target peripheral")
@@ -73,7 +63,7 @@ def main(serial_port):
     if hex_convert_char:
         logger.info("Testing writes")
         data_to_convert = bytearray(ord('A') + i for i in range(12))
-        for i in range(constants.HEX_CONVERT_CHAR_PROPERTIES.max_len/2):
+        for i in range(len(data_to_convert)):
             data_to_send = data_to_convert[:i+1]
             logger.info("Converting to hex data: '{}'".format(data_to_send))
             if not hex_convert_char.write(data_to_send).wait(5, False):
@@ -83,7 +73,7 @@ def main(serial_port):
             char, event_args = hex_convert_char.read().wait(5, False)
             logger.info("Hex: '{}'".format(event_args.value))
     else:
-        logger.warning("Failed to find char1")
+        logger.warning("Failed to find hex convert char")
 
     logger.info("Disconnecting from peripheral")
     peer.disconnect().wait()

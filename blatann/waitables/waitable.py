@@ -33,3 +33,8 @@ class Waitable(object):
         self._queue.put(results)
         if self._callback:
             self._callback(*results)
+
+
+class GenericWaitable(Waitable):
+    def notify(self, *results):
+        self._notify(*results)
