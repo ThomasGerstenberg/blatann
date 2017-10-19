@@ -11,9 +11,10 @@ from blatann.nrf.nrf_event_sync import EventSync
 logger = example_utils.setup_logger(level="DEBUG")
 
 
-def on_connect(peer):
+def on_connect(peer, event_args):
     """
-    :type peer: blatann.peer.Peer or None
+    :type peer: blatann.peer.Peer
+    :type event_args: None
     """
     if peer:
         logger.info("Connected to peer")
@@ -21,32 +22,33 @@ def on_connect(peer):
         logger.warning("Connection timed out")
 
 
-def on_disconnect(peer, reason):
-    logger.info("Disconnected from peer, reason: {}".format(reason))
+def on_disconnect(peer, event_args):
+    logger.info("Disconnected from peer, reason: {}".format(event_args.reason))
 
 
-def on_gatts_characteristic_write(characteristic, value):
+def on_gatts_characteristic_write(characteristic, event_args):
     """
     :type characteristic: blatann.gatts.GattsCharacteristic
-    :type value: bytearray
+    :type event_args: blatann.event_args.WriteEventArgs
     """
     logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
-                                                                                   str(value).encode("hex")))
-    new_value = "{}".format(str(value).encode("hex"))
+                                                                                   str(event_args.value).encode("hex")))
+    new_value = "{}".format(str(event_args.value).encode("hex"))
     characteristic.set_value(new_value[:characteristic.max_length], True)
 
 
-def on_gatts_subscription_state_changed(characteristic, new_state):
+def on_gatts_subscription_state_changed(characteristic, event_args):
     """
     :type characteristic: blatann.gatts.GattsCharacteristic
-    :type new_state: blatann.gatt.SubscriptionState
+    :type event_args: blatann.event_args.SubscriptionStateChangeEventArgs
     """
-    logger.info("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, new_state))
+    logger.info("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, event_args.subscription_state))
 
 
-def on_time_char_read(characteristic):
+def on_time_char_read(characteristic, event_args):
     """
     :type characteristic: blatann.gatts.GattsCharacteristic
+    :type event_args: None
     """
     t = time.time()
     ms = int((t * 1000) % 1000)
@@ -54,12 +56,21 @@ def on_time_char_read(characteristic):
     characteristic.set_value(msg)
 
 
-def on_client_pairing_complete(peer, status):
-    logger.info("Client Pairing complete, status: {}".format(status))
+def on_client_pairing_complete(peer, event_args):
+    """
+    :param peer:
+    :type event_args: blatann.event_args.AuthenticationStatusEventArgs
+    """
+    logger.info("Client Pairing complete, status: {}".format(event_args.status))
 
 
-def on_passkey_display(peer, passkey, match):
-    logger.info("Passkey display: {}, match: {}".format(passkey, match))
+def on_passkey_display(peer, event_args):
+    """
+
+    :param peer:
+    :type event_args: blatann.event_args.PasskeyDisplayEventArgs
+    """
+    logger.info("Passkey display: {}, match: {}".format(event_args.passkey, event_args.match_request))
 
 
 class CountingCharacteristicThread(object):

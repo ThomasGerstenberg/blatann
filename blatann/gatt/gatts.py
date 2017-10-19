@@ -4,6 +4,7 @@ from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.exceptions import InvalidOperationException
 from blatann.event_type import EventSource
+from blatann.event_args import *
 
 
 logger = logging.getLogger(__name__)
@@ -204,7 +205,7 @@ class GattsCharacteristic(gatt.Characteristic):
             self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
                                                            nrf_types.BLEGattsValue(new_value))
             self._value = new_value
-            self._on_write.notify(self, self.value)
+            self._on_write.notify(self, WriteEventArgs(self.value))
         self._queued_write_chunks = []
 
     def _on_cccd_write(self, event):
@@ -212,7 +213,7 @@ class GattsCharacteristic(gatt.Characteristic):
         :type event: nrf_events.GattsEvtWrite
         """
         self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(event.data))
-        self._on_sub_change.notify(self, self.cccd_state)
+        self._on_sub_change.notify(self, SubscriptionStateChangeEventArgs(self.cccd_state))
 
     def _on_gatts_write(self, driver, event):
         """
@@ -224,7 +225,7 @@ class GattsCharacteristic(gatt.Characteristic):
         elif event.attribute_handle != self.value_handle:
             return
         self._value = bytearray(event.data)
-        self._on_write.notify(self, self.value)
+        self._on_write.notify(self, WriteEventArgs(self.value))
 
     def _on_write_auth_request(self, write_event):
         """
@@ -296,7 +297,7 @@ class GattsCharacteristic(gatt.Characteristic):
         else:
             logging.error("auth request was not read or write???")
 
-    def _on_disconnect(self, peer, reason):
+    def _on_disconnect(self, peer, event_args):
         if self.cccd_handle and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED:
             self.cccd_state = gatt.SubscriptionState.NOT_SUBSCRIBED
             # TODO: Not working goodly

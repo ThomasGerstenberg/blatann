@@ -6,6 +6,7 @@ from blatann.gatt.writer import GattcWriter
 from blatann.nrf import nrf_types, nrf_events
 from blatann.waitables.event_waitable import EventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
+from blatann.event_args import *
 
 logger = logging.getLogger(__name__)
 
@@ -160,38 +161,40 @@ class GattcCharacteristic(gatt.Characteristic):
     Event Handlers
     """
 
-    def _read_complete(self, handle, status, data):
+    def _read_complete(self, sender, event_args):
         """
         Handler for GattcReader.on_read_complete.
         Dispatches the on_read_complete event and updates the internal value if read was successful
 
-        :param handle: The handle the read completed on
-        :param status: The status of the read
-        :param data: The data read
+        :param sender: The reader that the read completed on
+        :type sender: blatann.gatt.reader.GattcReader
+        :param event_args: The event arguments
+        :type event_args: blatann.gatt.reader.GattcReadCompleteEventArgs
         """
-        if handle == self.value_handle:
-            if status == nrf_types.BLEGattStatusCode.success:
-                self._value = data
-            self._on_read_complete_event.notify(self, status, self._value)
+        if event_args.handle == self.value_handle:
+            if event_args.status == nrf_types.BLEGattStatusCode.success:
+                self._value = event_args.data
+            self._on_read_complete_event.notify(self, ReadCompleteEventArgs(self._value, event_args.status))
 
-    def _write_complete(self, handle, status, data):
+    def _write_complete(self, sender, event_args):
         """
         Handler for GattcWriter.on_write_complete. Dispatches on_write_complete or on_cccd_write_complete
         depending on the handle the write finished on.
 
-        :param handle: The attribute handle the write completed on
-        :param status: The status of the write
-        :param data: The data written
+        :param sender: The writer that the write completed on
+        :type sender: blatann.gatt.writer.GattcWriter
+        :param event_args: The event arguments
+        :type event_args: blatann.gatt.writer.GattcWriteCompleteEventArgs
         """
         # Success, update the local value
-        if handle == self.value_handle:
-            if status == nrf_types.BLEGattStatusCode.success:
-                self._value = data
-            self._on_write_complete_event.notify(self, status, self._value)
-        elif handle == self.cccd_handle:
-            if status == nrf_types.BLEGattStatusCode.success:
-                self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(data))
-            self._on_cccd_write_complete_event.notify(self, status, self.cccd_state)
+        if event_args.handle == self.value_handle:
+            if event_args.status == nrf_types.BLEGattStatusCode.success:
+                self._value = event_args.data
+            self._on_write_complete_event.notify(self, WriteCompleteEventArgs(self._value, event_args.status))
+        elif event_args.handle == self.cccd_handle:
+            if event_args.status == nrf_types.BLEGattStatusCode.success:
+                self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(event_args.data))
+            self._on_cccd_write_complete_event.notify(self, SubscriptionWriteCompleteEventArgs(self.cccd_state, event_args.status))
 
     def _on_indication_notification(self, driver, event):
         """
@@ -201,10 +204,13 @@ class GattcCharacteristic(gatt.Characteristic):
         """
         if event.conn_handle != self.peer.conn_handle or event.attr_handle != self.value_handle:
             return
+
+        is_indication = False
         if event.hvx_type == nrf_events.BLEGattHVXType.indication:
+            is_indication = True
             self.ble_device.ble_driver.ble_gattc_hv_confirm(event.conn_handle, event.attr_handle)
         self._value = bytearray(event.data)
-        self._on_notification_event.notify(self, self._value)
+        self._on_notification_event.notify(self, NotificationReceivedEventArgs(self._value, is_indication))
 
     """
     Factory methods

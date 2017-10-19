@@ -4,6 +4,8 @@ from blatann.nrf import nrf_types, nrf_events
 from blatann.exceptions import InvalidStateException, InvalidOperationException
 from blatann.event_type import EventSource, Event
 from blatann.waitables.event_waitable import EventWaitable
+from blatann.event_args import *
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ class SecurityManager(object):
         self._busy = True
         return EventWaitable(self.on_pairing_complete)
 
-    def _on_peer_connected(self, peer):
+    def _on_peer_connected(self, peer, event_args):
         self._busy = False
         self.peer.driver_event_subscribe(self._on_security_params_request, nrf_events.GapEvtSecParamsRequest)
         self.peer.driver_event_subscribe(self._on_authentication_status, nrf_events.GapEvtAuthStatus)
@@ -116,14 +118,14 @@ class SecurityManager(object):
         :type event: nrf_events.GapEvtAuthStatus
         """
         self._busy = False
-        self._on_authentication_complete_event.notify(self.peer, event.auth_status)
+        self._on_authentication_complete_event.notify(self.peer, AuthenticationStatusEventArgs(event.auth_status))
 
     def _on_passkey_display(self, driver, event):
         """
         :type event: nrf_events.GapEvtPasskeyDisplay
         """
         # TODO: Better way to handle match request
-        self._on_passkey_display_event.notify(self.peer, event.passkey, event.match_request)
+        self._on_passkey_display_event.notify(self.peer, PasskeyDisplayEventArgs(event.passkey, event.match_request))
 
     def _on_auth_key_request(self, driver, event):
         """
@@ -136,7 +138,7 @@ class SecurityManager(object):
 
         self._auth_key_resolve_thread = threading.Thread(name="{} Passkey Entry".format(self.peer.conn_handle),
                                                          target=self._on_passkey_entry_event.notify,
-                                                         args=(self.peer, event.key_type, resolve))
+                                                         args=(self.peer, PasskeyEntryEventArgs(event.key_type, resolve)))
         self._auth_key_resolve_thread.start()
 
     def _on_timeout(self, driver, event):
@@ -145,4 +147,4 @@ class SecurityManager(object):
         """
         if event.src != nrf_types.BLEGapTimeoutSrc.security_req:
             return
-        self._on_authentication_complete_event.notify(self.peer, SecurityStatus.timeout)
+        self._on_authentication_complete_event.notify(self.peer, AuthenticationStatusEventArgs(SecurityStatus.timeout))

@@ -3,8 +3,16 @@ from blatann.event_type import EventSource, Event
 from blatann.nrf import nrf_types, nrf_events
 from blatann.waitables.event_waitable import EventWaitable
 from blatann.exceptions import InvalidStateException
+from blatann.event_args import EventArgs
 
 logger = logging.getLogger(__name__)
+
+
+class GattcWriteCompleteEventArgs(EventArgs):
+    def __init__(self, handle, status, data):
+        self.handle = handle
+        self.status = status
+        self.data = data
 
 
 class GattcWriter(object):
@@ -113,4 +121,4 @@ class GattcWriter(object):
 
     def _complete(self, status=nrf_events.BLEGattStatusCode.success):
         self._busy = False
-        self._on_write_complete.notify(self._handle, status, self._data)
+        self._on_write_complete.notify(self, GattcWriteCompleteEventArgs(self._handle, status, self._data))

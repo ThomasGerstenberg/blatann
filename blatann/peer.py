@@ -8,6 +8,7 @@ from blatann.gatt import gattc, service_discovery
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.waitables import connection_waitable, event_waitable
+from blatann.event_args import *
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,7 @@ class Peer(object):
             return
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.connection_state = PeerState.DISCONNECTED
-        self._on_disconnect.notify(self, event.reason)
+        self._on_disconnect.notify(self, DisconnectionEventArgs(event.reason))
 
         with self._connection_handler_lock:
             for handler in self._connection_based_driver_event_handlers.values():

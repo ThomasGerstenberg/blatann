@@ -4,8 +4,20 @@ from blatann.event_type import EventSource, Event
 from blatann.gatt import gattc
 from blatann.nrf import nrf_events
 from blatann.waitables.event_waitable import EventWaitable
+from blatann.event_args import EventArgs, DatabaseDiscoveryCompleteEventArgs
+
 
 logger = logging.getLogger(__name__)
+
+
+class _DiscoveryEventArgs(EventArgs):
+    def __init__(self, services, status):
+        """
+        :type services: list[gattc.GattcService]
+        :type status: nrf_events.BLEGattStatusCode
+        """
+        self.services = services
+        self.status = status
 
 
 class _DiscoveryState(object):
@@ -90,7 +102,7 @@ class _ServiceDiscoverer(_Discoverer):
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
         self.peer.driver_event_unsubscribe(self._on_primary_service_discovery)
         self.peer.driver_event_unsubscribe(self._on_service_uuid_read)
-        self._on_complete_event.notify(self._state.services, status)
+        self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
 
     def _on_primary_service_discovery(self, driver, event):
         """
@@ -172,7 +184,7 @@ class _CharacteristicDiscoverer(_Discoverer):
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
         self.peer.driver_event_unsubscribe(self._on_characteristic_discovery)
         self.peer.driver_event_unsubscribe(self._on_char_uuid_read)
-        self._on_complete_event.notify(self._state.services, status)
+        self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
 
     def _discover_characteristics(self):
         service = self._state.current_service
@@ -284,7 +296,7 @@ class _DescriptorDiscoverer(_Discoverer):
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
         self.peer.driver_event_unsubscribe(self._on_descriptor_discovery)
-        self._on_complete_event.notify(self._state.services, status)
+        self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
 
     def _discover_descriptors(self, starting_handle=None):
         char = self._state.current_characteristic
@@ -345,41 +357,41 @@ class DatabaseDiscoverer(object):
         """
         return self._on_discovery_complete
 
-    def _on_service_discovery_complete(self, services, status):
+    def _on_service_discovery_complete(self, sender, event_args):
         """
-        :type services: list[gattc.GattcService]
-        :type status: nrf_events.BLEGattStatusCode
+        :type sender: _ServiceDiscoverer
+        :type event_args: _DiscoveryEventArgs
         """
         logger.info("Service Discovery complete")
-        if status != nrf_events.BLEGattStatusCode.success:
-            logger.error("Error discovering services: {}".format(status))
-            self._on_database_discovery_complete.notify([], status)
+        if event_args.status != nrf_events.BLEGattStatusCode.success:
+            logger.error("Error discovering services: {}".format(event_args.status))
+            self._on_complete([], event_args.status)
         else:
-            self._characteristic_discoverer.start(services).then(self._on_characteristic_discovery_complete)
+            self._characteristic_discoverer.start(event_args.services).then(self._on_characteristic_discovery_complete)
 
-    def _on_characteristic_discovery_complete(self, services, status):
+    def _on_characteristic_discovery_complete(self, sender, event_args):
         """
-        :type services: list[gattc.GattcService]
-        :type status: nrf_events.BLEGattStatusCode
+        :type sender: _CharacteristicDiscoverer
+        :type event_args: _DiscoveryEventArgs
         """
         logger.info("Characteristic Discovery complete")
-        if status != nrf_events.BLEGattStatusCode.success:
-            logger.error("Error discovering characteristics: {}".format(status))
-            self._on_database_discovery_complete.notify([], status)
+        if event_args.status != nrf_events.BLEGattStatusCode.success:
+            logger.error("Error discovering characteristics: {}".format(event_args.status))
+            self._on_complete([], event_args.status)
         else:
-            self._descriptor_discoverer.start(services).then(self._on_descriptor_discovery_complete)
+            self._descriptor_discoverer.start(event_args.services).then(self._on_descriptor_discovery_complete)
 
-    def _on_descriptor_discovery_complete(self, services, status):
+    def _on_descriptor_discovery_complete(self, sender, event_args):
         """
-        :type services: list[gattc.GattcService]
-        :type status: nrf_events.BLEGattStatusCode
+        :type sender: _DescriptorDiscoverer
+        :type event_args: _DiscoveryEventArgs
         """
         logger.info("Descriptor Discovery complete")
-        self._on_complete(services, status)
+        self._on_complete(event_args.services, event_args.status)
 
     def _on_complete(self, services, status):
         self.peer.database.add_discovered_services(services)
-        self._on_discovery_complete.notify(services, status)
+        self._on_discovery_complete.notify(self.peer, DatabaseDiscoveryCompleteEventArgs(status))
         logger.info("Database Discovery complete!!")
 
     def start(self):

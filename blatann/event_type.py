@@ -46,7 +46,7 @@ class EventSource(Event):
         with self._handler_lock:
             self._handlers = []
 
-    def notify(self, *args, **kwargs):
+    def notify(self, sender, event_args=None):
         """
         Notifies all clients with the given arguments and keyword-arguments
         """
@@ -55,7 +55,7 @@ class EventSource(Event):
 
         for h in handlers:
             try:
-                h(*args, **kwargs)
+                h(sender, event_args)
             except Exception as e:
                 if self._logger:
                     self._logger.exception(e)

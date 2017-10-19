@@ -214,7 +214,7 @@ class Advertiser(object):
     def on_advertising_timeout(self):
         """
         Event generated whenever advertising times out and finishes with no connections made
-        Handler args: (None)
+        Event args: None
 
         :return: an Event which can have handlers registered to and deregistered from
         :rtype: Event
@@ -306,7 +306,7 @@ class Advertiser(object):
         """
         if event.src == nrf_events.BLEGapTimeoutSrc.advertising:
             self.advertising = False
-            self._on_advertising_timeout.notify()
+            self._on_advertising_timeout.notify(self)
             if self._auto_restart:
                 self.start()
 

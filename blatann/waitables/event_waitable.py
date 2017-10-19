@@ -16,3 +16,9 @@ class EventWaitable(Waitable):
 
     def _on_timeout(self):
         self._event.deregister(self._on_event)
+
+    def wait(self, timeout=None, exception_on_timeout=True):
+        res = super(EventWaitable, self).wait(timeout, exception_on_timeout)
+        if res is None:  # Timeout, send None, None for the sender and event_args
+            return None, None
+        return res
