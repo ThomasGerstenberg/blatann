@@ -48,7 +48,7 @@ class SecurityManager(object):
         self._busy = False
         self._on_authentication_complete_event = EventSource("On Authentication Complete", logger)
         self._on_passkey_display_event = EventSource("On Passkey Display", logger)
-        self._on_passkey_entry_event = EventSource("On Passkey Entry")
+        self._on_passkey_entry_event = EventSource("On Passkey Entry", logger)
         self.peer.on_connect.register(self._on_peer_connected)
         self._auth_key_resolve_thread = threading.Thread()
 
@@ -192,6 +192,10 @@ class SecurityManager(object):
         def resolve(passkey):
             if not self._busy:
                 return
+            if isinstance(passkey, (long, int)):
+                passkey = "{:06d}".format(passkey)
+            elif isinstance(passkey, unicode):
+                passkey = str(passkey)
             self.ble_device.ble_driver.ble_gap_auth_key_reply(self.peer.conn_handle, event.key_type, passkey)
 
         self._auth_key_resolve_thread = threading.Thread(name="{} Passkey Entry".format(self.peer.conn_handle),
