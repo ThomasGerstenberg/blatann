@@ -22,3 +22,13 @@ class EventWaitable(Waitable):
         if res is None:  # Timeout, send None, None for the sender and event_args
             return None, None
         return res
+
+
+class NotificationCompleteEventWaitable(EventWaitable):
+    def __init__(self, event, notification_id):
+        super(NotificationCompleteEventWaitable, self).__init__(event)
+        self.notification_id = notification_id
+
+    def _on_event(self, characteristic, event_args):
+        if event_args.id == self.notification_id:
+            super(NotificationCompleteEventWaitable, self)._on_event(characteristic, event_args)

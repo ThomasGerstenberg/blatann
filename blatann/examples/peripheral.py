@@ -93,22 +93,23 @@ class CountingCharacteristicThread(object):
         self._stopped.wait(3)
 
     def _on_notify_complete(self, characteristic, event_args):
-        logger.info("Notification Complete, id: {}".format(event_args.id))
+        logger.info("Notification Complete, id: {}, reason: {}".format(event_args.id, event_args.reason))
 
     def run(self):
         while not self._stop_event.is_set():
-            if not self.characteristic.client_subscribed:
-                continue
 
-            self.current_value += 1
-            value = struct.pack("<I", self.current_value)
             try:
-                self.characteristic.notify(value)
+                if not self.characteristic.client_subscribed:
+                    continue
+                self.current_value += 1
+                value = struct.pack("<I", self.current_value)
+                waitable = self.characteristic.notify(value)
+                # Send a burst of 16, then wait for them all to send before trying to send more
+                if self.current_value % 16 == 0:
+                    waitable.wait()
             except Exception as e:
                 logger.exception(e)
 
-            if self.current_value % 16 == 0:
-                time.sleep(5)
         self._stopped.set()
 
 
@@ -151,4 +152,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM3")
+    main("COM49")

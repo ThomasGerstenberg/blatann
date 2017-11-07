@@ -1,3 +1,4 @@
+from enum import Enum
 
 
 class EventArgs(object):
@@ -46,8 +47,17 @@ class SubscriptionStateChangeEventArgs(EventArgs):
 
 
 class NotificationCompleteEventArgs(EventArgs):
-    def __init__(self, notification_id):
+    class Reason(Enum):
+        SUCCESS = 0
+        QUEUE_CLEARED = 1
+        CLIENT_DISCONNECTED = 2
+        CLIENT_UNSUBSCRIBED = 3
+        FAILED = 4
+
+    def __init__(self, notification_id, data, reason):
         self.id = notification_id
+        self.data = data
+        self.reason = reason
 
 
 # Gatt Client Event Args
