@@ -1,8 +1,10 @@
 from collections import namedtuple
 import logging
+import threading
+import queue
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
-from blatann.exceptions import InvalidOperationException
+from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.event_type import EventSource
 from blatann.event_args import *
 
@@ -39,22 +41,25 @@ class GattsCharacteristic(gatt.Characteristic):
     """
     _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
-    def __init__(self, ble_device, peer, uuid, properties, value="", prefer_indications=True):
+    def __init__(self, ble_device, peer, uuid, properties, notification_manager, value="", prefer_indications=True):
         """
         :param ble_device:
         :param peer:
         :param uuid:
         :type properties: gatt.GattsCharacteristicProperties
+        :type notification_manager: _NotificationManager
         :param value:
         :param prefer_indications:
         """
         super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties)
         self._value = value
         self.prefer_indications = prefer_indications
+        self._notification_manager = notification_manager
         # Events
         self._on_write = EventSource("Write Event", logger)
         self._on_read = EventSource("Read Event", logger)
         self._on_sub_change = EventSource("Subscription Change Event", logger)
+        self._on_notify_complete = EventSource("Notification Complete Event", logger)
         # Subscribed events
         self.ble_device.ble_driver.event_subscribe(self._on_gatts_write, nrf_events.GattsEvtWrite)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request, nrf_events.GattsEvtReadWriteAuthorizeRequest)
@@ -88,16 +93,30 @@ class GattsCharacteristic(gatt.Characteristic):
 
         v = nrf_types.BLEGattsValue(value)
         self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle, v)
+        self._value = value
 
         if notify_client and self.client_subscribed and not self._read_in_process:
-            if self.cccd_state == gatt.SubscriptionState.INDICATION:
-                hvx_type = nrf_types.BLEGattHVXType.indication
-            else:
-                hvx_type = nrf_types.BLEGattHVXType.notification
-            hvx_params = nrf_types.BLEGattsHvx(self.value_handle, hvx_type, None)
-            self.ble_device.ble_driver.ble_gatts_hvx(self.peer.conn_handle, hvx_params)
+            self.notify(None)
 
-        self._value = value
+    def notify(self, data):
+        """
+        Notifies the client with the data provided without setting the data into the characteristic value.
+        If data is not provided (None), will notify with the currently-set value of the characteristic
+
+        :param data: The data to notify the client with
+        """
+        if not self.notifiable:
+            raise InvalidOperationException("Cannot notify client. "
+                                            "{} not set up for notifications or indications".format(self.uuid))
+        if not self.client_subscribed:
+            raise InvalidStateException("Client is not subscribed, cannot notify client")
+
+        if self.cccd_state == gatt.SubscriptionState.INDICATION:
+            hvx_type = nrf_types.BLEGattHVXType.indication
+        else:
+            hvx_type = nrf_types.BLEGattHVXType.notification
+
+        self._notification_manager.notify(self, self.value_handle, hvx_type, self._on_notify_complete, data)
 
     """
     Properties
@@ -180,6 +199,18 @@ class GattsCharacteristic(gatt.Characteristic):
         :rtype: blatann.event_type.Event
         """
         return self._on_sub_change
+
+    @property
+    def on_notify_complete(self):
+        """
+        Event that is generated when a notification or indication sent to the client is successfully sent
+
+        EventArgs type:
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
+        return self._on_notify_complete
 
     """
     Event Handling
@@ -309,6 +340,11 @@ class GattsService(gatt.Service):
     """
     Represents a registered GATT service that lives locally on the device
     """
+    def __init__(self, ble_device, peer, uuid, service_type, notification_manager,
+                 start_handle=gatt.BLE_GATT_HANDLE_INVALID, end_handle=gatt.BLE_GATT_HANDLE_INVALID):
+        super(GattsService, self).__init__(ble_device, peer, uuid, service_type, start_handle, end_handle)
+        self._notification_manager = notification_manager
+
     @property
     def characteristics(self):
         """
@@ -331,7 +367,7 @@ class GattsService(gatt.Service):
         :return: The characteristic just added to the service
         :rtype: GattsCharacteristic
         """
-        c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, initial_value)
+        c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, self._notification_manager, initial_value)
         # Register UUID
         self.ble_device.uuid_manager.register_uuid(uuid)
 
@@ -374,6 +410,7 @@ class GattsDatabase(gatt.GattDatabase):
         super(GattsDatabase, self).__init__(ble_device, peer)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request,
                                                    nrf_events.GattsEvtReadWriteAuthorizeRequest)
+        self._notification_manager = _NotificationManager(ble_device, peer)
 
     @property
     def services(self):
@@ -409,11 +446,18 @@ class GattsDatabase(gatt.GattDatabase):
         handle = nrf_types.BleGattHandle()
         # Call code to add service to driver
         self.ble_device.ble_driver.ble_gatts_service_add(service_type.value, uuid.nrf_uuid, handle)
-        service = GattsService(self.ble_device, self.peer, uuid, service_type, handle.handle)
+        service = GattsService(self.ble_device, self.peer, uuid, service_type, self._notification_manager,
+                               handle.handle)
         service.start_handle = handle.handle
         service.end_handle = handle.handle
         self.services.append(service)
         return service
+
+    def clear_pending_notifications(self):
+        """
+        Clears all pending notifications that are queued to be sent to the client
+        """
+        self._notification_manager.clear_all()
 
     def _on_rw_auth_request(self, driver, event):
         """
@@ -428,3 +472,77 @@ class GattsDatabase(gatt.GattDatabase):
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, False)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)
         self.ble_device.ble_driver.ble_gatts_rw_authorize_reply(event.conn_handle, reply)
+
+
+class _NotificationManager(object):
+    """
+    Handles queuing of notifications to the client
+    """
+    class NotificationParams(object):
+        _id_counter = 0
+        _lock = threading.Lock()
+
+        def __init__(self, characteristic, handle, notification_type, on_complete, data):
+            with _NotificationManager.NotificationParams._lock:
+                self.id = _NotificationManager.NotificationParams._id_counter
+                _NotificationManager.NotificationParams._id_counter += 1
+            self.char = characteristic
+            self.handle = handle
+            self.type = notification_type
+            self.on_complete = on_complete
+            self.data = data
+
+    def __init__(self, ble_device, peer):
+        self.ble_device = ble_device
+        self.peer = peer
+        self._queue = queue.Queue()
+        self._in_process = threading.Event()
+        self._lock = threading.Lock()
+        self._cur_notification = None
+        self.ble_device.ble_driver.event_subscribe(self._on_notify_complete, nrf_events.EvtTxComplete,
+                                                   nrf_events.GattsEvtHandleValueConfirm)
+        self.ble_device.ble_driver.event_subscribe(self._on_disconnect, nrf_events.GapEvtDisconnected)
+
+    def notify(self, characteristic, handle, notification_type, event_on_complete, data=None):
+        params = self.NotificationParams(characteristic, handle, notification_type, event_on_complete, data)
+        with self._lock:
+            if self._in_process.is_set():
+                self._queue.put(params)
+            else:
+                self._notify(params)
+        return params.id
+
+    def clear_all(self):
+        with self._lock:
+            with self._queue.mutex:
+                self._queue.queue.clear()
+            self._in_process.clear()
+            self._cur_notification = None
+
+    def _notify(self, params):
+        hvx_params = nrf_types.BLEGattsHvx(params.handle, params.type, params.data)
+        self._cur_notification = params
+        self.ble_device.ble_driver.ble_gatts_hvx(self.peer.conn_handle, hvx_params)
+        self._in_process.set()
+
+    def _get_next(self):
+        try:
+            return self._queue.get_nowait()
+        except queue.Empty:
+            return None
+
+    def _on_notify_complete(self, driver, event):
+        with self._lock:
+            cur_notification = self._cur_notification
+            next_notification = self._get_next()
+            if next_notification:
+                self._notify(next_notification)
+            else:
+                self._in_process.clear()
+
+        if cur_notification is not None:
+            cur_notification.on_complete.notify(cur_notification.char,
+                                                NotificationCompleteEventArgs(cur_notification.id))
+
+    def _on_disconnect(self, driver, event):
+        self.clear_all()

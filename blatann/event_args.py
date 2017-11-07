@@ -45,6 +45,11 @@ class SubscriptionStateChangeEventArgs(EventArgs):
         self.subscription_state = subscription_state
 
 
+class NotificationCompleteEventArgs(EventArgs):
+    def __init__(self, notification_id):
+        self.id = notification_id
+
+
 # Gatt Client Event Args
 
 class ReadCompleteEventArgs(EventArgs):

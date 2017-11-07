@@ -75,10 +75,14 @@ def on_passkey_display(peer, event_args):
 
 class CountingCharacteristicThread(object):
     def __init__(self, characteristic):
+        """
+        :type characteristic: blatann.gatt.gatts.GattsCharacteristic
+        """
         self.current_value = 0
         self._stop_event = threading.Event()
         self._stopped = threading.Event()
         self.characteristic = characteristic
+        self.characteristic.on_notify_complete.register(self._on_notify_complete)
         self.thread = threading.Thread(target=self.run)
         atexit.register(self.join)
         self.thread.daemon = True
@@ -88,15 +92,23 @@ class CountingCharacteristicThread(object):
         self._stop_event.set()
         self._stopped.wait(3)
 
+    def _on_notify_complete(self, characteristic, event_args):
+        logger.info("Notification Complete, id: {}".format(event_args.id))
+
     def run(self):
         while not self._stop_event.is_set():
-            time.sleep(1)
+            if not self.characteristic.client_subscribed:
+                continue
+
             self.current_value += 1
             value = struct.pack("<I", self.current_value)
             try:
-                self.characteristic.set_value(value, notify_client=True)
+                self.characteristic.notify(value)
             except Exception as e:
                 logger.exception(e)
+
+            if self.current_value % 16 == 0:
+                time.sleep(5)
         self._stopped.set()
 
 

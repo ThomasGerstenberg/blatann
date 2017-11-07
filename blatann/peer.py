@@ -39,6 +39,9 @@ class Peer(object):
     """
     BLE_CONN_HANDLE_INVALID = BLE_CONN_HANDLE_INVALID
 
+    """ Number of bytes that are header/overhead per MTU when sending a notification or indication """
+    NOTIFICATION_INDICATION_OVERHEAD_BYTES = 3
+
     def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS):
         """
@@ -79,6 +82,15 @@ class Peer(object):
         :return: The current MTU size
         """
         return self._mtu_size
+
+    @property
+    def bytes_per_notification(self):
+        """
+        Gets the maximum number of bytes that can be sent in a single notification/indication
+
+        :return: Number of bytes that can be sent in a notification/indication
+        """
+        return self._mtu_size - self.NOTIFICATION_INDICATION_OVERHEAD_BYTES
 
     @property
     def is_peripheral(self):
