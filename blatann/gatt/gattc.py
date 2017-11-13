@@ -84,7 +84,19 @@ class GattcCharacteristic(gatt.Characteristic):
         return self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED
 
     """
-    Event Handlers
+    Events
+    """
+
+    @property
+    def on_read_complete(self):
+        return self._on_read_complete_event
+
+    @property
+    def on_write_complete(self):
+        return self._on_write_complete_event
+
+    """
+    Public Methods
     """
 
     def subscribe(self, on_notification_handler, prefer_indications=False):

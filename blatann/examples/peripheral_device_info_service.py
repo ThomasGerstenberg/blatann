@@ -1,0 +1,52 @@
+from blatann import BleDevice
+from blatann.examples import example_utils
+from blatann.gap import advertising
+from blatann.services import device_info
+from blatann.nrf.nrf_event_sync import EventSync
+
+logger = example_utils.setup_logger(level="DEBUG")
+
+
+def on_connect(peer, event_args):
+    """
+    :type peer: blatann.peer.Peer
+    :type event_args: None
+    """
+    if peer:
+        logger.info("Connected to peer")
+    else:
+        logger.warning("Connection timed out")
+
+
+def on_disconnect(peer, event_args):
+    logger.info("Disconnected from peer, reason: {}".format(event_args.reason))
+
+
+def main(serial_port):
+    ble_device = BleDevice(serial_port)
+    ble_device.open()
+
+    dis = device_info.add_device_info_service(ble_device.database)
+
+    dis.set_software_revision("14.2.1")
+    dis.set_hardware_revision("A")
+    dis.set_firmware_revision("1.0.4")
+    dis.set_serial_number("AB1234")
+    dis.set_pnp_id(device_info.PnpVendorSource.BLUETOOTH_SIG, 0x0058, 0x0002, 0x0013)
+
+    name = "Peripheral DIS"
+    adv_data = advertising.AdvertisingData(local_name=name, service_uuid16s=device_info.DIS_SERVICE_UUID)
+    ble_device.advertiser.set_advertise_data(adv_data)
+
+    logger.info("Advertising")
+    ble_device.client.on_connect.register(on_connect)
+    ble_device.client.on_disconnect.register(on_disconnect)
+    ble_device.advertiser.start(timeout_sec=0, auto_restart=True)
+    with EventSync(ble_device.ble_driver, int) as sync:
+        event = sync.get(timeout=60*30)  # Advertise for 30 mins
+    logger.info("Done")
+    ble_device.close()
+
+
+if __name__ == '__main__':
+    main("COM3")

@@ -187,15 +187,15 @@ class Peer(object):
         self._on_connect.notify(self)
 
     def _check_driver_event_connection_handle_wrapper(self, func):
-        def f(driver, event):
+        def wrapper(driver, event):
             """
             :param driver:
             :type event: blatann.nrf.nrf_events.BLEEvent
             """
-            logger.info("Got event: {} for peer {}".format(event, self.conn_handle))
+            logger.debug("Got event: {} for peer {}".format(event, self.conn_handle))
             if self.connected and self.conn_handle == event.conn_handle:
                 func(driver, event)
-        return f
+        return wrapper
 
     def driver_event_subscribe(self, handler, *event_types):
         """

@@ -20,6 +20,7 @@ setup(
     description="API for controlling nRF52 connectivity devices through pc-ble-driver-py",
     url="https://github.com/ThomasGerstenberg/blatann",
     author="Thomas Gerstenberg",
+    email="tgerst6@gmail.com",
     keywords="ble bluetooth nrf52 nordic",
     packages=find_packages(exclude=["test", "test.*"]),
     install_requires=_install_requires,
