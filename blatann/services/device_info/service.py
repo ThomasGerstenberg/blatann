@@ -1,15 +1,24 @@
-import struct
+import logging
+from blatann.services import ble_data_types
 from blatann.services.device_info.constants import *
-from blatann.services.device_info.serializers import PnpIdSerializer, SystemIdSerializer
+from blatann.services.device_info.data_types import PnpId, SystemId
+from blatann.event_type import EventSource
+from blatann.event_args import DecodedReadCompleteEventArgs
+from blatann.waitables import EventWaitable
+from blatann.gatt import GattStatusCode
 from blatann.gatt.gattc import GattcService
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
 
 
+logger = logging.getLogger(__name__)
+
+
 class _DisCharacteristic(object):
-    def __init__(self, service, uuid):
+    def __init__(self, service, uuid, data_class):
         self.service = service
         self.uuid = uuid
         self._char = None
+        self.data_class = data_class
 
     @property
     def is_defined(self):
@@ -32,14 +41,32 @@ class _DisServerCharacteristic(_DisCharacteristic):
 
 
 class _DisClientCharacteristic(_DisCharacteristic):
-    def __init__(self, service, uuid):
-        super(_DisClientCharacteristic, self).__init__(service, uuid)
+    def __init__(self, service, uuid, data_class):
+        super(_DisClientCharacteristic, self).__init__(service, uuid, data_class)
         self._char = service.find_characteristic(uuid)
+        self._on_read_complete_event = EventSource("Char {} Read Complete".format(self.uuid))
+
+    def _read_complete(self, characteristic, event_args):
+        """
+        :param characteristic:
+        :type event_args: blatann.event_args.ReadCompleteEventArgs
+        """
+        decoded_value = None
+        if event_args.status == GattStatusCode.success:
+            try:
+                decoded_value, remainder = self.data_class.decode(event_args.value)
+            except Exception as e:  # TODO not so generic
+                logger.error("Service {}, Characteristic {} failed to decode value on read. Stream: [{}]".format(self.service.uuid, self.uuid, event_args.value.encode("hex")))
+                logger.exception(e)
+
+        decoded_event_args = DecodedReadCompleteEventArgs(event_args.status, event_args.value, decoded_value)
+        self._on_read_complete_event.notify(characteristic, decoded_event_args)
 
     def read(self):
         if not self.is_defined:
             raise AttributeError("Characteristic {} is not present in the Device Info Service".format(self.uuid))
-        return self._char.read()
+        self._char.read().then(self._read_complete)
+        return EventWaitable(self._on_read_complete_event)
 
 
 class _DeviceInfoService(object):
@@ -52,15 +79,15 @@ class _DeviceInfoService(object):
             raise ValueError("Service must be a Gatt Server or Client")
 
         self._service = service
-        self._system_id_char = char_cls(service, SYSTEM_ID_UUID)
-        self._model_number_char = char_cls(service, MODEL_NUMBER_UUID)
-        self._serial_no_char = char_cls(service, SERIAL_NUMBER_UUID)
-        self._firmware_rev_char = char_cls(service, FIRMWARE_REV_UUID)
-        self._hardware_rev_char = char_cls(service, HARDWARE_REV_UUID)
-        self._software_rev_char = char_cls(service, SOFTWARE_REV_UUID)
-        self._mfg_name_char = char_cls(service, MANUFACTURER_NAME_UUID)
-        self._regulatory_cert_char = char_cls(service, REGULATORY_CERT_UUID)
-        self._pnp_id_char = char_cls(service, PNP_ID_UUID)
+        self._system_id_char = char_cls(service, SYSTEM_ID_UUID, SystemId)
+        self._model_number_char = char_cls(service, MODEL_NUMBER_UUID, ble_data_types.String)
+        self._serial_no_char = char_cls(service, SERIAL_NUMBER_UUID, ble_data_types.String)
+        self._firmware_rev_char = char_cls(service, FIRMWARE_REV_UUID, ble_data_types.String)
+        self._hardware_rev_char = char_cls(service, HARDWARE_REV_UUID, ble_data_types.String)
+        self._software_rev_char = char_cls(service, SOFTWARE_REV_UUID, ble_data_types.String)
+        self._mfg_name_char = char_cls(service, MANUFACTURER_NAME_UUID, ble_data_types.String)
+        self._regulatory_cert_char = char_cls(service, REGULATORY_CERT_UUID, ble_data_types.String)
+        self._pnp_id_char = char_cls(service, PNP_ID_UUID, PnpId)
 
         self._characteristics = {
             SystemIdCharacteristic: self._system_id_char,
@@ -169,9 +196,10 @@ class DisServer(_DeviceInfoService):
     def set(self, characteristic, value, max_len=None):
         self._characteristics[characteristic].set_value(value, max_len)
 
-    def set_system_id(self, manufacturer_id, oui, max_len=None):
-        value = SystemIdSerializer().encode(manufacturer_id, oui)
-        self.set(SystemIdCharacteristic, value, max_len)
+    def set_system_id(self, system_id):
+        assert isinstance(system_id, SystemId)
+        value = system_id.encode()
+        self.set(SystemIdCharacteristic, value)
 
     def set_model_number(self, model_number, max_len=None):
         self.set(ModelNumberCharacteristic, model_number, max_len)
@@ -194,8 +222,9 @@ class DisServer(_DeviceInfoService):
     def set_regulatory_certifications(self, certs):
         raise NotImplementedError()
 
-    def set_pnp_id(self, vendor_id_source, vendor_id, product_id, product_revision):
-        value = PnpIdSerializer().encode(vendor_id_source, vendor_id, product_id, product_revision)
+    def set_pnp_id(self, pnp_id):
+        assert isinstance(pnp_id, PnpId)
+        value = pnp_id.encode()
         self.set(PnpIdCharacteristic, value)
 
     @classmethod

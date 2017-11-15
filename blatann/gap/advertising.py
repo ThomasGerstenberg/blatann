@@ -9,8 +9,7 @@ from blatann.event_type import Event, EventSource
 logger = logging.getLogger(__name__)
 
 
-class AdvertisingFlags(IntEnum):
-    # TODO: Not working as expected, IntFlag isn't available
+class AdvertisingFlags(object):
     LIMITED_DISCOVERY_MODE = 0x01
     GENERAL_DISCOVERY_MODE = 0x02
     BR_EDR_NOT_SUPPORTED = 0x04

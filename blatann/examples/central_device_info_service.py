@@ -18,6 +18,7 @@ def main(serial_port):
     target_address = None
     scan_report = ble_device.scanner.start_scan().wait()
     for report in scan_report.advertising_peers_found:
+        # Look for the Device Info Service UUID to be advertised
         if device_info.DIS_SERVICE_UUID in report.advertise_data.service_uuid16s:
             target_address = report.peer_address
             break
@@ -42,15 +43,28 @@ def main(serial_port):
         peer.disconnect().wait()
         return
 
+    # Iterate through all possible device info characteristics, read the value if defined
     for char in device_info.CHARACTERISTICS:
         if dis.has(char):
             logger.info("Reading characteristic: {}...".format(char))
             char, event_args = dis.get(char).wait()
             logger.info("Value: {}".format(event_args.value))
 
+    # Examples of reading individual characteristics (if present)
+
     if dis.has_software_revision:
         char, event_args = dis.get_software_revision().wait()
-        logger.info("Software Version: {}".format(event_args.value))
+        sw_version = event_args.value
+        logger.info("Software Version: {}".format(sw_version))
+    if dis.has_pnp_id:
+        char, event_args = dis.get_pnp_id().wait()
+        pnp_id = event_args.value
+        logger.info("Vendor ID: {}".format(pnp_id.vendor_id))
+    if dis.has_system_id:
+        char, event_args = dis.get_system_id().wait()
+        system_id = event_args.value
+        logger.info("System ID: {}".format(system_id))
+
     peer.disconnect().wait()
     ble_device.close()
 

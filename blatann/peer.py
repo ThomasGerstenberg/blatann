@@ -220,7 +220,7 @@ class Peer(object):
         """
         with self._connection_handler_lock:
             wrapped_handler = self._connection_based_driver_event_handlers.get(handler, None)
-            logger.info("Unsubscribing {} ({})".format(handler, wrapped_handler))
+            logger.debug("Unsubscribing {} ({})".format(handler, wrapped_handler))
             if wrapped_handler:
                 self._ble_device.ble_driver.event_unsubscribe(wrapped_handler, *event_types)
                 del self._connection_based_driver_event_handlers[handler]

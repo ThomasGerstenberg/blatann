@@ -40,7 +40,7 @@ class GattcReader(object):
         """
         Event that is emitted when a read completes on an attribute handle.
 
-        Handler args: (int attribute_handle, gatt.GattStatusCode, bytearray data_read)
+        Handler args: (int attribute_handle, gatt.GattStatusCode, bytes data_read)
 
         :return: an Event which can have handlers registered to and deregistered from
         :rtype: Event
@@ -92,4 +92,4 @@ class GattcReader(object):
 
     def _complete(self, status=nrf_events.BLEGattStatusCode.success):
         self._busy = False
-        self._on_read_complete_event.notify(self, GattcReadCompleteEventArgs(self._handle, status, self._data))
+        self._on_read_complete_event.notify(self, GattcReadCompleteEventArgs(self._handle, status, bytes(self._data)))
