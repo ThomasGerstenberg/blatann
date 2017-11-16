@@ -139,7 +139,6 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
     @classmethod
     def decode(cls, stream):
         flags, stream = _MeasurementFlags().decode(stream)
-
         sequence_number, stream = ble_data_types.Uint16.decode(stream)
         time = ble_data_types.DateTime.decode(stream)
 
@@ -148,6 +147,7 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
         glucose_type = GlucoseType.undetermined_whole_blood
         location = SampleLocation.unknown
         time_offset = None
+        has_context = flags.has_context
 
         if flags.time_offset_present:
             time_offset, stream = ble_data_types.Int16.decode(stream)
@@ -161,6 +161,6 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
             sensor_status, stream = SensorStatus.decode(stream)
 
         measurement = GlucoseMeasurement(sequence_number, time, time_offset, glucose_value, units, glucose_type,
-                                         location, sensor_status)
+                                         location, sensor_status, has_context)
         return measurement
 

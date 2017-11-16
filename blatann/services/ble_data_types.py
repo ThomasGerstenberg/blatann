@@ -148,6 +148,7 @@ class SFloat(BleDataType):
 
     @classmethod
     def _encode_value(cls, value):
+        # Function taken from here: https://github.com/signove/antidote/blob/master/src/util/bytelib.c#L491
         value = float(value)
         sign = 1.0 if value >= 0 else -1.0
         mantissa = abs(value)
@@ -183,7 +184,7 @@ class SFloat(BleDataType):
             diff = abs(s_mantissa - r_mantissa)
 
         int_mantissa = int(round(sign * mantissa))
-        value = ((exponent & 0x000F) << 12) | (int_mantissa & 0xFFFF)
+        value = ((exponent & 0x000F) << 12) | (int_mantissa & 0x0FFF)
         return value
 
     @classmethod
@@ -201,6 +202,7 @@ class SFloat(BleDataType):
 
     @classmethod
     def decode(cls, stream):
+        # Function taken from here: https://github.com/signove/antidote/blob/master/src/util/bytelib.c#L281
         value_int = struct.unpack("<H", stream[:2])[0]
         mantissa = value_int & 0x0FFF
         exponent = value_int >> 12
@@ -208,6 +210,9 @@ class SFloat(BleDataType):
         # Get the 2s complement if the value is greater than 8
         if exponent > cls._exponent_max:
             exponent = -(0x10 - exponent)
+
+        if mantissa >= 0x0800:
+            mantissa = -((0x0FFF+1) - mantissa)
 
         if mantissa == cls.ReservedMantissaValues.POS_INFINITY:
             value = float("inf")
@@ -234,7 +239,7 @@ class DateTime(BleCompoundDataType):
     @classmethod
     def decode(cls, stream):
         [y, mo, d, h, m, s], stream = super(DateTime, cls).decode(stream)
-        return datetime.datetime(y, mo, d, h, m, s)
+        return datetime.datetime(y, mo, d, h, m, s), stream
 
 
 class Bitfield(BleCompoundDataType):
