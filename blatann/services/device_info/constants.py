@@ -1,4 +1,3 @@
-from enum import IntEnum
 from blatann.uuid import Uuid16
 
 # Uuids
@@ -47,7 +46,3 @@ CHARACTERISTICS = [
     PnpIdCharacteristic
 ]
 
-
-class PnpVendorSource(IntEnum):
-    BLUETOOTH_SIG = 1
-    USB_VENDOR = 2

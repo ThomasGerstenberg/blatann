@@ -1,4 +1,10 @@
+from enum import IntEnum
 from blatann.services import ble_data_types
+
+
+class PnpVendorSource(IntEnum):
+    bluetooth_sig = 1
+    usb_vendor = 2
 
 
 class PnpId(ble_data_types.BleCompoundDataType):

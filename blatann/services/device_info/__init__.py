@@ -1,6 +1,11 @@
 from blatann.services.device_info.service import DisClient as _DisClient, DisServer as _DisServer
-from blatann.services.device_info.constants import DIS_SERVICE_UUID, PnpVendorSource, CHARACTERISTICS
-from blatann.services.device_info.data_types import PnpId, SystemId
+from blatann.services.device_info.constants import (
+    DIS_SERVICE_UUID, CHARACTERISTICS,
+    SystemIdCharacteristic, ModelNumberCharacteristic, SerialNumberCharacteristic, FirmwareRevisionCharacteristic,
+    HardwareRevisionCharacteristic, SoftwareRevisionCharacteristic, ManufacturerNameCharacteristic,
+    RegulatoryCertificateCharacteristic, PnpIdCharacteristic
+)
+from blatann.services.device_info.data_types import PnpId, SystemId, PnpVendorSource
 
 
 def add_device_info_service(gatts_database):

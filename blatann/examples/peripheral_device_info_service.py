@@ -32,7 +32,7 @@ def main(serial_port):
     dis.set_hardware_revision("A")
     dis.set_firmware_revision("1.0.4")
     dis.set_serial_number("AB1234")
-    pnp_id = device_info.PnpId(device_info.PnpVendorSource.BLUETOOTH_SIG, 0x0058, 0x0002, 0x0013)
+    pnp_id = device_info.PnpId(device_info.PnpVendorSource.bluetooth_sig, 0x0058, 0x0002, 0x0013)
     dis.set_pnp_id(pnp_id)
 
     name = "Peripheral DIS"
