@@ -54,7 +54,8 @@ class _DisClientCharacteristic(_DisCharacteristic):
         decoded_value = None
         if event_args.status == GattStatusCode.success:
             try:
-                decoded_value, remainder = self.data_class.decode(event_args.value)
+                stream = ble_data_types.BleDataStream(event_args.value)
+                decoded_value = self.data_class.decode(stream)
             except Exception as e:  # TODO not so generic
                 logger.error("Service {}, Characteristic {} failed to decode value on read. Stream: [{}]".format(self.service.uuid, self.uuid, event_args.value.encode("hex")))
                 logger.exception(e)
@@ -197,8 +198,12 @@ class DisServer(_DeviceInfoService):
         self._characteristics[characteristic].set_value(value, max_len)
 
     def set_system_id(self, system_id):
-        assert isinstance(system_id, SystemId)
-        value = system_id.encode()
+        """
+        :type system_id: SystemId
+        """
+        if not isinstance(system_id, SystemId):
+            raise ValueError("Value must be of type {}".format(SystemId.__name__))
+        value = system_id.encode().value
         self.set(SystemIdCharacteristic, value)
 
     def set_model_number(self, model_number, max_len=None):
@@ -223,8 +228,11 @@ class DisServer(_DeviceInfoService):
         raise NotImplementedError()
 
     def set_pnp_id(self, pnp_id):
+        """
+        :type pnp_id: PnpId
+        """
         assert isinstance(pnp_id, PnpId)
-        value = pnp_id.encode()
+        value = pnp_id.encode().value
         self.set(PnpIdCharacteristic, value)
 
     @classmethod

@@ -27,6 +27,7 @@ version.py
 .idea/sqlDataSources.xml
 .idea/dynamic.xml
 .idea/uiDesigner.xml
+.idea/preferred-vcs.xml
 
 # build outputs
 build/

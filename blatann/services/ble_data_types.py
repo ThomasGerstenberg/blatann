@@ -1,24 +1,95 @@
+from enum import IntEnum
 import math
 import struct
 import datetime
 
 
+class BleDataStream(object):
+    def __init__(self, value=""):
+        self.value = value
+        self.decode_index = 0
+
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return self.value
+
+    def encode(self, ble_type, *values):
+        stream = ble_type.encode(*values)
+        if isinstance(stream, BleDataStream):
+            self.value += stream.value
+        else:
+            self.value += stream
+
+    def encode_multiple(self, *ble_type_value_pairs):
+        for type_values in ble_type_value_pairs:
+            self.encode(type_values[0], *type_values[1:])
+
+    def encode_if(self, conditional, ble_type, *values):
+        if conditional:
+            self.encode(ble_type, *values)
+
+    def encode_if_multiple(self, conditional, *ble_type_value_pairs):
+        if conditional:
+            self.encode_multiple(*ble_type_value_pairs)
+
+    def decode(self, ble_type):
+        return ble_type.decode(self)
+
+    def decode_if(self, conditional, ble_type):
+        if conditional:
+            return self.decode(ble_type)
+
+    def decode_multiple(self, *ble_types):
+        return map(self.decode, ble_types)
+
+    def decode_if_multiple(self, conditional, *ble_types):
+        if conditional:
+            return self.decode_multiple(*ble_types)
+        return [None] * len(ble_types)
+
+    def take(self, num_bytes):
+        s = self.value[self.decode_index:self.decode_index + num_bytes]
+        self.decode_index += num_bytes
+        return s
+
+    def take_all(self):
+        s = self.value[self.decode_index:]
+        self.decode_index = len(self.value)
+        return s
+
+
 class BleCompoundDataType(object):
     data_stream_types = []
 
-    def encode(self, *values):
-        stream = ""
+    def encode_values(self, *values):
+        """
+        :rtype: BleDataStream
+        """
+        stream = BleDataStream()
         for value, data_type in zip(values, self.data_stream_types):
-            stream += data_type.encode(value)
+            stream.encode(data_type, value)
         return stream
+
+    def encode(self):
+        """
+        :rtype: BleDataStream
+        """
+        raise NotImplementedError()
 
     @classmethod
     def decode(cls, stream):
+        """
+        :type stream: BleDataStream
+        :return: The values decoded from the stream
+        :rtype: tuple
+        """
         values = []
         for data_type in cls.data_stream_types:
-            value, stream = data_type.decode(stream)
+            value = stream.decode(data_type)
             values.append(value)
-        return values, stream
+        return values
 
 
 class BleDataType(object):
@@ -28,6 +99,9 @@ class BleDataType(object):
 
     @classmethod
     def decode(cls, stream):
+        """
+        :type stream: BleDataStream
+        """
         raise NotImplementedError()
 
 
@@ -40,8 +114,11 @@ class DoubleNibble(BleDataType):
 
     @classmethod
     def decode(cls, stream):
-        value = struct.unpack("<B", stream[0])[0]
-        return [value >> 4 & 0x0F, value & 0x0F], stream[1:]
+        """
+        :type stream: BleDataStream
+        """
+        value = struct.unpack("<B", stream.take(1))[0]
+        return [value >> 4 & 0x0F, value & 0x0F]
 
 
 class UnsignedIntegerBase(BleDataType):
@@ -69,9 +146,12 @@ class UnsignedIntegerBase(BleDataType):
 
     @classmethod
     def decode(cls, stream):
-        value_stream = stream[:cls.byte_count] + "\x00" * (cls._decode_size()-cls.byte_count)
+        """
+        :type stream: BleDataStream
+        """
+        value_stream = stream.take(cls.byte_count) + "\x00" * (cls._decode_size()-cls.byte_count)
         value = struct.unpack(cls._formatter(), value_stream)[0]
-        return value, stream[cls.byte_count:]
+        return value
 
 
 class SignedIntegerBase(UnsignedIntegerBase):
@@ -125,7 +205,8 @@ class String(BleDataType):
 
     @classmethod
     def decode(cls, stream):
-        return stream, ""
+        # TODO: Are strings null-terminated in BLE types?
+        return stream.take_all()
 
 
 class SFloat(BleDataType):
@@ -203,7 +284,7 @@ class SFloat(BleDataType):
     @classmethod
     def decode(cls, stream):
         # Function taken from here: https://github.com/signove/antidote/blob/master/src/util/bytelib.c#L281
-        value_int = struct.unpack("<H", stream[:2])[0]
+        value_int = struct.unpack("<H", stream.take(2))[0]
         mantissa = value_int & 0x0FFF
         exponent = value_int >> 12
 
@@ -223,29 +304,33 @@ class SFloat(BleDataType):
         else:
             value = mantissa * 10.0**exponent
 
-        return value, stream[2:]
+        return value
 
 
 class DateTime(BleCompoundDataType):
     data_stream_types = [Uint16, Uint8, Uint8, Uint8, Uint8, Uint8]
 
-    @classmethod
-    def encode(cls, dt):
+    def __init__(self, dt):
         """
         :type dt: datetime.datetime
         """
-        return super(DateTime, cls).encode(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+        self.dt = dt
+
+    def encode(self):
+        return self.encode_values(self.dt.year, self.dt.month, self.dt.day,
+                                  self.dt.hour, self.dt.minute, self.dt.second)
 
     @classmethod
     def decode(cls, stream):
-        [y, mo, d, h, m, s], stream = super(DateTime, cls).decode(stream)
-        return datetime.datetime(y, mo, d, h, m, s), stream
+        y, mo, d, h, m, s = super(DateTime, cls).decode(stream)
+        return datetime.datetime(y, mo, d, h, m, s)
 
 
 class Bitfield(BleCompoundDataType):
     bitfield_width = 8
+    bitfield_enum = None
 
-    _width_encoder_map = {
+    _width_type_map = {
         8: Uint8,
         16: Uint16,
         24: Uint24,
@@ -256,27 +341,44 @@ class Bitfield(BleCompoundDataType):
         64: Uint64,
     }
 
-    def __init__(self, bit_to_field_name_mapping):
+    def __init__(self):
         assert self.bitfield_width % 8 == 0
-        assert(max(bit_to_field_name_mapping.keys()) < self.bitfield_width)
-        self._mapping = bit_to_field_name_mapping
+        assert type(self.bitfield_enum), IntEnum
+        self._mapping = {enum.value: enum.name for enum in self.bitfield_enum}
+        assert max(self._mapping.keys()) < self.bitfield_width
+
+    def _iter_bits(self):
+        for bit, attr_name in sorted(self._mapping.items()):
+            yield bit, attr_name
 
     def encode(self):
+        stream = BleDataStream()
         value = 0
-        for bit, attr_name in self._mapping.items():
+        for bit, attr_name in self._iter_bits():
             bit_value = getattr(self, attr_name)
             if bit_value:
                 value |= 1 << bit
-
-        return self._width_encoder_map[self.bitfield_width].encode(value)
+        stream.encode(self._width_type_map[self.bitfield_width], value)
+        return stream
 
     @classmethod
     def decode(cls, stream):
-        bitfield = cls()
-        value, stream = cls._width_encoder_map[cls.bitfield_width].decode(stream)
+        value = cls._width_type_map[cls.bitfield_width].decode(stream)
+        return  cls.from_integer_value(value)
 
-        for bit, attr_name in bitfield._mapping.items():
-            if ((value & 1) << bit) > 0:
+    @classmethod
+    def from_integer_value(cls, value):
+        bitfield = cls()
+        for bit, attr_name in bitfield._iter_bits():
+            if (value & (1 << bit)) > 0:
                 setattr(bitfield, attr_name, True)
 
-        return bitfield, stream
+        return bitfield
+
+    def __repr__(self):
+        set_bit_strs = []
+
+        for bit, attr_name in self._iter_bits():
+            if getattr(self, attr_name):
+                set_bit_strs.append("{}({})".format(attr_name, bit))
+        return "{}({})".format(self.__class__.__name__, ", ".join(set_bit_strs))
