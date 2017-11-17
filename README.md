@@ -60,6 +60,11 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] Multi-role
     - [X] Passcode Pairing
     - [ ] Bonding
+- [ ] Bluetooth Services
+    - [X] Device Info Service
+    - [ ] Glucose Service (in progress)
+    - [ ] Nordic UART Service
+    - More TBD (or on request)
 - [X] License
 - [ ] Unit Tests
 - [ ] Integration Tests
