@@ -15,6 +15,9 @@ class BleDataStream(object):
     def __str__(self):
         return self.value
 
+    def __len__(self):
+        return len(self.value)
+
     def encode(self, ble_type, *values):
         stream = ble_type.encode(*values)
         if isinstance(stream, BleDataStream):

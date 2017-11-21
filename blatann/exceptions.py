@@ -12,3 +12,7 @@ class InvalidOperationException(BlatannException):
 
 class TimeoutError(BlatannException):
     pass
+
+
+class DecodeError(BlatannException):
+    pass
