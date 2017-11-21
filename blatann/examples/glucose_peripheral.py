@@ -2,7 +2,7 @@ import logging
 import datetime
 
 from blatann import BleDevice
-from blatann.gap import advertising
+from blatann.gap import advertising, IoCapabilities
 from blatann.utils import setup_logger
 from blatann.services import glucose
 from blatann.waitables import GenericWaitable
@@ -20,6 +20,10 @@ def on_connect(peer, event_args):
 
 def on_disconnect(peer, event_args):
     logger.info("Disconnected from peer, reason: {}".format(event_args.reason))
+
+
+def display_passkey(peer, event_args):
+    logger.info("Passkey: {}".format(event_args.passkey))
 
 
 def add_fake_glucose_readings(glucose_database, num_records=15):
@@ -53,8 +57,8 @@ def main(serial_port):
 
     # Create a database to store the readings
     glucose_database = glucose.BasicGlucoseDatabase()
-    # Add the service to the BLE database, using the glucose database just created
-    glucose.add_glucose_service(ble_device.database, glucose_database)
+    # Add the service to the BLE database, using the glucose database just created, require encryption at the minimum
+    glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.JUST_WORKS)
 
     # Add some measurements to the glucose database
     add_fake_glucose_readings(glucose_database)
@@ -65,6 +69,13 @@ def main(serial_port):
 
     # Set the connection parameters for the client
     ble_device.client.set_connection_parameters(15, 30, 4000)
+
+    # Set the function to display the passkey
+    ble_device.client.security.on_passkey_display_required.register(display_passkey)
+
+    # Set the security parameters for the client
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=False,
+                                                   io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
 
     # Advertise the Glucose service
     adv_data = advertising.AdvertisingData(local_name="Glucose Test", flags=0x06,
