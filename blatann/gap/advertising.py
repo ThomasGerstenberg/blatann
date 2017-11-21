@@ -313,5 +313,5 @@ class Advertiser(object):
         """
         :type event: nrf_events.GapEvtDisconnected
         """
-        if event.conn_handle == self.client.conn_handle or not self.client.connected and self._auto_restart:
+        if event.conn_handle == self.client.conn_handle and self._auto_restart:
             self.start()
