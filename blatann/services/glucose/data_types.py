@@ -174,7 +174,7 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
     def __init__(self, sequence_number, measurement_time, time_offset_minutes=None,
                  value=None, units=GlucoseConcentrationUnits.kg_per_liter,
                  glucose_type=GlucoseType.undetermined_whole_blood, location=SampleLocation.unknown,
-                 sensor_status=None, has_context=False):
+                 sensor_status=None, context=None):
         self.sequence_number = sequence_number
         self.measurement_time = measurement_time
         self.time_offset_minutes = time_offset_minutes
@@ -183,7 +183,7 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
         self.type = glucose_type
         self.location = location
         self.sensor_status = sensor_status
-        self.has_context = has_context
+        self.context = context
 
     def encode(self):
         stream = ble_data_types.BleDataStream()
@@ -193,11 +193,11 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
         flags.sample_present = self.value is not None
         flags.concentration_units = int(self.units)
         flags.sensor_status = self.sensor_status is not None
-        flags.has_context = self.has_context
+        flags.has_context = self.context is not None
 
         stream.encode(flags)
         stream.encode(ble_data_types.Uint16, self.sequence_number)
-        stream.encode(ble_data_types.DateTime, self.measurement_time)
+        stream.encode(ble_data_types.DateTime(self.measurement_time))
 
         stream.encode_if(flags.time_offset_present, ble_data_types.Int16, self.time_offset_minutes)
 
@@ -367,6 +367,7 @@ class RacpResponseCode(IntEnum):
     no_records_found = 6
     abort_not_successful = 7
     procedure_not_completed = 8
+    operand_not_supported = 9
 
 
 class RacpCommand(ble_data_types.BleCompoundDataType):
@@ -435,7 +436,7 @@ class RacpResponse(ble_data_types.BleCompoundDataType):
 
     def encode(self):
         stream = ble_data_types.BleDataStream()
-        if self.record_count is not None:
+        if self.record_count is None:
             stream.encode_multiple([ble_data_types.Uint8, RacpOpcode.response_code],
                                    [ble_data_types.Uint8, RacpOperator.null],
                                    [ble_data_types.Uint8, self.request_code],

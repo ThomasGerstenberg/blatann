@@ -15,8 +15,11 @@ class BleDataStream(object):
     def __str__(self):
         return self.value
 
+    def __getitem__(self, item):
+        return self.value[item]
+
     def __len__(self):
-        return len(self.value)
+        return len(self.value) - self.decode_index
 
     def encode(self, ble_type, *values):
         stream = ble_type.encode(*values)
@@ -112,7 +115,7 @@ class DoubleNibble(BleDataType):
     @classmethod
     def encode(cls, value):
         # value should be a list of two integers
-        v = (value[0] & 0xF0) | (value[1] & 0x0F)
+        v = ((value[0] & 0x0F) << 4) | (value[1] & 0x0F)
         return struct.pack("<B", v)
 
     @classmethod
