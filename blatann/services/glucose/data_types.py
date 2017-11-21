@@ -1,6 +1,4 @@
 from enum import IntEnum
-
-from blatann.exceptions import DecodeError
 from blatann.services import ble_data_types
 
 
@@ -252,6 +250,7 @@ class GlucoseSample(ble_data_types.BleCompoundDataType):
         stream = ble_data_types.BleDataStream()
         stream.encode(ble_data_types.SFloat, self.value)
         stream.encode(ble_data_types.DoubleNibble, [self.type, self.sample_location])
+        return stream
 
     @classmethod
     def decode(cls, stream):
