@@ -39,6 +39,9 @@ class GlucoseServer(object):
 
     def set_features(self, features):
         """
+        Sets the features for the Glucose Feature characteristic
+
+        :param features: The supported features of the sensor
         :type features: GlucoseFeatures
         """
         self.feature_characteristic.set_value(features.encode().value, False)

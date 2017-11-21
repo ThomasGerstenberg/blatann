@@ -5,6 +5,7 @@ from blatann import BleDevice
 from blatann.gap import advertising, IoCapabilities
 from blatann.utils import setup_logger
 from blatann.services import glucose
+from blatann.services.glucose import GlucoseFeatureType
 from blatann.waitables import GenericWaitable
 
 
@@ -58,7 +59,11 @@ def main(serial_port):
     # Create a database to store the readings
     glucose_database = glucose.BasicGlucoseDatabase()
     # Add the service to the BLE database, using the glucose database just created, require encryption at the minimum
-    glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.JUST_WORKS)
+    service = glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.JUST_WORKS)
+
+    # Set the Glucose Feature values
+    features = glucose.GlucoseFeatures(GlucoseFeatureType.low_battery_detection, GlucoseFeatureType.strip_insertion_error_detection)
+    service.set_features(features)
 
     # Add some measurements to the glucose database
     add_fake_glucose_readings(glucose_database)
