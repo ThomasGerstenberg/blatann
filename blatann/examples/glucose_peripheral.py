@@ -12,10 +12,6 @@ logger = setup_logger(level="INFO")
 
 
 def on_connect(peer, event_args):
-    """
-    :type peer: blatann.peer.Peer
-    :type event_args: None
-    """
     if peer:
         logger.info("Connected to peer")
     else:
@@ -26,43 +22,62 @@ def on_disconnect(peer, event_args):
     logger.info("Disconnected from peer, reason: {}".format(event_args.reason))
 
 
-def main(serial_port):
-    ble_device = BleDevice(serial_port)
-    ble_device.open()
+def add_fake_glucose_readings(glucose_database, num_records=15):
+    init_time = datetime.datetime.now()
 
-    glucose_database = glucose.BasicGlucoseDatabase()
-    glucose.add_glucose_server(ble_device.database, glucose_database)
+    for i in range(0, num_records):
+        # Increment the reading times by 5 mins
+        sample_time = init_time + datetime.timedelta(minutes=i * 5)
 
-    # Fake some measurement stuff, basic for now
-
-    now = datetime.datetime.now()
-
-    for i in range(1, 15):
-        sample_time = now + datetime.timedelta(minutes=i*5)
+        # create a sample reading
         sample = glucose.GlucoseSample(glucose.GlucoseType.capillary_plasma, glucose.SampleLocation.finger,
                                        12.345 * i, glucose.GlucoseConcentrationUnits.mol_per_liter)
+
+        # Create the measurement
         m = glucose.GlucoseMeasurement(i, sample_time, sample=sample)
 
         # Add some records with context
         if i % 4 == 0:
-            carbs = glucose.CarbsInfo(carbs_grams=50*i, carb_type=glucose.CarbohydrateType.lunch)
-            medication = glucose.MedicationInfo(glucose.MedicationType.long_acting_insulin, 5.41*i,
+            carbs = glucose.CarbsInfo(carbs_grams=50 * i, carb_type=glucose.CarbohydrateType.lunch)
+            medication = glucose.MedicationInfo(glucose.MedicationType.long_acting_insulin, 5.41 * i,
                                                 glucose.MedicationUnits.milligrams)
-            context = glucose.GlucoseContext(i, carbs=carbs, medication=medication, hba1c_percent=i*6.05)
+            context = glucose.GlucoseContext(i, carbs=carbs, medication=medication, hba1c_percent=i * 6.05)
             m.context = context
 
         glucose_database.add_record(m)
 
-    logger.info("Advertising")
+
+def main(serial_port):
+    ble_device = BleDevice(serial_port)
+    ble_device.open()
+
+    # Create a database to store the readings
+    glucose_database = glucose.BasicGlucoseDatabase()
+    # Add the service to the BLE database, using the glucose database just created
+    glucose.add_glucose_service(ble_device.database, glucose_database)
+
+    # Add some measurements to the glucose database
+    add_fake_glucose_readings(glucose_database)
+
+    # Register listeners for when the client connects and disconnects
+    ble_device.client.on_connect.register(on_connect)
+    ble_device.client.on_disconnect.register(on_disconnect)
+
+    # Set the connection parameters for the client
+    ble_device.client.set_connection_parameters(15, 30, 4000)
+
+    # Advertise the Glucose service
     adv_data = advertising.AdvertisingData(local_name="Glucose Test", flags=0x06,
                                            service_uuid16s=glucose.GLUCOSE_SERVICE_UUID)
     ble_device.advertiser.set_advertise_data(adv_data)
-    ble_device.client.on_connect.register(on_connect)
-    ble_device.client.on_disconnect.register(on_disconnect)
-    ble_device.client.set_connection_parameters(15, 30, 4000)
+
+    logger.info("Advertising")
     ble_device.advertiser.start(timeout_sec=0, auto_restart=True)
+
+    # Create a waitable that will never fire, and wait for some time
     w = GenericWaitable()
-    w.wait(60*30, exception_on_timeout=False)
+    w.wait(60*30, exception_on_timeout=False)  # Keep device active for 30 mins
+
     logger.info("Done")
     ble_device.close()
 
