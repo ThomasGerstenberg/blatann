@@ -371,12 +371,30 @@ class RacpResponseCode(IntEnum):
 
 class RacpCommand(ble_data_types.BleCompoundDataType):
     def __init__(self, opcode, operator, filter_type=None, filter_params=None):
+        """
+        :type opcode: RacpOpcode
+        :type operator: RacpOperator
+        :type filter_type: FilterType
+        :param filter_params:
+        """
         self.opcode = opcode
         self.operator = operator
         self.filter_type = filter_type
         if filter_params is None:
             filter_params = []
         self.filter_params = filter_params
+
+    def get_filter_min_max(self):
+        if self.operator == RacpOperator.all_records:
+            return None, None
+        if self.operator == RacpOperator.less_than_or_equal_to:
+            return None, self.filter_params[0]
+        if self.operator == RacpOperator.greater_than_or_equal_to:
+            return self.filter_params[0], None
+        if self.operator == RacpOperator.within_range_inclusive:
+            return self.filter_params[0], self.filter_params[1]
+        # First/Last record, return Nones
+        return None, None
 
     def encode(self):
         stream = ble_data_types.BleDataStream()
@@ -406,6 +424,11 @@ class RacpCommand(ble_data_types.BleCompoundDataType):
 
 class RacpResponse(ble_data_types.BleCompoundDataType):
     def __init__(self, request_opcode=None, response_code=None, record_count=None):
+        """
+        :type request_opcode: RacpOpcode
+        :type response_code: RacpResponseCode
+        :type record_count: int
+        """
         self.request_code = request_opcode
         self.response_code = response_code
         self.record_count = record_count

@@ -361,13 +361,17 @@ class Bitfield(BleCompoundDataType):
             bit_value = getattr(self, attr_name)
             if bit_value:
                 value |= 1 << bit
-        stream.encode(self._width_type_map[self.bitfield_width], value)
+        stream.encode(self._encoder_class(), value)
         return stream
 
     @classmethod
+    def _encoder_class(cls):
+        return cls._width_type_map[cls.bitfield_width]
+
+    @classmethod
     def decode(cls, stream):
-        value = cls._width_type_map[cls.bitfield_width].decode(stream)
-        return  cls.from_integer_value(value)
+        value = cls._encoder_class().decode(stream)
+        return cls.from_integer_value(value)
 
     @classmethod
     def from_integer_value(cls, value):
@@ -377,6 +381,10 @@ class Bitfield(BleCompoundDataType):
                 setattr(bitfield, attr_name, True)
 
         return bitfield
+
+    @classmethod
+    def byte_count(cls):
+        return cls._encoder_class().byte_count
 
     def __repr__(self):
         set_bit_strs = []
