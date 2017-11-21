@@ -8,7 +8,7 @@ from blatann.services import glucose
 from blatann.waitables import GenericWaitable
 
 
-logger = setup_logger(level="DEBUG")
+logger = setup_logger(level="INFO")
 
 
 def on_connect(peer, event_args):
@@ -48,7 +48,7 @@ def main(serial_port):
             carbs = glucose.CarbsInfo(carbs_grams=50*i, carb_type=glucose.CarbohydrateType.lunch)
             medication = glucose.MedicationInfo(glucose.MedicationType.long_acting_insulin, 5.41*i,
                                                 glucose.MedicationUnits.milligrams)
-            context = glucose.GlucoseContext(i, carbs=carbs, medication=medication, hba1c_percent=i*6)
+            context = glucose.GlucoseContext(i, carbs=carbs, medication=medication, hba1c_percent=i*6.05)
             m.context = context
 
         glucose_database.add_record(m)

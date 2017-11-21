@@ -2,7 +2,7 @@ import logging
 from blatann.services.glucose.constants import *
 from blatann.services.glucose.data_types import *
 from blatann.services.glucose.racp import *
-from blatann.services.glucose.database import AbstractGlucoseDatabase
+from blatann.services.glucose.database import IGlucoseDatabase
 from blatann.gatt import SecurityLevel
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
 
@@ -14,7 +14,7 @@ class GlucoseServer(object):
     def __init__(self, service, glucose_database, security_level=SecurityLevel.OPEN):
         """
         :type service: GattsService
-        :type glucose_database: AbstractGlucoseDatabase
+        :type glucose_database: IGlucoseDatabase
         :param security_level:
         """
         self.service = service
@@ -46,7 +46,7 @@ class GlucoseServer(object):
     def _report_next_record(self):
         if self._current_command:
             if len(self._records_to_report) > 0:
-                next_record = self._records_to_report.pop()
+                next_record = self._records_to_report.pop(0)
                 noti_id = self.measurement_characteristic.notify(next_record.encode().value).notification_id
                 self._active_notifications.append(noti_id)
                 if next_record.context:

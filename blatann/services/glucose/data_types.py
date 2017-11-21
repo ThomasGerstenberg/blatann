@@ -259,6 +259,10 @@ class GlucoseSample(ble_data_types.BleCompoundDataType):
 
         return GlucoseSample(glucose_type, location, value)
 
+    def __repr__(self):
+        return "{}({}, {}, {}, {})".format(self.__class__.__name__, str(self.type), self.value,
+                                           str(self.units), str(self.sample_location))
+
 
 class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
     """
@@ -323,6 +327,19 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
 
         return GlucoseMeasurement(sequence_number, time, time_offset, reading, sensor_status, has_context)
 
+    def __repr__(self):
+        params = ["seq: {}".format(self.sequence_number), "time: {}".format(self.measurement_time)]
+        if self.time_offset_minutes is not None:
+            params.append("time offset: {}".format(self.time_offset_minutes))
+        if self.sample:
+            params.append(str(self.sample))
+        if self.sensor_status:
+            params.append(str(self.sensor_status))
+        if self.context:
+            params.append(str(self.context))
+
+        return "{}({})".format(self.__class__.__name__, ", ".join(params))
+
 
 class CarbsInfo(ble_data_types.BleCompoundDataType):
     """
@@ -348,6 +365,9 @@ class CarbsInfo(ble_data_types.BleCompoundDataType):
     def decode(cls, stream):
         carb_type, carbs_grams = stream.decode_multiple(ble_data_types.Uint8, ble_data_types.SFloat)
         return CarbsInfo(carb_type, carbs_grams)
+
+    def __repr__(self):
+        return "{}({}g, {})".format(self.__class__.__name__, self.carbs_grams, str(self.carb_type))
 
 
 class ExerciseInfo(ble_data_types.BleCompoundDataType):
@@ -381,6 +401,10 @@ class ExerciseInfo(ble_data_types.BleCompoundDataType):
         duration, intensity = stream.decode_multiple(ble_data_types.Uint16, ble_data_types.Uint8)
         return ExerciseInfo(duration, intensity)
 
+    def __repr__(self):
+        return "{}({} seconds, {}% intensity)".format(self.__class__.__name__,
+                                                      self.duration_seconds, self.intensity_percent)
+
 
 class MedicationInfo(ble_data_types.BleCompoundDataType):
     """
@@ -410,6 +434,9 @@ class MedicationInfo(ble_data_types.BleCompoundDataType):
     def decode(cls, stream):
         med_type, med_value = stream.decode_multiple(ble_data_types.Uint8, ble_data_types.SFloat)
         return MedicationInfo(med_type, med_value)
+
+    def __repr__(self):
+        return "{}({}, {} {})".format(self.__class__.__name__, self.value, str(self.units), str(self.type))
 
 
 class _GlucoseContextFlags(ble_data_types.Bitfield):
@@ -528,3 +555,23 @@ class GlucoseContext(ble_data_types.BleCompoundDataType):
         hba1c = stream.decode_if(flags.hba1c_present, ble_data_types.SFloat)
 
         return GlucoseContext(sequence_number, carbs, meal_type, tester, health, exercise, medication, hba1c, extended_flags)
+
+    def __repr__(self):
+        params = ["seq: {}".format(self.sequence_number)]
+        if self.carbs:
+            params.append(str(self.carbs))
+        if self.meal_type:
+            params.append(str(self.meal_type))
+        if self.tester:
+            params.append(str(self.tester))
+        if self.health_status:
+            params.append(str(self.health_status))
+        if self.exercise:
+            params.append(str(self.exercise))
+        if self.medication:
+            params.append(str(self.medication))
+        if self.hba1c_percent:
+            params.append("hba1c: {}%".format(self.hba1c_percent))
+        if self.extra_flags:
+            params.append("extra_flags: {}".format(self.extra_flags))
+        return "{}({})".format(self.__class__.__name__, ", ".join(params))
