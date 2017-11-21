@@ -41,6 +41,14 @@ def main(serial_port):
         t = now + datetime.timedelta(minutes=i*5)
         v = 12.345 * i
         m = glucose.GlucoseMeasurement(i, t, value=v)
+        # Add some records with context
+        if i % 4 == 0:
+            context = glucose.GlucoseContext(i, carb_type=glucose.CarbohydrateType.breakfast, carbs_grams=50*i,
+                                             medication_type=glucose.MedicationType.long_acting_insulin,
+                                             medication_units=glucose.MedicationUnits.milligrams,
+                                             medication_value=100*i, hba1c_percent=i*6)
+            m.context = context
+
         glucose_database.add_record(m)
 
     logger.info("Advertising")
@@ -58,4 +66,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM4")
+    main("COM49")

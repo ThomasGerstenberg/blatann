@@ -68,8 +68,8 @@ class SensorStatus(ble_data_types.Bitfield):
 
 
 class MedicationUnits(IntEnum):
-    kilograms = 0
-    liters = 1
+    milligrams = 0
+    milliliters = 1
 
 
 class CarbohydrateType(IntEnum):
@@ -110,7 +110,7 @@ class MedicationType(IntEnum):
     rapid_acting_insulin = 1
     short_acting_insulin = 2
     intermediate_acting_insulin = 3
-    long_acting_insulin =4
+    long_acting_insulin = 4
     premixed_insulin = 5
 
 
@@ -246,7 +246,7 @@ class _GlucoseContextFlags(ble_data_types.Bitfield):
         self.tester_health_present = False
         self.exercise_present = False
         self.medication_present = False
-        self.medication_units = MedicationUnits.kilograms
+        self.medication_units = MedicationUnits.milligrams
         self.hba1c_present = False
         self.extended_flags_present = False
 
@@ -256,13 +256,13 @@ class _GlucoseContextFlags(ble_data_types.Bitfield):
 class GlucoseContext(ble_data_types.BleCompoundDataType):
     EXERCISE_DURATION_OVERRUN = 65535
 
-    def __init__(self, sequence_number, carb_type=None, carbs_mg=None, meal_type=None,
+    def __init__(self, sequence_number, carb_type=None, carbs_grams=None, meal_type=None,
                  tester=None, health_status=None, exercise_duration_seconds=None, exercise_intensity_percent=None,
-                 medication_type=None, medication_value=None, medication_units=MedicationUnits.kilograms,
+                 medication_type=None, medication_value=None, medication_units=MedicationUnits.milligrams,
                  hba1c_percent=None, extra_flags=None):
         self.sequence_number = sequence_number
         self.carb_type = carb_type
-        self.carbs_mg = carbs_mg
+        self.carbs_mg = carbs_grams
         self.meal_type = meal_type
         self.tester = tester
         self.health_status = health_status

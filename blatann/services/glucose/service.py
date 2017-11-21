@@ -1,13 +1,8 @@
 import logging
-from blatann.services import ble_data_types
 from blatann.services.glucose.constants import *
 from blatann.services.glucose.data_types import *
 from blatann.services.glucose.database import AbstractGlucoseDatabase
-from blatann.event_type import EventSource
-from blatann.event_args import DecodedReadCompleteEventArgs
-from blatann.waitables import EventWaitable
-from blatann.gatt import GattStatusCode, SecurityLevel
-from blatann.gatt.gattc import GattcService
+from blatann.gatt import SecurityLevel
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
 
 

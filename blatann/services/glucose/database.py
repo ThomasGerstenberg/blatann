@@ -1,5 +1,5 @@
 from threading import RLock
-from blatann.services.glucose.data_types import GlucoseMeasurement, GlucoseContext
+from blatann.services.glucose.data_types import GlucoseMeasurement, GlucoseContext, RacpResponseCode
 
 
 class AbstractGlucoseDatabase(object):
@@ -50,6 +50,7 @@ class BasicGlucoseDatabase(AbstractGlucoseDatabase):
             records = self._get_records_in_range(min_seq_num, max_seq_num)
             for r in records:
                 self._records.remove(r)
+        return RacpResponseCode.success
 
     def record_count(self, min_seq_num=None, max_seq_num=None):
         return len(self._get_records_in_range(min_seq_num, max_seq_num))
