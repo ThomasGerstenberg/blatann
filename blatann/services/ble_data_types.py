@@ -15,8 +15,11 @@ class BleDataStream(object):
     def __str__(self):
         return self.value
 
+    def __getitem__(self, item):
+        return self.value[item]
+
     def __len__(self):
-        return len(self.value)
+        return len(self.value) - self.decode_index
 
     def encode(self, ble_type, *values):
         stream = ble_type.encode(*values)
@@ -112,7 +115,7 @@ class DoubleNibble(BleDataType):
     @classmethod
     def encode(cls, value):
         # value should be a list of two integers
-        v = (value[0] & 0xF0) | (value[1] & 0x0F)
+        v = ((value[0] & 0x0F) << 4) | (value[1] & 0x0F)
         return struct.pack("<B", v)
 
     @classmethod
@@ -361,13 +364,17 @@ class Bitfield(BleCompoundDataType):
             bit_value = getattr(self, attr_name)
             if bit_value:
                 value |= 1 << bit
-        stream.encode(self._width_type_map[self.bitfield_width], value)
+        stream.encode(self._encoder_class(), value)
         return stream
 
     @classmethod
+    def _encoder_class(cls):
+        return cls._width_type_map[cls.bitfield_width]
+
+    @classmethod
     def decode(cls, stream):
-        value = cls._width_type_map[cls.bitfield_width].decode(stream)
-        return  cls.from_integer_value(value)
+        value = cls._encoder_class().decode(stream)
+        return cls.from_integer_value(value)
 
     @classmethod
     def from_integer_value(cls, value):
@@ -377,6 +384,10 @@ class Bitfield(BleCompoundDataType):
                 setattr(bitfield, attr_name, True)
 
         return bitfield
+
+    @classmethod
+    def byte_count(cls):
+        return cls._encoder_class().byte_count
 
     def __repr__(self):
         set_bit_strs = []

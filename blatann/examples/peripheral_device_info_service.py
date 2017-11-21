@@ -2,7 +2,7 @@ from blatann import BleDevice
 from blatann.examples import example_utils
 from blatann.gap import advertising
 from blatann.services import device_info
-from blatann.nrf.nrf_event_sync import EventSync
+from blatann.waitables import GenericWaitable
 
 logger = example_utils.setup_logger(level="DEBUG")
 
@@ -43,8 +43,11 @@ def main(serial_port):
     ble_device.client.on_connect.register(on_connect)
     ble_device.client.on_disconnect.register(on_disconnect)
     ble_device.advertiser.start(timeout_sec=0, auto_restart=True)
-    with EventSync(ble_device.ble_driver, int) as sync:
-        event = sync.get(timeout=60*30)  # Advertise for 30 mins
+
+    # Create a waitable that will never fire, and wait for some time
+    w = GenericWaitable()
+    w.wait(60*30, exception_on_timeout=False)  # Keep device active for 30 mins
+
     logger.info("Done")
     ble_device.close()
 
