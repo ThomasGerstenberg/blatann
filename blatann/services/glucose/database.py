@@ -1,5 +1,6 @@
 from threading import RLock
-from blatann.services.glucose.data_types import GlucoseMeasurement, GlucoseContext, RacpResponseCode
+from blatann.services.glucose.data_types import GlucoseMeasurement
+from blatann.services.glucose.racp import RacpResponseCode
 
 
 class AbstractGlucoseDatabase(object):

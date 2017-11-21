@@ -4,12 +4,22 @@ from blatann.exceptions import DecodeError
 from blatann.services import ble_data_types
 
 
+# See https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.glucose.xml
+# For more info about the data types and values defined here
+
+
 class GlucoseConcentrationUnits(IntEnum):
+    """
+    The concentration units available for reporting glucose levels
+    """
     kg_per_liter = 0
     mol_per_liter = 1
 
 
 class GlucoseType(IntEnum):
+    """
+    The glucose types available
+    """
     capillary_whole_blood = 1
     capillary_plasma = 2
     venous_whole_blood = 3
@@ -23,6 +33,9 @@ class GlucoseType(IntEnum):
 
 
 class SampleLocation(IntEnum):
+    """
+    Location which the blood sample was taken
+    """
     finger = 1
     alternate_test_site = 2
     earlobe = 3
@@ -30,7 +43,75 @@ class SampleLocation(IntEnum):
     unknown = 15
 
 
+class MedicationUnits(IntEnum):
+    """
+    Available units to report medication values in
+    """
+    milligrams = 0
+    milliliters = 1
+
+
+class CarbohydrateType(IntEnum):
+    """
+    The type of carbohydrate consumed by the user
+    """
+    breakfast = 1
+    lunch = 2
+    dinner = 3
+    snack = 4
+    drink = 5
+    supper = 6
+    brunch = 7
+
+
+class MealType(IntEnum):
+    """
+    The type of meal consumed
+    """
+    preprandial = 1   # Before Meal
+    postprandial = 2  # After Meal
+    fasting = 3
+    casual = 4        # Snacks, drinks, etc.
+    bedtime = 5
+
+
+class TesterType(IntEnum):
+    """
+    Information about who tested the glucose levels
+    """
+    self = 1
+    health_care_professional = 2
+    lab_test = 3
+    not_available = 15
+
+
+class HealthStatus(IntEnum):
+    """
+    Current health status of the user
+    """
+    minor_issues = 1
+    major_issues = 2
+    during_menses = 3
+    under_stress = 4
+    normal = 5
+    not_available = 15
+
+
+class MedicationType(IntEnum):
+    """
+    Medication type consumed
+    """
+    rapid_acting_insulin = 1
+    short_acting_insulin = 2
+    intermediate_acting_insulin = 3
+    long_acting_insulin = 4
+    premixed_insulin = 5
+
+
 class SensorStatusType(IntEnum):
+    """
+    The types of sensor statuses that can be communicated
+    """
     battery_low = 0
     sensor_malfunction = 1
     sample_size_insufficient = 2
@@ -46,10 +127,17 @@ class SensorStatusType(IntEnum):
 
 
 class SensorStatus(ble_data_types.Bitfield):
+    """
+    Class which holds the current sensor status information
+    """
     bitfield_width = 16
     bitfield_enum = SensorStatusType
 
     def __init__(self, *sensor_statuses):
+        """
+        :param sensor_statuses: The list of SensorStatusTypes that are currently active on the device
+        :type sensor_statuses: SensorStatusType
+        """
         # Field names must match enum names exactly
         self.battery_low = SensorStatusType.battery_low in sensor_statuses
         self.sensor_malfunction = SensorStatusType.sensor_malfunction in sensor_statuses
@@ -67,54 +155,11 @@ class SensorStatus(ble_data_types.Bitfield):
         super(SensorStatus, self).__init__()
 
 
-class MedicationUnits(IntEnum):
-    milligrams = 0
-    milliliters = 1
-
-
-class CarbohydrateType(IntEnum):
-    breakfast = 1
-    lunch = 2
-    dinner = 3
-    snack = 4
-    drink = 5
-    supper = 6
-    brunch = 7
-
-
-class MealType(IntEnum):
-    preprandial = 1
-    postprandial = 2
-    fasting = 3
-    casual = 4
-    bedtime = 5
-
-
-class TesterType(IntEnum):
-    self = 1
-    health_care_professional = 2
-    lab_test = 3
-    not_available = 15
-
-
-class HealthStatus(IntEnum):
-    minor_issues = 1
-    major_issues = 2
-    during_menses = 3
-    under_stress = 4
-    normal = 5
-    not_available = 15
-
-
-class MedicationType(IntEnum):
-    rapid_acting_insulin = 1
-    short_acting_insulin = 2
-    intermediate_acting_insulin = 3
-    long_acting_insulin = 4
-    premixed_insulin = 5
-
-
-class GlucoseFeatureTypes(IntEnum):
+class GlucoseFeatureType(IntEnum):
+    """
+    Enumeration of the supported feature types to be reported
+    using the Feature characteristic
+    """
     low_battery_detection = 0
     sensor_malfunction_detection = 1
     sensor_sample_size = 2
@@ -129,27 +174,39 @@ class GlucoseFeatureTypes(IntEnum):
 
 
 class GlucoseFeatures(ble_data_types.Bitfield):
+    """
+    Class which holds the features of the glucose sensor and is reported to over bluetooth.
+    This is the class used for the Feature characteristic.
+    """
     bitfield_width = 16
-    bitfield_enum = GlucoseFeatureTypes
+    bitfield_enum = GlucoseFeatureType
 
     def __init__(self, *supported_features):
+        """
+        :param supported_features: The features that are supported by the sensor
+        :type supported_features: GlucoseFeatureType
+        """
         # Field names must match enum names exactly
-        self.low_battery_detection = GlucoseFeatureTypes.low_battery_detection in supported_features
-        self.sensor_malfunction_detection = GlucoseFeatureTypes.sensor_malfunction_detection in supported_features
-        self.sensor_sample_size = GlucoseFeatureTypes.sensor_sample_size in supported_features
-        self.strip_insertion_error_detection = GlucoseFeatureTypes.strip_insertion_error_detection in supported_features
-        self.strip_type_error_detection = GlucoseFeatureTypes.strip_type_error_detection in supported_features
-        self.sensor_result_high_low_detection = GlucoseFeatureTypes.sensor_result_high_low_detection in supported_features
-        self.sensor_temp_high_low_detection = GlucoseFeatureTypes.sensor_temp_high_low_detection in supported_features
-        self.sensor_read_interrupt_detection = GlucoseFeatureTypes.sensor_read_interrupt_detection in supported_features
-        self.general_device_fault = GlucoseFeatureTypes.general_device_fault in supported_features
-        self.time_fault = GlucoseFeatureTypes.time_fault in supported_features
-        self.multiple_bond = GlucoseFeatureTypes.multiple_bond in supported_features
+        self.low_battery_detection = GlucoseFeatureType.low_battery_detection in supported_features
+        self.sensor_malfunction_detection = GlucoseFeatureType.sensor_malfunction_detection in supported_features
+        self.sensor_sample_size = GlucoseFeatureType.sensor_sample_size in supported_features
+        self.strip_insertion_error_detection = GlucoseFeatureType.strip_insertion_error_detection in supported_features
+        self.strip_type_error_detection = GlucoseFeatureType.strip_type_error_detection in supported_features
+        self.sensor_result_high_low_detection = GlucoseFeatureType.sensor_result_high_low_detection in supported_features
+        self.sensor_temp_high_low_detection = GlucoseFeatureType.sensor_temp_high_low_detection in supported_features
+        self.sensor_read_interrupt_detection = GlucoseFeatureType.sensor_read_interrupt_detection in supported_features
+        self.general_device_fault = GlucoseFeatureType.general_device_fault in supported_features
+        self.time_fault = GlucoseFeatureType.time_fault in supported_features
+        self.multiple_bond = GlucoseFeatureType.multiple_bond in supported_features
 
         super(GlucoseFeatures, self).__init__()
 
 
 class _MeasurementFlags(ble_data_types.Bitfield):
+    """
+    Bitfield used in the GlucoseMeasurement struct which defines
+    which fields are present in the message
+    """
     class Bits(IntEnum):
         time_offset_present = 0
         sample_present = 1
@@ -170,18 +227,64 @@ class _MeasurementFlags(ble_data_types.Bitfield):
         super(_MeasurementFlags, self).__init__()
 
 
+class GlucoseSample(ble_data_types.BleCompoundDataType):
+    """
+    Holds the info about a glucose sample to be reported through the Glucose Measurement characteristic
+    """
+    def __init__(self, glucose_type, sample_location, value, units=GlucoseConcentrationUnits.kg_per_liter):
+        """
+        :param glucose_type: The type of blood the glucose sample is from
+        :type glucose_type: GlucoseType
+        :param sample_location: the body location the sample was taken from
+        :type sample_location: SampleLocation
+        :param value: The glucose reading taken, in units specified by the units parameter
+        :type value: float
+        :param units: The units of the glucose sample
+        :type units: GlucoseConcentrationUnits
+        """
+        self.type = glucose_type
+        self.value = value
+        self.sample_location = sample_location
+        # Units are specified in a separate bitfield, not encoded or decoded
+        self.units = units
+
+    def encode(self):
+        stream = ble_data_types.BleDataStream()
+        stream.encode(ble_data_types.SFloat, self.value)
+        stream.encode(ble_data_types.DoubleNibble, [self.type, self.sample_location])
+
+    @classmethod
+    def decode(cls, stream):
+        value = stream.decode(ble_data_types.SFloat)
+        glucose_type, location = stream.decode(ble_data_types.DoubleNibble)
+
+        return GlucoseSample(glucose_type, location, value)
+
+
 class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
+    """
+    Represents a single measurement taken and can be reported over BLE
+    """
     def __init__(self, sequence_number, measurement_time, time_offset_minutes=None,
-                 value=None, units=GlucoseConcentrationUnits.kg_per_liter,
-                 glucose_type=GlucoseType.undetermined_whole_blood, location=SampleLocation.unknown,
-                 sensor_status=None, context=None):
+                 sample=None, sensor_status=None, context=None):
+        """
+        :param sequence_number: the sequence number of the measurement. Mandatory.
+        :type sequence_number: int
+        :param measurement_time: The time at which the measurement occurred. Must be a datetime struct. Mandatory.
+        :type measurement_time: datetime.datetime
+        :param time_offset_minutes: The time offset of the measurement, in minutes. Optional.
+        :type time_offset_minutes: int
+        :param sample: The blood glucose reading. Optional.
+        :type sample: GlucoseSample
+        :param sensor_status: The status of the glucose sensor. Optional.
+        :type sensor_status: SensorStatus
+        :param context: The glucose context to be reported with the measurement. Optional
+        :type context: GlucoseContext
+        """
         self.sequence_number = sequence_number
         self.measurement_time = measurement_time
         self.time_offset_minutes = time_offset_minutes
-        self.value = value
-        self.units = units
-        self.type = glucose_type
-        self.location = location
+        self.sample = sample
         self.sensor_status = sensor_status
         self.context = context
 
@@ -190,21 +293,17 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
 
         flags = _MeasurementFlags()
         flags.time_offset_present = self.time_offset_minutes is not None
-        flags.sample_present = self.value is not None
-        flags.concentration_units = int(self.units)
+        flags.sample_present = self.sample is not None
+        if flags.sample_present:
+            flags.concentration_units = int(self.sample.units)
         flags.sensor_status = self.sensor_status is not None
         flags.has_context = self.context is not None
 
         stream.encode(flags)
         stream.encode(ble_data_types.Uint16, self.sequence_number)
         stream.encode(ble_data_types.DateTime(self.measurement_time))
-
         stream.encode_if(flags.time_offset_present, ble_data_types.Int16, self.time_offset_minutes)
-
-        stream.encode_if_multiple(flags.sample_present,
-                                  [ble_data_types.SFloat, self.value],
-                                  [ble_data_types.DoubleNibble, [self.type, self.location]])
-
+        stream.encode_if(flags.sample_present, self.sample)
         stream.encode_if(flags.sensor_status, self.sensor_status)
 
         return stream
@@ -218,15 +317,107 @@ class GlucoseMeasurement(ble_data_types.BleCompoundDataType):
         has_context = flags.has_context
 
         time_offset = stream.decode_if(flags.time_offset_present, ble_data_types.Int16)
-        glucose_value, (glucose_type, location) = stream.decode_if_multiple(flags.sample_present, ble_data_types.SFloat, ble_data_types.DoubleNibble)
+        reading = stream.decode_if(flags.sample_present, GlucoseSample)
+        if reading:
+            reading.units = units
         sensor_status = stream.decode_if(flags.sensor_status, SensorStatus)
 
-        measurement = GlucoseMeasurement(sequence_number, time, time_offset, glucose_value, units, glucose_type,
-                                         location, sensor_status, has_context)
-        return measurement
+        return GlucoseMeasurement(sequence_number, time, time_offset, reading, sensor_status, has_context)
+
+
+class CarbsInfo(ble_data_types.BleCompoundDataType):
+    """
+    Holds information about the carbs consumed
+    """
+    def __init__(self, carbs_grams, carb_type):
+        """
+        :param carbs_grams: The amount of carbs consumed, in grams
+        :type carbs_grams: float
+        :param carb_type: The type of carbs consumed
+        :type carb_type: CarbohydrateType
+        """
+        self.carbs_grams = carbs_grams
+        self.carb_type = carb_type
+
+    def encode(self):
+        stream = ble_data_types.BleDataStream()
+        stream.encode(ble_data_types.Uint8, self.carb_type)
+        stream.encode(ble_data_types.SFloat, self.carbs_grams)
+        return stream
+
+    @classmethod
+    def decode(cls, stream):
+        carb_type, carbs_grams = stream.decode_multiple(ble_data_types.Uint8, ble_data_types.SFloat)
+        return CarbsInfo(carb_type, carbs_grams)
+
+
+class ExerciseInfo(ble_data_types.BleCompoundDataType):
+    """
+    Holds information about the exercise performed with the glucose sample
+    """
+    # Special value which represents that the exercise duration was longer than what can be reported (uint16 max)
+    EXERCISE_DURATION_OVERRUN = 65535
+
+    def __init__(self, duration_seconds, intensity_percent):
+        """
+        :param duration_seconds: The duration of exercise, in seconds. Can only report up to 65534 seconds over BLE
+        :type duration_seconds: int
+        :param intensity_percent: The exercise intensity, expressed as a percentage
+        :type intensity_percent: int
+        """
+        self.duration_seconds = duration_seconds
+        self.intensity_percent = intensity_percent
+
+    def encode(self):
+        stream = ble_data_types.BleDataStream()
+
+        # Clamp duration to max 16-bit, max value means overrun
+        duration = max(self.duration_seconds, self.EXERCISE_DURATION_OVERRUN)
+        stream.encode(ble_data_types.Uint16, duration)
+        stream.encode(ble_data_types.Uint8, self.intensity_percent)
+        return stream
+
+    @classmethod
+    def decode(cls, stream):
+        duration, intensity = stream.decode_multiple(ble_data_types.Uint16, ble_data_types.Uint8)
+        return ExerciseInfo(duration, intensity)
+
+
+class MedicationInfo(ble_data_types.BleCompoundDataType):
+    """
+    Holds information about the medication administered
+    """
+    def __init__(self, med_type, med_value, med_units=MedicationUnits.milligrams):
+        """
+        :param med_type: The type of medication administered
+        :type med_type: MedicationType
+        :param med_value: The amount of medication administered, expressed in units specified
+        :type med_value: float
+        :param med_units: The units of medication
+        :type med_units: MedicationUnits
+        """
+        self.type = med_type
+        self.value = med_value
+        # Units are specified in a separate bitfield, not encoded or decoded
+        self.units = med_units
+
+    def encode(self):
+        stream = ble_data_types.BleDataStream()
+        stream.encode(ble_data_types.Uint8, self.type)
+        stream.encode(ble_data_types.SFloat, self.value)
+        return stream
+
+    @classmethod
+    def decode(cls, stream):
+        med_type, med_value = stream.decode_multiple(ble_data_types.Uint8, ble_data_types.SFloat)
+        return MedicationInfo(med_type, med_value)
 
 
 class _GlucoseContextFlags(ble_data_types.Bitfield):
+    """
+    Bitfield used in the GlucoseContext struct which defines
+    which fields are present in the message
+    """
     class Bits(IntEnum):
         carb_present = 0
         meal_present = 1
@@ -254,23 +445,37 @@ class _GlucoseContextFlags(ble_data_types.Bitfield):
 
 
 class GlucoseContext(ble_data_types.BleCompoundDataType):
-    EXERCISE_DURATION_OVERRUN = 65535
+    """
+    Class which holds the extra glucose context data associated with the glucose measurement
+    """
 
-    def __init__(self, sequence_number, carb_type=None, carbs_grams=None, meal_type=None,
-                 tester=None, health_status=None, exercise_duration_seconds=None, exercise_intensity_percent=None,
-                 medication_type=None, medication_value=None, medication_units=MedicationUnits.milligrams,
-                 hba1c_percent=None, extra_flags=None):
+    def __init__(self, sequence_number, carbs=None, meal_type=None, tester=None, health_status=None,
+                 exercise=None, medication=None, hba1c_percent=None, extra_flags=None):
+        """
+        :param sequence_number: The sequence number that the context corresponds to. Must match the GlucoseMeasurement sequence number
+        :type sequence_number: int
+        :param carbs: Information about the carbs consumed. Optional.
+        :type carbs: CarbsInfo
+        :param meal_type: The type of meal the reading was taken with. Optional
+        :type meal_type: MealType
+        :param tester: Who tested the glucose levels. Optional, must be present if health_status is specified.
+        :type tester: TesterType
+        :param health_status: The health status of the patient. Optional, must be present if tester is specified.
+        :type health_status: HealthStatus
+        :param exercise: Information about the exercise performed at time of sample. Optional.
+        :type exercise: ExerciseInfo
+        :param medication: Information about the medication administered to the patient. Optional.
+        :type medication: MedicationInfo
+        :param hba1c_percent:
+        :param extra_flags:
+        """
         self.sequence_number = sequence_number
-        self.carb_type = carb_type
-        self.carbs_mg = carbs_grams
+        self.carbs = carbs
         self.meal_type = meal_type
         self.tester = tester
         self.health_status = health_status
-        self.exercise_duration_seconds = exercise_duration_seconds
-        self.exercise_intensity_percent = exercise_intensity_percent
-        self.medication_type = medication_type
-        self.medication_value = medication_value
-        self.medication_units = medication_units
+        self.exercise = exercise
+        self.medication = medication
         self.hba1c_percent = hba1c_percent
         self.extra_flags = extra_flags
 
@@ -278,12 +483,13 @@ class GlucoseContext(ble_data_types.BleCompoundDataType):
         stream = ble_data_types.BleDataStream()
 
         flags = _GlucoseContextFlags()
-        flags.carb_present = self.carbs_mg is not None
+        flags.carb_present = self.carbs is not None
         flags.meal_present = self.meal_type is not None
         flags.tester_health_present = self.tester is not None
-        flags.exercise_present = self.exercise_duration_seconds is not None
-        flags.medication_present = self.medication_value is not None
-        flags.medication_units = self.medication_units
+        flags.exercise_present = self.exercise is not None
+        flags.medication_present = self.medication is not None
+        if flags.medication_present:
+            flags.medication_units = self.medication.units
         flags.hba1c_present = self.hba1c_percent is not None
         flags.extended_flags_present = self.extra_flags is not None
 
@@ -291,23 +497,14 @@ class GlucoseContext(ble_data_types.BleCompoundDataType):
         stream.encode(ble_data_types.Uint16, self.sequence_number)
 
         stream.encode_if(flags.extended_flags_present, ble_data_types.Uint8, self.extra_flags)
-
-        stream.encode_if_multiple(flags.carb_present,
-                                  [ble_data_types.Uint8, self.carb_type],
-                                  [ble_data_types.SFloat, self.carbs_mg])
+        stream.encode_if(flags.carb_present, self.carbs)
 
         stream.encode_if(flags.meal_present, ble_data_types.Uint8, self.meal_type)
         stream.encode_if(flags.tester_health_present, ble_data_types.DoubleNibble, [self.tester, self.health_status])
 
-        duration = max(self.exercise_duration_seconds or 0, self.EXERCISE_DURATION_OVERRUN)  # Clamp to max 16-bit, max value means overrun
+        stream.encode_if(flags.exercise_present, self.exercise)
 
-        stream.encode_if_multiple(flags.exercise_present,
-                                  [ble_data_types.Uint16, duration],
-                                  [ble_data_types.Uint8, self.exercise_intensity_percent])
-
-        stream.encode_if_multiple(flags.medication_present,
-                                  [ble_data_types.Uint8, self.medication_type],
-                                  [ble_data_types.SFloat, self.medication_value])
+        stream.encode_if(flags.medication_present, self.medication)
         stream.encode_if(flags.hba1c_present, ble_data_types.SFloat, self.hba1c_percent)
 
         return stream
@@ -322,144 +519,13 @@ class GlucoseContext(ble_data_types.BleCompoundDataType):
 
         sequence_number = stream.decode(ble_data_types.Uint16)
         extended_flags = stream.decode_if(flags.extended_flags_present, ble_data_types.Uint8)
-        carb_type, carbs_mg = stream.decode_multiple(flags.carb_present, ble_data_types.Uint8, ble_data_types.SFloat)
+        carbs = stream.decode_if(flags.carb_present, CarbsInfo)
         meal_type = stream.decode_if(flags.meal_present, ble_data_types.Uint8)
         tester, health = stream.decode_if(flags.tester_health_present, ble_data_types.DoubleNibble)
-        exercise_duration, exercise_intensity = stream.decode_if_multiple(flags.exercise_present, ble_data_types.Uint16, ble_data_types.Uint8)
-        med_type, med_value = stream.decode_if_multiple(flags.medication_present, ble_data_types.Uint8, ble_data_types.SFloat)
+        exercise = stream.decode_if(flags.exercise_present, ExerciseInfo)
+        medication = stream.decode_if(flags.medication_present, MedicationInfo)
+        if medication:
+            medication.units = med_units
         hba1c = stream.decode_if(flags.hba1c_present, ble_data_types.SFloat)
 
-        return GlucoseContext(sequence_number, carb_type, carbs_mg, meal_type, tester, health,
-                              exercise_duration, exercise_intensity,
-                              med_type, med_value, med_units, hba1c, extended_flags)
-
-
-class RacpOpcode(IntEnum):
-    report_stored_records = 1
-    delete_stored_records = 2
-    abort_operation = 3
-    report_number_of_records = 4
-    number_of_records_response = 5
-    response_code = 6
-
-
-class RacpOperator(IntEnum):
-    null = 0
-    all_records = 1
-    less_than_or_equal_to = 2
-    greater_than_or_equal_to = 3
-    within_range_inclusive = 4
-    first_record = 5
-    last_record = 6
-
-
-class FilterType(IntEnum):
-    sequence_number = 1
-    user_facing_time = 2
-
-
-class RacpResponseCode(IntEnum):
-    success = 1
-    not_supported = 2
-    invalid_operator = 3
-    operator_not_supported = 4
-    invalid_operand = 5
-    no_records_found = 6
-    abort_not_successful = 7
-    procedure_not_completed = 8
-    operand_not_supported = 9
-
-
-class RacpCommand(ble_data_types.BleCompoundDataType):
-    def __init__(self, opcode, operator, filter_type=None, filter_params=None):
-        """
-        :type opcode: RacpOpcode
-        :type operator: RacpOperator
-        :type filter_type: FilterType
-        :param filter_params:
-        """
-        self.opcode = opcode
-        self.operator = operator
-        self.filter_type = filter_type
-        if filter_params is None:
-            filter_params = []
-        self.filter_params = filter_params
-
-    def get_filter_min_max(self):
-        if self.operator == RacpOperator.all_records:
-            return None, None
-        if self.operator == RacpOperator.less_than_or_equal_to:
-            return None, self.filter_params[0]
-        if self.operator == RacpOperator.greater_than_or_equal_to:
-            return self.filter_params[0], None
-        if self.operator == RacpOperator.within_range_inclusive:
-            return self.filter_params[0], self.filter_params[1]
-        # First/Last record, return Nones
-        return None, None
-
-    def encode(self):
-        stream = ble_data_types.BleDataStream()
-        stream.encode(ble_data_types.Uint8, self.opcode)
-        stream.encode(ble_data_types.Uint8, self.operator)
-        if self.filter_type is not None:
-            stream.encode(ble_data_types.Uint8, self.filter_type)
-            for f in self.filter_params:
-                stream.encode(ble_data_types.Uint16, f)
-        return stream
-
-    @classmethod
-    def decode(cls, stream):
-        opcode = stream.decode(ble_data_types.Uint8)
-        operator = stream.decode(ble_data_types.Uint8)
-        if len(stream) > 0:
-            filter_type = stream.decode(ble_data_types.Uint8)
-            filter_params = []
-            while len(stream) >= 2:
-                filter_params.append(stream.decode(ble_data_types.Uint16))
-        else:
-            filter_type = None
-            filter_params = None
-
-        return RacpCommand(opcode, operator, filter_type, filter_params)
-
-
-class RacpResponse(ble_data_types.BleCompoundDataType):
-    def __init__(self, request_opcode=None, response_code=None, record_count=None):
-        """
-        :type request_opcode: RacpOpcode
-        :type response_code: RacpResponseCode
-        :type record_count: int
-        """
-        self.request_code = request_opcode
-        self.response_code = response_code
-        self.record_count = record_count
-
-    def encode(self):
-        stream = ble_data_types.BleDataStream()
-        if self.record_count is None:
-            stream.encode_multiple([ble_data_types.Uint8, RacpOpcode.response_code],
-                                   [ble_data_types.Uint8, RacpOperator.null],
-                                   [ble_data_types.Uint8, self.request_code],
-                                   [ble_data_types.Uint8, self.response_code])
-        else:
-            stream.encode_multiple([ble_data_types.Uint8, RacpOpcode.number_of_records_response],
-                                   [ble_data_types.Uint8, RacpOperator.null],
-                                   [ble_data_types.Uint16, self.record_count])
-        return stream
-
-    @classmethod
-    def decode(cls, stream):
-        opcode = RacpOpcode(stream.decode(ble_data_types.Uint8))
-        _ = RacpOperator(stream.decode(ble_data_types.Uint8))
-
-        if opcode == RacpOpcode.response_code:
-            request_opcode, response_code = stream.decode_multiple(ble_data_types.Uint8, ble_data_types.Uint8)
-            record_count = None
-        elif opcode == RacpOpcode.number_of_records_response:
-            request_opcode = None
-            response_code = None
-            record_count = stream.decode(ble_data_types.Uint16)
-        else:
-            raise DecodeError("Unable to decode RACP Response, got opcode: {}".format(opcode))
-
-        return RacpResponse(request_opcode, response_code, record_count)
+        return GlucoseContext(sequence_number, carbs, meal_type, tester, health, exercise, medication, hba1c, extended_flags)

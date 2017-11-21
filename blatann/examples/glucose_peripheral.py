@@ -38,15 +38,17 @@ def main(serial_port):
     now = datetime.datetime.now()
 
     for i in range(1, 15):
-        t = now + datetime.timedelta(minutes=i*5)
-        v = 12.345 * i
-        m = glucose.GlucoseMeasurement(i, t, value=v)
+        sample_time = now + datetime.timedelta(minutes=i*5)
+        sample = glucose.GlucoseSample(glucose.GlucoseType.capillary_plasma, glucose.SampleLocation.finger,
+                                       12.345 * i, glucose.GlucoseConcentrationUnits.mol_per_liter)
+        m = glucose.GlucoseMeasurement(i, sample_time, sample=sample)
+
         # Add some records with context
         if i % 4 == 0:
-            context = glucose.GlucoseContext(i, carb_type=glucose.CarbohydrateType.breakfast, carbs_grams=50*i,
-                                             medication_type=glucose.MedicationType.long_acting_insulin,
-                                             medication_units=glucose.MedicationUnits.milligrams,
-                                             medication_value=100*i, hba1c_percent=i*6)
+            carbs = glucose.CarbsInfo(carbs_grams=50*i, carb_type=glucose.CarbohydrateType.lunch)
+            medication = glucose.MedicationInfo(glucose.MedicationType.long_acting_insulin, 5.41*i,
+                                                glucose.MedicationUnits.milligrams)
+            context = glucose.GlucoseContext(i, carbs=carbs, medication=medication, hba1c_percent=i*6)
             m.context = context
 
         glucose_database.add_record(m)
