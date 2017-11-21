@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import sys
 
 
-VERSION = "v0.1.0"
+VERSION = "v0.2.0"
 
 py2 = sys.version_info[0] == 2
 py3 = sys.version_info[0] == 3
