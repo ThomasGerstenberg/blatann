@@ -71,6 +71,11 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
     return wrapper(wrapped)
 
 
+class NrfDriverObserver(object):
+    def on_driver_event(self, nrf_driver, event):
+        pass
+
+
 class NrfDriver(object):
     api_lock = Lock()
     default_baud_rate = 115200
