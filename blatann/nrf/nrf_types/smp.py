@@ -24,6 +24,28 @@ class BLEGapSecMode(object):
         return cls(params.sm, params.lv)
 
 
+class BLEGapMasterId(object):
+    def __init__(self, ediv, rand):
+        self.ediv = ediv
+        self.rand = rand
+
+    def to_c(self):
+        rand_array = util.list_to_uint8_array(self.rand)
+        master_id = driver.ble_gap_master_id_t()
+        master_id.ediv = self.ediv
+        master_id.rand = rand_array.cast()
+        return master_id
+
+    @classmethod
+    def from_c(cls, master_id):
+        rand = util.uint8_array_to_list(master_id.rand, driver.BLE_GAP_SEC_RAND_LEN)
+        ediv = master_id.ediv
+        return cls(ediv, rand)
+
+    def __repr__(self):
+        return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, self.rand)
+
+
 class BLEGapSecModeType(object):
     NO_ACCESS = BLEGapSecMode(0, 0)
     OPEN = BLEGapSecMode(1, 1)
@@ -149,7 +171,14 @@ class BLEGapSecKeyset(object):
     def __init__(self):
         self.sec_keyset = driver.ble_gap_sec_keyset_t()
         keys_own = driver.ble_gap_sec_keys_t()
-        self.sec_keyset.keys_own = keys_own
+        keys_own.p_enc_key = driver.ble_gap_enc_key_t()
+        keys_own.p_enc_key.enc_info = driver.ble_gap_enc_info_t()
+        keys_own.p_enc_key.master_id = driver.ble_gap_master_id_t()
+        keys_own.p_id_key = driver.ble_gap_id_key_t()
+        keys_own.p_id_key.id_info = driver.ble_gap_irk_t()
+        keys_own.p_id_key.id_addr_info = driver.ble_gap_addr_t()
+        keys_own.p_sign_key = driver.ble_gap_sign_info_t()
+        keys_own.p_pk = driver.ble_gap_lesc_p256_pk_t()
 
         keys_peer = driver.ble_gap_sec_keys_t()
         keys_peer.p_enc_key = driver.ble_gap_enc_key_t()
@@ -158,8 +187,10 @@ class BLEGapSecKeyset(object):
         keys_peer.p_id_key = driver.ble_gap_id_key_t()
         keys_peer.p_id_key.id_info = driver.ble_gap_irk_t()
         keys_peer.p_id_key.id_addr_info = driver.ble_gap_addr_t()
-        # keys_peer.p_sign_key            = driver.ble_gap_sign_info_t()
-        # keys_peer.p_pk                  = driver.ble_gap_lesc_p256_pk_t()
+        keys_peer.p_sign_key = driver.ble_gap_sign_info_t()
+        keys_peer.p_pk = driver.ble_gap_lesc_p256_pk_t()
+
+        self.sec_keyset.keys_own = keys_own
         self.sec_keyset.keys_peer = keys_peer
 
     @classmethod

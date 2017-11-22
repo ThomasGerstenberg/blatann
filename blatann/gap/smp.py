@@ -51,6 +51,7 @@ class SecurityManager(object):
         self._on_passkey_entry_event = EventSource("On Passkey Entry", logger)
         self.peer.on_connect.register(self._on_peer_connected)
         self._auth_key_resolve_thread = threading.Thread()
+        self.keyset = nrf_types.BLEGapSecKeyset()
 
     """
     Events
@@ -142,8 +143,8 @@ class SecurityManager(object):
         self.peer.driver_event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
 
     def _get_security_params(self):
-        keyset_own = nrf_types.BLEGapSecKeyDist()
-        keyset_peer = nrf_types.BLEGapSecKeyDist()
+        keyset_own = nrf_types.BLEGapSecKeyDist(True, True)
+        keyset_peer = nrf_types.BLEGapSecKeyDist(True, True)
         sec_params = nrf_types.BLEGapSecParams(self.security_params.bond, self.security_params.passcode_pairing,
                                                False, False, self.security_params.io_capabilities,
                                                self.security_params.out_of_band, 7, 16, keyset_own, keyset_peer)
@@ -155,14 +156,13 @@ class SecurityManager(object):
         """
         # Security parameters are only provided for clients
         sec_params = self._get_security_params() if self.peer.is_client else None
-        keyset = nrf_types.BLEGapSecKeyset()
 
         if self.security_params.reject_pairing_requests:
             status = nrf_types.BLEGapSecStatus.pairing_not_supp
         else:
             status = nrf_types.BLEGapSecStatus.success
 
-        self.ble_device.ble_driver.ble_gap_sec_params_reply(event.conn_handle, status, sec_params, keyset)
+        self.ble_device.ble_driver.ble_gap_sec_params_reply(event.conn_handle, status, sec_params, self.keyset)
 
         if not self.security_params.reject_pairing_requests:
             self._busy = True

@@ -22,8 +22,8 @@ _event_classes = [
     GapEvtConnSecUpdate,
     GapEvtAuthStatus,
     GapEvtPasskeyDisplay,
+    GapEvtSecInfoRequest,
     # TODO: (not all listed)
-    # driver.BLE_GAP_EVT_SEC_INFO_REQUEST,
     # driver.BLE_GAP_EVT_SEC_REQUEST,
 
     # Gattc

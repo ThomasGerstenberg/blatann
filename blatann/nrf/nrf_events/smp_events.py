@@ -35,6 +35,31 @@ class GapEvtConnSecUpdate(GapEvtSec):
                                                                                                 self.encr_key_size)
 
 
+class GapEvtSecInfoRequest(GapEvtSec):
+    evt_id = driver.BLE_GAP_EVT_SEC_INFO_REQUEST
+
+    def __init__(self, conn_handle, peer_addr, master_id, enc_info, id_info, sign_info):
+        super(GapEvtSecInfoRequest, self).__init__(conn_handle)
+        self.peer_addr = peer_addr
+        self.master_id = master_id
+        self.enc_info = enc_info
+        self.id_info = id_info
+        self.sign_info = sign_info
+
+    @classmethod
+    def from_c(cls, event):
+        sec_info = event.evt.gap_evt.params.sec_info_request
+        conn_handle = event.evt.gap_evt.conn_handle
+        peer_addr = BLEGapAddr.from_c(sec_info.peer_addr)
+        master_id = BLEGapMasterId.from_c(sec_info.master_id)
+
+        return cls(conn_handle, peer_addr, master_id, sec_info.enc_info, sec_info.id_info, sec_info.sign_info)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, peer_addr={!r}, master_id={!r}, enc: {!r}, id: {!r}, sign: {!r})".format(
+            self.__class__.__name__, self.conn_handle, self.peer_addr, self.master_id,
+            self.enc_info, self.id_info, self.sign_info)
+
 class GapEvtSecParamsRequest(GapEvtSec):
     evt_id = driver.BLE_GAP_EVT_SEC_PARAMS_REQUEST
 
