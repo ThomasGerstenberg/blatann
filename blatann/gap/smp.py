@@ -143,8 +143,8 @@ class SecurityManager(object):
         self.peer.driver_event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
 
     def _get_security_params(self):
-        keyset_own = nrf_types.BLEGapSecKeyDist(True, True)
-        keyset_peer = nrf_types.BLEGapSecKeyDist(True, True)
+        keyset_own = nrf_types.BLEGapSecKeyDist(True, True, False, False)
+        keyset_peer = nrf_types.BLEGapSecKeyDist(True, True, False, False)
         sec_params = nrf_types.BLEGapSecParams(self.security_params.bond, self.security_params.passcode_pairing,
                                                False, False, self.security_params.io_capabilities,
                                                self.security_params.out_of_band, 7, 16, keyset_own, keyset_peer)
@@ -177,6 +177,10 @@ class SecurityManager(object):
         """
         self._busy = False
         self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(event.auth_status))
+        if event.auth_status == SecurityStatus.success:
+            logger.info("Keyset before auth: {}".format(self.keyset))
+            self.keyset.reload()
+            logger.info("Keyset after auth:  {}".format(self.keyset))
 
     def _on_passkey_display(self, driver, event):
         """

@@ -3,6 +3,7 @@ import logging
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.enums import *
+from blatann.nrf.nrf_types.gap import BLEGapAddr
 
 
 logger = logging.getLogger(__name__)
@@ -22,28 +23,6 @@ class BLEGapSecMode(object):
     @classmethod
     def from_c(cls, params):
         return cls(params.sm, params.lv)
-
-
-class BLEGapMasterId(object):
-    def __init__(self, ediv, rand):
-        self.ediv = ediv
-        self.rand = rand
-
-    def to_c(self):
-        rand_array = util.list_to_uint8_array(self.rand)
-        master_id = driver.ble_gap_master_id_t()
-        master_id.ediv = self.ediv
-        master_id.rand = rand_array.cast()
-        return master_id
-
-    @classmethod
-    def from_c(cls, master_id):
-        rand = util.uint8_array_to_list(master_id.rand, driver.BLE_GAP_SEC_RAND_LEN)
-        ediv = master_id.ediv
-        return cls(ediv, rand)
-
-    def __repr__(self):
-        return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, self.rand)
 
 
 class BLEGapSecModeType(object):
@@ -106,10 +85,8 @@ class BLEGapSecKeyDist(object):
         return kdist
 
     def __repr__(self):
-        return "{}(enc_key={!r}, id_key={!r}, sign_key={!r}, link_key={!r})".format(self.__class__.__name__,
-                                                                                    self.enc_key, self.id_key,
-                                                                                    self.sign_key,
-                                                                                    self.link_key)
+        return "{}(enc_key={!r}, id_key={!r}, sign_key={!r}, link_key={!r})".format(
+            self.__class__.__name__, self.enc_key, self.id_key, self.sign_key, self.link_key)
 
 
 class BLEGapSecParams(object):
@@ -154,48 +131,228 @@ class BLEGapSecParams(object):
         return sec_params
 
     def __repr__(self):
-        return "{}(bond={!r}, mitm={!r}, le_sec_pairing={!r}, keypress_noti={!r}, io_caps={!r}, oob={!r}, " \
-               "min_key_size={!r}, max_key_size={!r}, kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__,
-                                                                                               self.bond, self.mitm,
-                                                                                               self.le_sec_pairing,
-                                                                                               self.keypress_noti,
-                                                                                               self.io_caps,
-                                                                                               self.oob,
-                                                                                               self.min_key_size,
-                                                                                               self.max_key_size,
-                                                                                               self.kdist_own,
-                                                                                               self.kdist_peer)
+        return "{}(bond={!r}, mitm={!r}, lesc={!r}, " \
+               "keypress_noti={!r}, io_caps={!r}, oob={!r}, " \
+               "min_key_size={!r}, max_key_size={!r}, " \
+               "kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__, self.bond, self.mitm,
+                                                         self.le_sec_pairing, self.keypress_noti, self.io_caps,
+                                                         self.oob, self.min_key_size, self.max_key_size,
+                                                         self.kdist_own, self.kdist_peer)
+
+
+class BLEGapMasterId(object):
+    def __init__(self, ediv, rand):
+        self.ediv = ediv
+        self.rand = rand
+
+    def to_c(self):
+        rand_array = util.list_to_uint8_array(self.rand).cast()
+        master_id = driver.ble_gap_master_id_t()
+        master_id.ediv = self.ediv
+        master_id.rand = rand_array.cast()
+        return master_id
+
+    @classmethod
+    def from_c(cls, master_id):
+        rand = util.uint8_array_to_list(master_id.rand, driver.BLE_GAP_SEC_RAND_LEN)
+        ediv = master_id.ediv
+        return cls(ediv, rand)
+
+    def __repr__(self):
+        return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, self.rand)
+
+
+class BLEGapEncryptInfo(object):
+    KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
+
+    def __init__(self, ltk="", lesc=False, auth=False):
+        self.ltk = ltk
+        self.lesc = lesc
+        self.auth = auth
+
+    def to_c(self):
+        info = driver.ble_gap_enc_info_t()
+        info.ltk = util.list_to_uint8_array(self.ltk).cast()
+        info.lesc = self.lesc
+        info.auth = self.auth
+        info.ltk_len = len(self.ltk)
+        return info
+
+    @classmethod
+    def from_c(cls, info):
+        ltk = util.uint8_array_to_list(info.ltk, cls.KEY_LENGTH)
+        lesc = info.lesc
+        auth = info.auth
+        return cls(ltk, lesc, auth)
+
+    def __repr__(self):
+        if not self.ltk:
+            return ""
+        return "Encrypt(ltk: {}, lesc: {}, auth: {})".format(self.ltk, self.lesc, self.auth)
+
+
+class BLEGapEncryptKey(object):
+    def __init__(self, enc_info=None, master_id=None):
+        self.enc_info = enc_info
+        self.master_id = master_id
+
+    def to_c(self):
+        key = driver.ble_gap_enc_key_t()
+
+        if self.enc_info:
+            key.enc_info = self.enc_info.to_c()
+        if self.master_id:
+            key.master_id = self.master_id.to_c()
+        return key
+
+    @classmethod
+    def from_c(cls, key):
+        enc_info = BLEGapEncryptInfo.from_c(key.enc_info)
+        master_id = BLEGapMasterId.from_c(key.master_id)
+        return cls(enc_info, master_id)
+
+    def __repr__(self):
+        if not self.enc_info:
+            return ""
+        return "key: {}, master_id: {}".format(self.enc_info, self.master_id)
+
+
+class BLEGapIdKey(object):
+    KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
+
+    def __init__(self, irk="", peer_addr=None):
+        self.irk = irk
+        self.peer_addr = peer_addr
+
+    def to_c(self):
+        irk_key = driver.ble_gap_id_key_t()
+
+        irk = driver.ble_gap_irk_t()
+        irk.irk = util.list_to_uint8_array(self.irk).cast()
+        irk_key.id_info = irk
+
+        if self.peer_addr:
+            addr = self.peer_addr.to_c()
+            irk_key.id_addr_info = addr
+        return irk_key
+
+    @classmethod
+    def from_c(cls, id_key):
+        irk = util.uint8_array_to_list(id_key.id_info.irk, cls.KEY_LENGTH)
+        addr = BLEGapAddr.from_c(id_key.id_addr_info)
+        return cls(irk, addr)
+
+    def __repr__(self):
+        if not self.irk:
+            return ""
+        return "irk: {}, peer: {}".format(self.irk, self.peer_addr)
+
+
+class BLEGapPublicKey(object):
+    KEY_LENGTH = driver.BLE_GAP_LESC_P256_PK_LEN
+
+    def __init__(self, key=""):
+        self.key = key
+
+    def to_c(self):
+        key = driver.ble_gap_lesc_p256_pk_t()
+        key.pk = util.list_to_uint8_array(self.key).cast()
+        return key
+
+    @classmethod
+    def from_c(cls, key):
+        key_data = util.uint8_array_to_list(key.pk, cls.KEY_LENGTH)
+        return cls(key_data)
+
+    def __repr__(self):
+        if not self.key:
+            return ""
+        return str(self.key)
+
+
+class BLEGapSignKey(object):
+    KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
+
+    def __init__(self, key=""):
+        self.key = key
+
+    def to_c(self):
+        key = driver.ble_gap_sign_info_t()
+        key.csrk = util.list_to_uint8_array(self.key).cast()
+        return key
+
+    @classmethod
+    def from_c(cls, key):
+        key_data = util.uint8_array_to_list(key.csrk, cls.KEY_LENGTH)
+        return cls(key_data)
+
+    def __repr__(self):
+        if not self.key:
+            return ""
+        return str(self.key)
+
+
+class BLEGapSecKeys(object):
+    def __init__(self, enc_key=None, id_key=None, sign_key=None, public_key=None):
+        if not enc_key:
+            enc_key = BLEGapEncryptKey()
+        if not id_key:
+            id_key = BLEGapIdKey()
+        if not sign_key:
+            sign_key = BLEGapSignKey()
+        if not public_key:
+            public_key = BLEGapPublicKey()
+        self.enc_key = enc_key
+        self.id_key = id_key
+        self.sign_key = sign_key
+        self.public_key = public_key
+
+    def to_c(self):
+        keys = driver.ble_gap_sec_keys_t()
+        keys.p_enc_key = self.enc_key.to_c()
+        keys.p_id_key = self.id_key.to_c()
+        keys.p_sign_key = self.sign_key.to_c()
+        keys.p_pk = self.public_key.to_c()
+        return keys
+
+    @classmethod
+    def from_c(cls, keys):
+        enc_key = BLEGapEncryptKey.from_c(keys.p_enc_key)
+        id_key = BLEGapIdKey.from_c(keys.p_id_key)
+        sign_key = BLEGapSignKey.from_c(keys.p_sign_key)
+        pk = BLEGapPublicKey.from_c(keys.p_pk)
+        return cls(enc_key, id_key, sign_key, pk)
+
+    def __repr__(self):
+        return "{}(enc: {}, id: {}, sign: {}, pk: {})".format(self.__class__.__name__, self.enc_key, self.id_key,
+                                                              self.sign_key, self.public_key)
 
 
 class BLEGapSecKeyset(object):
-    def __init__(self):
-        self.sec_keyset = driver.ble_gap_sec_keyset_t()
-        keys_own = driver.ble_gap_sec_keys_t()
-        keys_own.p_enc_key = driver.ble_gap_enc_key_t()
-        keys_own.p_enc_key.enc_info = driver.ble_gap_enc_info_t()
-        keys_own.p_enc_key.master_id = driver.ble_gap_master_id_t()
-        keys_own.p_id_key = driver.ble_gap_id_key_t()
-        keys_own.p_id_key.id_info = driver.ble_gap_irk_t()
-        keys_own.p_id_key.id_addr_info = driver.ble_gap_addr_t()
-        keys_own.p_sign_key = driver.ble_gap_sign_info_t()
-        keys_own.p_pk = driver.ble_gap_lesc_p256_pk_t()
-
-        keys_peer = driver.ble_gap_sec_keys_t()
-        keys_peer.p_enc_key = driver.ble_gap_enc_key_t()
-        keys_peer.p_enc_key.enc_info = driver.ble_gap_enc_info_t()
-        keys_peer.p_enc_key.master_id = driver.ble_gap_master_id_t()
-        keys_peer.p_id_key = driver.ble_gap_id_key_t()
-        keys_peer.p_id_key.id_info = driver.ble_gap_irk_t()
-        keys_peer.p_id_key.id_addr_info = driver.ble_gap_addr_t()
-        keys_peer.p_sign_key = driver.ble_gap_sign_info_t()
-        keys_peer.p_pk = driver.ble_gap_lesc_p256_pk_t()
-
-        self.sec_keyset.keys_own = keys_own
-        self.sec_keyset.keys_peer = keys_peer
-
-    @classmethod
-    def from_c(cls, sec_params):
-        raise NotImplemented()
+    def __init__(self, own_keys=None, peer_keys=None):
+        if not own_keys:
+            own_keys = BLEGapSecKeys()
+        if not peer_keys:
+            peer_keys = BLEGapSecKeys()
+        self.own_keys = own_keys
+        self.peer_keys = peer_keys
+        self.ble_keyset = self.to_c()
 
     def to_c(self):
-        return self.sec_keyset
+        self.ble_keyset = driver.ble_gap_sec_keyset_t()
+        self.ble_keyset.keys_own = self.own_keys.to_c()
+        self.ble_keyset.keys_peer = self.peer_keys.to_c()
+        return self.ble_keyset
+
+    def reload(self):
+        self.own_keys = BLEGapSecKeys.from_c(self.ble_keyset.keys_own)
+        self.peer_keys = BLEGapSecKeys.from_c(self.ble_keyset.keys_peer)
+
+    @classmethod
+    def from_c(cls, keyset):
+        own_keys = BLEGapSecKeys.from_c(keyset.keys_own)
+        peer_keys = BLEGapSecKeys.from_c(keyset.keys_peer)
+        return cls(own_keys, peer_keys)
+
+    def __repr__(self):
+        return "{}(own: {!r}, peer: {!r})".format(self.__class__.__name__, self.own_keys, self.peer_keys)

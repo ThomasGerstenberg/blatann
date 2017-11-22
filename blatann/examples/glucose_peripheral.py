@@ -15,7 +15,7 @@ from blatann.services.glucose import GlucoseFeatureType
 from blatann.waitables import GenericWaitable
 
 
-logger = setup_logger(level="INFO")
+logger = setup_logger(level="DEBUG")
 
 
 def on_connect(peer, event_args):
@@ -118,7 +118,7 @@ def main(serial_port):
     ble_device.client.security.on_passkey_display_required.register(display_passkey)
 
     # Set the security parameters for the client
-    ble_device.client.security.set_security_params(passcode_pairing=False, bond=False,
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=True,
                                                    io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
 
     # Advertise the Glucose service
@@ -138,4 +138,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM49")
+    main("COM4")
