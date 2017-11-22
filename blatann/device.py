@@ -5,8 +5,7 @@ from blatann import peer, exceptions
 from blatann.gap import advertising, scanning
 from blatann.gatt import gatts
 from blatann.nrf import nrf_events, nrf_types
-from blatann.nrf.nrf_driver import NrfDriver
-from blatann.nrf.nrf_observers import NrfDriverObserver
+from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
 from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
 
