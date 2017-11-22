@@ -141,7 +141,9 @@ class BLEGapSecParams(object):
 
 
 class BLEGapMasterId(object):
-    def __init__(self, ediv, rand):
+    RAND_LEN = driver.BLE_GAP_SEC_RAND_LEN
+
+    def __init__(self, ediv=0, rand=""):
         self.ediv = ediv
         self.rand = rand
 
@@ -154,7 +156,7 @@ class BLEGapMasterId(object):
 
     @classmethod
     def from_c(cls, master_id):
-        rand = util.uint8_array_to_list(master_id.rand, driver.BLE_GAP_SEC_RAND_LEN)
+        rand = bytearray(util.uint8_array_to_list(master_id.rand, cls.RAND_LEN))
         ediv = master_id.ediv
         return cls(ediv, rand)
 
@@ -180,7 +182,7 @@ class BLEGapEncryptInfo(object):
 
     @classmethod
     def from_c(cls, info):
-        ltk = util.uint8_array_to_list(info.ltk, cls.KEY_LENGTH)
+        ltk = bytearray(util.uint8_array_to_list(info.ltk, cls.KEY_LENGTH))
         lesc = info.lesc
         auth = info.auth
         return cls(ltk, lesc, auth)
@@ -238,7 +240,7 @@ class BLEGapIdKey(object):
 
     @classmethod
     def from_c(cls, id_key):
-        irk = util.uint8_array_to_list(id_key.id_info.irk, cls.KEY_LENGTH)
+        irk = bytearray(util.uint8_array_to_list(id_key.id_info.irk, cls.KEY_LENGTH))
         addr = BLEGapAddr.from_c(id_key.id_addr_info)
         return cls(irk, addr)
 
@@ -261,7 +263,7 @@ class BLEGapPublicKey(object):
 
     @classmethod
     def from_c(cls, key):
-        key_data = util.uint8_array_to_list(key.pk, cls.KEY_LENGTH)
+        key_data = bytearray(util.uint8_array_to_list(key.pk, cls.KEY_LENGTH))
         return cls(key_data)
 
     def __repr__(self):
@@ -283,7 +285,7 @@ class BLEGapSignKey(object):
 
     @classmethod
     def from_c(cls, key):
-        key_data = util.uint8_array_to_list(key.csrk, cls.KEY_LENGTH)
+        key_data = bytearray(util.uint8_array_to_list(key.csrk, cls.KEY_LENGTH))
         return cls(key_data)
 
     def __repr__(self):
