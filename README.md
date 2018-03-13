@@ -12,7 +12,7 @@ and the associated Connectivity firmware.
 
 #### Supported Devices/Software
 
-This has been tested using both the nRF52 Dev Kit and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
+This has been tested using both the nRF52832 Dev Kit and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
 
 This API implements against Connectivity Firmware for SoftDevice v3. This does NOT support the nRF51 or SoftDevice v2.
 
@@ -51,7 +51,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] CCCD Caching
     - [ ] Documentation
 - [ ] Examples
-    - [ ] Advertiser
+    - [X] Advertiser (implemented via normal peripheral examples)
     - [X] Scanner
     - [X] Central, Procedural
     - [X] Central, Event Driven
@@ -62,7 +62,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] Bonding
 - [ ] Bluetooth Services
     - [X] Device Info Service
-    - [ ] Glucose Service (in progress)
+    - [ ] Glucose Service (Peripheral done, Central untested)
     - [ ] Nordic UART Service
     - More TBD (or on request)
 - [X] License
