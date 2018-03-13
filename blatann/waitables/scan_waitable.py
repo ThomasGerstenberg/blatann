@@ -25,6 +25,6 @@ class ScanFinishedWaitable(Waitable):
 
     def wait(self, timeout=None, exception_on_timeout=True):
         """
-        :rtype: blatann.scanning.ScanReportCollection
+        :rtype: blatann.gap.scanning.ScanReportCollection
         """
         return super(ScanFinishedWaitable, self).wait(timeout, exception_on_timeout)

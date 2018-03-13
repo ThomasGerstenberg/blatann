@@ -1,3 +1,10 @@
+"""
+This example exhibits some of the functionality of a peripheral BLE device,
+such as reading, writing and notifying characteristics.
+
+This peripheral can be used with one of the central examples running on a separate nordic device,
+or can be run with the nRF Connect app to explore the contents of the service
+"""
 import atexit
 import struct
 import threading
@@ -5,7 +12,7 @@ import time
 
 from blatann import BleDevice
 from blatann.examples import example_utils, constants
-from blatann.gap import advertising, smp
+from blatann.gap import advertising, smp, IoCapabilities
 from blatann.waitables import GenericWaitable
 
 logger = example_utils.setup_logger(level="DEBUG")
@@ -13,8 +20,11 @@ logger = example_utils.setup_logger(level="DEBUG")
 
 def on_connect(peer, event_args):
     """
-    :type peer: blatann.peer.Peer
-    :type event_args: None
+    Event callback for when a central device connects to us
+
+    :param peer: The peer that connected to us
+    :type peer: blatann.peer.Client
+    :param event_args: None
     """
     if peer:
         logger.info("Connected to peer")
@@ -23,23 +33,40 @@ def on_connect(peer, event_args):
 
 
 def on_disconnect(peer, event_args):
+    """
+    Event callback for when the client disconnects from us (or when we disconnect from the client)
+
+    :param peer: The peer that disconnected
+    :type peer: blatann.peer.Client
+    :param event_args: The event args
+    :type event_args: blatann.event_args.DisconnectionEventArgs
+    """
     logger.info("Disconnected from peer, reason: {}".format(event_args.reason))
 
 
-def on_gatts_characteristic_write(characteristic, event_args):
+def on_hex_conversion_characteristic_write(characteristic, event_args):
     """
-    :type characteristic: blatann.gatts.GattsCharacteristic
+    Event callback for when the client writes to the hex conversion characteristic.
+    This takes the data written, converts it to the hex representation, and updates the characteristic
+    with this new value. If the client is subscribed to the characteristic, the client will be notified.
+
+    :param characteristic: The hex conversion characteristic
+    :type characteristic: blatann.gatt.gatts.GattsCharacteristic
+    :param event_args: the event arguments
     :type event_args: blatann.event_args.WriteEventArgs
     """
     logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
                                                                                    str(event_args.value).encode("hex")))
     new_value = "{}".format(str(event_args.value).encode("hex"))
-    characteristic.set_value(new_value[:characteristic.max_length], True)
+    characteristic.set_value(new_value[:characteristic.max_length], notify_client=True)
 
 
 def on_gatts_subscription_state_changed(characteristic, event_args):
     """
-    :type characteristic: blatann.gatts.GattsCharacteristic
+    Event callback for when a client subscribes or unsubscribes from a characteristic. This
+    is the equivalent to when a client writes to a CCCD descriptor on a characteristic.
+
+    :type characteristic: blatann.gatt.gatts.GattsCharacteristic
     :type event_args: blatann.event_args.SubscriptionStateChangeEventArgs
     """
     logger.info("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, event_args.subscription_state))
@@ -47,8 +74,13 @@ def on_gatts_subscription_state_changed(characteristic, event_args):
 
 def on_time_char_read(characteristic, event_args):
     """
-    :type characteristic: blatann.gatts.GattsCharacteristic
-    :type event_args: None
+    Event callback for when the client reads our time characteristic. Gets the current time and updates the characteristic.
+    This demonstrates "lazy evaluation" of characteristics--instead of having to constantly update this characteristic,
+    it is only updated when read/observed by an outside actor.
+
+    :param characteristic: the time characteristic
+    :type characteristic: blatann.gatt.gatts.GattsCharacteristic
+    :param event_args: None
     """
     t = time.time()
     ms = int((t * 1000) % 1000)
@@ -58,7 +90,11 @@ def on_time_char_read(characteristic, event_args):
 
 def on_client_pairing_complete(peer, event_args):
     """
-    :param peer:
+    Event callback for when the pairing process completes with the client
+
+    :param peer: the peer that completed pairing
+    :type peer: blatann.peer.Client
+    :param event_args: the event arguments
     :type event_args: blatann.event_args.PairingCompleteEventArgs
     """
     logger.info("Client Pairing complete, status: {}".format(event_args.status))
@@ -66,16 +102,27 @@ def on_client_pairing_complete(peer, event_args):
 
 def on_passkey_display(peer, event_args):
     """
+    Event callback that is called when a passkey is required to be displayed to a user
+    for the pairing process.
 
-    :param peer:
+    :param peer: The peer the passkey is for
+    :type peer: blatann.peer.Client
+    :param event_args: The event args
     :type event_args: blatann.event_args.PasskeyDisplayEventArgs
     """
     logger.info("Passkey display: {}, match: {}".format(event_args.passkey, event_args.match_request))
 
 
 class CountingCharacteristicThread(object):
+    """
+    Thread which updates the counting characteristic and notifies
+    the client each time its updated.
+    This also demonstrates the notification queuing functionality--if a notification/indication
+    is already in progress, future notifications will be queued and sent out when the previous ones complete.
+    """
     def __init__(self, characteristic):
         """
+        :param characteristic: the counting characteristic
         :type characteristic: blatann.gatt.gatts.GattsCharacteristic
         """
         self.current_value = 0
@@ -89,24 +136,39 @@ class CountingCharacteristicThread(object):
         self.thread.start()
 
     def join(self):
+        """
+        Used to stop and join the thread
+        """
         self._stop_event.set()
         self._stopped.wait(3)
 
     def _on_notify_complete(self, characteristic, event_args):
+        """
+        Event callback that is triggered when the notification finishes sending
+
+        :param characteristic: The characteristic the notification was on
+        :type characteristic: blatann.gatt.gatts.GattsCharacteristic
+        :param event_args: The event arguments
+        :type event_args: blatann.event_args.NotificationCompleteEventArgs
+        """
         logger.info("Notification Complete, id: {}, reason: {}".format(event_args.id, event_args.reason))
 
     def run(self):
         while not self._stop_event.is_set():
-
             try:
-                if not self.characteristic.client_subscribed:
+                if not self.characteristic.client_subscribed: # Do nothing until a client is subscribed
+                    time.sleep(1)
                     continue
+                # Increment the value and pack it
                 self.current_value += 1
                 value = struct.pack("<I", self.current_value)
+
+                # Send out a notification of this new value
                 waitable = self.characteristic.notify(value)
                 # Send a burst of 16, then wait for them all to send before trying to send more
                 if self.current_value % 16 == 0:
                     waitable.wait()
+                    time.sleep(1)  # Wait a second before sending out the next burst
             except Exception as e:
                 logger.exception(e)
 
@@ -114,32 +176,46 @@ class CountingCharacteristicThread(object):
 
 
 def main(serial_port):
+    # Create and open the device
     ble_device = BleDevice(serial_port)
     ble_device.open()
 
     # Set up desired security parameters
-    ble_device.client.security.set_security_params(True, smp.IoCapabilities.DISPLAY_ONLY, False, False)
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=False,
+                                                   io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
     ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
 
+    # Create and add the math service
     service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
 
-    char1 = service.add_characteristic(constants.HEX_CONVERT_CHAR_UUID, constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data")
-    char1.on_write.register(on_gatts_characteristic_write)
-    char1.on_subscription_change.register(on_gatts_subscription_state_changed)
+    # Create and add the hex conversion characteristic to the service
+    hex_conv_char = service.add_characteristic(constants.HEX_CONVERT_CHAR_UUID,
+                                               constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data")
+    # Register the callback for when a write occurs and subscription state changes
+    hex_conv_char.on_write.register(on_hex_conversion_characteristic_write)
+    hex_conv_char.on_subscription_change.register(on_gatts_subscription_state_changed)
 
+    # Create and add the counting characteristic, initializing the data to [0, 0, 0, 0]
     counting_char = service.add_characteristic(constants.COUNTING_CHAR_UUID, constants.COUNTING_CHAR_PROPERTIES, [0]*4)
     counting_char.on_subscription_change.register(on_gatts_subscription_state_changed)
+
+    # Create the thread for the counting characteristic
     counting_char_thread = CountingCharacteristicThread(counting_char)
 
+    # Create and add the time service
     time_service = ble_device.database.add_service(constants.TIME_SERVICE_UUID)
+
+    # Add the time characteristic and register the callback for when its read
     time_char = time_service.add_characteristic(constants.TIME_CHAR_UUID, constants.TIME_CHAR_PROPERTIES, "Time")
     time_char.on_read.register(on_time_char_read)
 
+    # Initialize the advertising and scan response data
     adv_data = advertising.AdvertisingData(local_name=constants.PERIPHERAL_NAME, flags=0x06)
     scan_data = advertising.AdvertisingData(service_uuid128s=constants.TIME_SERVICE_UUID, has_more_uuid128_services=True)
     ble_device.advertiser.set_advertise_data(adv_data, scan_data)
 
+    # Start advertising
     logger.info("Advertising")
     ble_device.client.on_connect.register(on_connect)
     ble_device.client.on_disconnect.register(on_disconnect)
@@ -149,6 +225,7 @@ def main(serial_port):
     w = GenericWaitable()
     w.wait(60*30, exception_on_timeout=False)  # Keep device active for 30 mins
 
+    # Cleanup
     counting_char_thread.join()
     logger.info("Done")
     ble_device.close()
