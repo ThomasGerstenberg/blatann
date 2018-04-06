@@ -36,7 +36,7 @@ class GapEvtAdvReport(GapEvt):
         if not adv_report_evt.scan_rsp:
             adv_type = BLEGapAdvType(adv_report_evt.type)
         else:
-            adv_type = BLEGapAdvType.scsan_response
+            adv_type = BLEGapAdvType.scan_response
 
         return cls(conn_handle=event.evt.gap_evt.conn_handle,
                    peer_addr=BLEGapAddr.from_c(adv_report_evt.peer_addr),
