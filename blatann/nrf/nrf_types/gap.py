@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class BLEGapAdvParams(object):
-    def __init__(self, interval_ms, timeout_s):
+    def __init__(self, interval_ms, timeout_s, advertising_type=BLEGapAdvType.connectable_undirected):
         self.interval_ms = interval_ms
         self.timeout_s = timeout_s
+        self.advertising_type = advertising_type
 
     def to_c(self):
         adv_params = driver.ble_gap_adv_params_t()
-        adv_params.type = BLEGapAdvType.connectable_undirected.value
+        adv_params.type = self.advertising_type.value
         adv_params.p_peer_addr = None  # Undirected advertisement.
         adv_params.fp = driver.BLE_GAP_ADV_FP_ANY
         adv_params.p_whitelist = None

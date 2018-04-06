@@ -51,8 +51,8 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] CCCD Caching
     - [ ] Documentation
 - [ ] Examples
-    - [X] Advertiser (implemented via normal peripheral examples)
-    - [X] Scanner
+    - [X] Advertiser/Broadcaster
+    - [X] Scanner/Observer
     - [X] Central, Procedural
     - [X] Central, Event Driven
     - [ ] Central, Multiple Connections
