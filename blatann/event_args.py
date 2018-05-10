@@ -1,6 +1,24 @@
 from enum import Enum
 
 
+class GattOperationCompleteReason(Enum):
+    """
+    The reason why a GATT operation completed
+    """
+    # Operation successful
+    SUCCESS = 0
+    # Queue of queued operations (notifications,reads, writes) was leared
+    QUEUE_CLEARED = 1
+    # The client disconnected before the operation completed
+    CLIENT_DISCONNECTED = 2
+    # The server disconnected before the operation completed
+    SERVER_DISCONNECTED = 3
+    # The client unsubscribed from the characteristic before the notification was sent
+    CLIENT_UNSUBSCRIBED = 4
+    # Unknown Failure
+    FAILED = 4
+
+
 class EventArgs(object):
     """
     Base Event Arguments class
@@ -94,26 +112,14 @@ class NotificationCompleteEventArgs(EventArgs):
     """
     Event arguments for when a notification has been sent to the client from the notification queue
     """
-    class Reason(Enum):
-        """
-        The reason why the notification completed
-        """
-        # Sent Successfully
-        SUCCESS = 0
-        # Queue was requested to be cleared
-        QUEUE_CLEARED = 1
-        # The client disconnected before notification sent
-        CLIENT_DISCONNECTED = 2
-        # The client unsubscribed from the characteristic
-        CLIENT_UNSUBSCRIBED = 3
-        # Unknown Failure
-        FAILED = 4
+    Reason = GattOperationCompleteReason
 
     def __init__(self, notification_id, data, reason):
         """
         :param notification_id: The ID of the notification that completed. This will match an ID of a sent notification
         :param data: The data that was sent (or not sent, if failed) to the client
         :param reason: The reason the notification completed
+        :type reason: GattOperationCompleteReason
         """
         self.id = notification_id
         self.data = data
@@ -126,42 +132,57 @@ class ReadCompleteEventArgs(EventArgs):
     """
     Event arguments for when a read has completed of a peripheral's characteristic
     """
-    def __init__(self, value, status):
+    def __init__(self, read_id, value, status, reason):
         """
+        :param read_id: The ID of the read that completed. This will match an id of an initiated read
         :param value: The value read by the characteristic (bytes)
         :param status: The read status
         :type status: blatann.gatt.GattStatusCode
+        :param reason: The reason the read completed
+        :type reason: GattOperationCompleteReason
         """
+        self.id = read_id
         self.value = value
         self.status = status
+        self.reason = reason
 
 
 class WriteCompleteEventArgs(EventArgs):
     """
     Event arguments for when a write has completed on a peripheral's characteristic
     """
-    def __init__(self, value, status):
+    def __init__(self, write_id, value, status, reason):
         """
+        :param write_id: the ID of the write that completed. This will match an id of an initiated write
         :param value: The value that was written to the characteristic (bytes)
         :param status: The write status
         :type status: blatann.gatt.GattStatusCode
+        :param reason: The reason the write completed
+        :type reason: GattOperationCompleteReason
         """
+        self.id = write_id
         self.value = value
         self.status = status
+        self.reason = reason
 
 
 class SubscriptionWriteCompleteEventArgs(EventArgs):
     """
     Event arguments for when changing the subscription state of a characteristic completes
     """
-    def __init__(self, value, status):
+    def __init__(self, write_id, value, status, reason):
         """
+        :param write_id: the ID of the write that completed. This will match an id of an initiated write
         :param value: The value that was written to the characteristic (bytes)
         :param status: The write status
         :type status: blatann.gatt.GattStatusCode
+        :param reason: The reason the write completed
+        :type reason: GattOperationCompleteReason
         """
+        self.id = write_id
         self.value = value
         self.status = status
+        self.reason = reason
 
 
 class NotificationReceivedEventArgs(EventArgs):
