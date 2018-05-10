@@ -40,6 +40,8 @@ class GattcCharacteristic(gatt.Characteristic):
         self._on_cccd_write_complete_event = EventSource("CCCD Write Complete", logger)
 
         self.peer.driver_event_subscribe(self._on_indication_notification, nrf_events.GattcEvtHvx)
+        self._manager.on_write_complete.register(self._write_complete)
+        self._manager.on_read_complete.register(self._read_complete)
 
     """
     Properties
@@ -183,7 +185,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
     def _read_complete(self, sender, event_args):
         """
-        Handler for GattcReader.on_read_complete.
+        Handler for _ReadWriteManager.on_read_complete.
         Dispatches the on_read_complete event and updates the internal value if read was successful
 
         :param sender: The reader that the read completed on
@@ -199,7 +201,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
     def _write_complete(self, sender, event_args):
         """
-        Handler for GattcWriter.on_write_complete. Dispatches on_write_complete or on_cccd_write_complete
+        Handler for _ReadWriteManager.on_write_complete. Dispatches on_write_complete or on_cccd_write_complete
         depending on the handle the write finished on.
 
         :param sender: The writer that the write completed on
@@ -409,6 +411,8 @@ class _ReadWriteManager(QueuedTasksManagerBase):
         self._cur_write_task = None
         self.on_read_complete = EventSource("Gattc Read Complete", logger)
         self.on_write_complete = EventSource("Gattc Write Complete", logger)
+        self._reader.on_read_complete.register(self._read_complete)
+        self._writer.on_write_complete.register(self._write_complete)
 
     def read(self, handle):
         read_task = _ReadTask(handle)
