@@ -50,10 +50,10 @@ class GlucoseServer(object):
         if self._current_command:
             if len(self._records_to_report) > 0:
                 next_record = self._records_to_report.pop(0)
-                noti_id = self.measurement_characteristic.notify(next_record.encode().value).notification_id
+                noti_id = self.measurement_characteristic.notify(next_record.encode().value).id
                 self._active_notifications.append(noti_id)
-                if next_record.context:
-                    noti_id = self.context_characteristic.notify(next_record.context.encode().value).notification_id
+                if next_record.context and self.context_characteristic.client_subscribed:
+                    noti_id = self.context_characteristic.notify(next_record.context.encode().value).id
                     self._active_notifications.append(noti_id)
             else:
                 # Done reporting
