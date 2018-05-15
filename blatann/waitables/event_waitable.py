@@ -24,11 +24,11 @@ class EventWaitable(Waitable):
         return res
 
 
-class NotificationCompleteEventWaitable(EventWaitable):
-    def __init__(self, event, notification_id):
-        super(NotificationCompleteEventWaitable, self).__init__(event)
-        self.notification_id = notification_id
+class IdBasedEventWaitable(EventWaitable):
+    def __init__(self, event, event_id):
+        super(IdBasedEventWaitable, self).__init__(event)
+        self.id = event_id
 
-    def _on_event(self, characteristic, event_args):
-        if event_args.id == self.notification_id:
-            super(NotificationCompleteEventWaitable, self)._on_event(characteristic, event_args)
+    def _on_event(self, sender, event_args):
+        if event_args.id == self.id:
+            super(IdBasedEventWaitable, self)._on_event(sender, event_args)

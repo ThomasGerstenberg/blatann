@@ -53,7 +53,8 @@ class GattcReader(object):
         read is in progress, raises an InvalidStateException
 
         :param handle: the attribute handle to read
-        :return: A waitable that will fire when the read finishes. See on_read_complete for the values returned from the waitable
+        :return: A waitable that will fire when the read finishes.
+                 See on_read_complete for the values returned from the waitable
         :rtype: EventWaitable
         """
         if self._busy:
@@ -92,4 +93,5 @@ class GattcReader(object):
 
     def _complete(self, status=nrf_events.BLEGattStatusCode.success):
         self._busy = False
-        self._on_read_complete_event.notify(self, GattcReadCompleteEventArgs(self._handle, status, bytes(self._data)))
+        event_args = GattcReadCompleteEventArgs(self._handle, status, bytes(self._data))
+        self._on_read_complete_event.notify(self, event_args)

@@ -94,7 +94,7 @@ class GattcWriter(object):
 
     def _on_write_response(self, driver, event):
         """
-        Handler fro GattcEvtWriteResponse
+        Handler for GattcEvtWriteResponse
 
         :type event: nrf_events.GattcEvtWriteResponse
         """

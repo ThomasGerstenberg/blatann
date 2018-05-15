@@ -4,10 +4,11 @@ import threading
 import queue
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
-from blatann.waitables.event_waitable import NotificationCompleteEventWaitable
+from blatann.waitables.event_waitable import IdBasedEventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.event_type import EventSource
 from blatann.event_args import *
+from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
 
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,7 @@ class GattsCharacteristic(gatt.Characteristic):
             raise InvalidStateException("Client is not subscribed, cannot notify client")
 
         notification_id = self._notification_manager.notify(self, self.value_handle, self._on_notify_complete, data)
-        return NotificationCompleteEventWaitable(self._on_notify_complete, notification_id)
+        return IdBasedEventWaitable(self._on_notify_complete, notification_id)
 
     """
     Properties
@@ -500,16 +501,14 @@ class _Notification(object):
             raise InvalidStateException("Client not subscribed")
 
 
-class _NotificationManager(object):
+class _NotificationManager(QueuedTasksManagerBase):
     """
     Handles queuing of notifications to the client
     """
     def __init__(self, ble_device, peer):
+        super(_NotificationManager, self).__init__()
         self.ble_device = ble_device
         self.peer = peer
-        self._queue = queue.Queue()
-        self._in_process = threading.Event()
-        self._lock = threading.Lock()
         self._cur_notification = None
         self.ble_device.ble_driver.event_subscribe(self._on_notify_complete, nrf_events.EvtTxComplete,
                                                    nrf_events.GattsEvtHandleValueConfirm)
@@ -517,68 +516,37 @@ class _NotificationManager(object):
 
     def notify(self, characteristic, handle, event_on_complete, data=None):
         notification = _Notification(characteristic, handle, event_on_complete, data)
-        with self._lock:
-            if self._in_process.is_set():
-                self._queue.put(notification)
-            else:
-                try:
-                    self._notify(notification)
-                except nrf_types.NordicSemiException:
-                    notification.notify_complete(NotificationCompleteEventArgs.Reason.FAILED)
-
+        self._add_task(notification)
         return notification.id
-
-    def _notify(self, notification):
-        hvx_params = nrf_types.BLEGattsHvx(notification.handle, notification.type, notification.data)
-        self._cur_notification = notification
-        self.ble_device.ble_driver.ble_gatts_hvx(self.peer.conn_handle, hvx_params)
-        self._in_process.set()
 
     def clear_all(self):
         self._clear_all(NotificationCompleteEventArgs.Reason.QUEUE_CLEARED)
 
-    def _clear_all(self, reason):
-        with self._lock:
-            notification = self._get_next()
-            while notification:
-                notification.notify_complete(reason)
-                notification = self._get_next()
-            self._in_process.clear()
-            self._cur_notification = None
-
-    def _get_next(self):
+    def _handle_task(self, notification):
         """
-        :rtype: _NotificationManager.Notification
+        :type notification: _Notification
         """
-        try:
-            return self._queue.get_nowait()
-        except queue.Empty:
-            return None
+        if not notification.char.client_subscribed:
+            return True
+        hvx_params = nrf_types.BLEGattsHvx(notification.handle, notification.type, notification.data)
+        self._cur_notification = notification
+        self.ble_device.ble_driver.ble_gatts_hvx(self.peer.conn_handle, hvx_params)
 
-    def _get_next_subscribed(self):
-        next_notification = self._get_next()
-        while next_notification:
-            if next_notification.char.client_subscribed:
-                break
-            next_notification.notify_complete(NotificationCompleteEventArgs.Reason.CLIENT_UNSUBSCRIBED)
-            next_notification = self._get_next()
-        return next_notification
+    def _handle_task_failure(self, notification, e):
+        """
+        :type notification: _Notification
+        """
+        notification.notify_complete(NotificationCompleteEventArgs.Reason.FAILED)
+
+    def _handle_task_cleared(self, notification, reason):
+        """
+        :type notification: _Notification
+        """
+        notification.notify_complete(reason)
 
     def _on_notify_complete(self, driver, event):
         self._cur_notification.notify_complete(NotificationCompleteEventArgs.Reason.SUCCESS)
-
-        with self._lock:
-            next_notification = self._get_next_subscribed()
-            while next_notification:
-                try:
-                    self._notify(next_notification)
-                    break
-                except nrf_types.NordicSemiException:
-                    next_notification.notify_complete(NotificationCompleteEventArgs.Reason.FAILED)
-                    next_notification = self._get_next_subscribed()
-
-            if not next_notification:
-                self._in_process.clear()
+        self._task_completed(self._cur_notification)
 
     def _on_disconnect(self, driver, event):
         self._clear_all(NotificationCompleteEventArgs.Reason.CLIENT_DISCONNECTED)
