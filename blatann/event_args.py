@@ -217,15 +217,14 @@ class DecodedReadCompleteEventArgs(ReadCompleteEventArgs):
     Event Arguments for when a read on a peripheral's characteristic completes and the data stream returned
     is decoded. If unable to decode the value, the bytes read are still returned
     """
-    def __init__(self, status, raw_value, decoded_stream=None):
+    def __init__(self, read_complete_event_args, decoded_stream=None):
         """
-        :param status: The status of the read
-        :type status: blatann.gatt.GattStatusCode
-        :param raw_value: The raw value/bytestream of the characteristic
+        :param read_complete_event_args: The read complete event args that this wraps
+        :type read_complete_event_args: ReadCompleteEventArgs
         :param decoded_stream: The stream which is decoded into an object. This will vary depending on the decoder
         """
-        super(DecodedReadCompleteEventArgs, self).__init__(raw_value, status)
-        self.raw_value = raw_value
+        super(DecodedReadCompleteEventArgs, self).__init__(read_complete_event_args.id, read_complete_event_args.value,
+                                                           read_complete_event_args.status, read_complete_event_args.reason)
+        self.raw_value = read_complete_event_args.value
         if decoded_stream:
             self.value = decoded_stream
-
