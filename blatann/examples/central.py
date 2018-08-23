@@ -1,5 +1,5 @@
 """
-This example eemonstrates implementing a central BLE connection in a procedural manner. Each bluetooth operation
+This example demonstrates implementing a central BLE connection in a procedural manner. Each bluetooth operation
 performed is done sequentially in a linear fashion, and the main context blocks until each operation completes
 before moving on to the rest of the program
 
