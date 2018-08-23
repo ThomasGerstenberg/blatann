@@ -2,7 +2,7 @@ import logging
 from blatann.services.battery.constants import *
 from blatann.services.battery.data_types import *
 from blatann.event_type import EventSource, Event
-from blatann.event_args import DecodedReadCompleteEventArgs
+from blatann.event_args import DecodedReadCompleteEventArgs, ReadCompleteEventArgs, GattOperationCompleteReason
 from blatann.waitables import EventWaitable
 from blatann.gatt import SecurityLevel, GattStatusCode
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
@@ -58,24 +58,54 @@ class BatteryClient(object):
         self._on_battery_level_updated_event = EventSource("Battery Level Update Event")
 
     def read(self):
+        """
+        Reads the Battery level characteristic.
+
+        :return: A waitable for when the read completes, which waits for the on_battery_level_update_event to be
+                 emitted
+        :rtype: EventWaitable
+        """
         self._batt_characteristic.read().then(self._on_read_complete)
         return EventWaitable(self._on_battery_level_updated_event)
 
     @property
     def on_battery_level_update_event(self):
         """
+        Event that is generated whenever the battery level on the peripheral is updated, whether
+        it is by notification or from reading the characteristic itself.
+
+        The DecodedReadCompleteEventArgs value given is the integer battery percent received. If the read failed
+        or failed to decode, the value will be equal to the raw bytes received.
+
         :rtype: Event
         """
         return self._on_battery_level_updated_event
 
     @property
     def can_enable_notifications(self):
+        """
+        Checks if the battery level characteristic allows notifications to be subscribed to
+
+        :return: True if notifications can be enabled, False if not
+        """
         return self._batt_characteristic.subscribable
 
     def enable_notifications(self):
+        """
+        Enables notifications for the battery level characteristic. Note: this function will raise an exception
+        if notifications aren't possible
+
+        :return: a Waitable which waits for the write to finish
+        """
         return self._batt_characteristic.subscribe(self._on_battery_level_notification)
 
     def disable_notifications(self):
+        """
+        Disables notifications for the battery level characteristic. Note: this function will raise an exception
+        if notifications aren't possible
+
+        :return: a Waitable which waits for the write to finish
+        """
         return self._batt_characteristic.unsubscribe()
 
     def _on_battery_level_notification(self, characteristic, event_args):
@@ -92,7 +122,9 @@ class BatteryClient(object):
             logger.error("Failed to decode Battery Level, stream: [{}]".format(event_args.value.encode("hex")))
             logger.exception(e)
 
-        decoded_event_args = DecodedReadCompleteEventArgs(GattStatusCode.success, event_args.value, decoded_value)
+        read_complete_event_args = ReadCompleteEventArgs(0, event_args.value, GattStatusCode.success,
+                                                         GattOperationCompleteReason.SUCCESS)
+        decoded_event_args = DecodedReadCompleteEventArgs(read_complete_event_args, decoded_value)
         self._on_battery_level_updated_event.notify(self, decoded_event_args)
 
     def _on_read_complete(self, characteristic, event_args):
@@ -109,7 +141,7 @@ class BatteryClient(object):
                 logger.error("Failed to decode Battery Level, stream: [{}]".format(event_args.value.encode("hex")))
                 logger.exception(e)
 
-        decoded_event_args = DecodedReadCompleteEventArgs(event_args.status, event_args.value, decoded_value)
+        decoded_event_args = DecodedReadCompleteEventArgs(event_args, decoded_value)
         self._on_battery_level_updated_event.notify(self, decoded_event_args)
 
     @classmethod
