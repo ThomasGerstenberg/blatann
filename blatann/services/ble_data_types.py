@@ -332,6 +332,42 @@ class DateTime(BleCompoundDataType):
         return datetime.datetime(y, mo, d, h, m, s)
 
 
+class DayOfWeek(IntEnum):
+    unknown = 0
+    monday = 1
+    tuesday = 2
+    wednesday = 3
+    thursday = 4
+    friday = 5
+    saturday = 6
+    sunday = 7
+
+
+class DayDateTime(BleCompoundDataType):
+    data_stream_types = [DateTime, Uint8]
+
+    def __init__(self, dt):
+        """
+        :type dt: datetime.datetime
+        """
+        self.dt = dt
+
+    def encode(self):
+        stream = DateTime(self.dt).encode()
+        # datetime weekdays are 0-6 (mon-sun), convert to 1-7 (mon-sun)
+        weekday = self.dt.weekday() + 1
+        stream.encode(Uint8, weekday)
+        return stream
+
+    @classmethod
+    def decode(cls, stream):
+        """
+        :rtype: datetime.datetime
+        """
+        dt, day_of_week = super(DayDateTime, cls).decode(stream)
+        return dt  # Do we care about the day of week at this point?
+
+
 class Bitfield(BleCompoundDataType):
     bitfield_width = 8
     bitfield_enum = None
