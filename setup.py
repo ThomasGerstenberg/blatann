@@ -8,7 +8,7 @@ VERSION = "v0.2.2"
 py2 = sys.version_info[0] == 2
 py3 = sys.version_info[0] == 3
 
-_install_requires = ["pc-ble-driver-py"]
+_install_requires = ["pc-ble-driver-py", "pytz"]
 
 if py2:
     _install_requires.extend(["enum34"])

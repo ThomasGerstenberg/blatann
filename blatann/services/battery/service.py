@@ -21,7 +21,8 @@ class BatteryServer(object):
         self._service = service
 
         battery_level_char_props = GattsCharacteristicProperties(read=True, notify=enable_notifications,
-                                                                 max_length=BatteryLevel.byte_count,
+                                                                 variable_length=False,
+                                                                 max_length=BatteryLevel.encoded_size(),
                                                                  security_level=security_level)
         self._batt_characteristic = service.add_characteristic(BATTERY_LEVEL_CHARACTERISTIC_UUID,
                                                                battery_level_char_props)

@@ -41,6 +41,10 @@ class AdjustmentReason(ble_data_types.Bitfield):
     bitfield_enum = AdjustmentReasonType
 
     def __init__(self, *adjustment_reasons):
+        """
+        :param adjustment_reasons: The list of reasons for the time adjustment
+        :type adjustment_reasons: AdjustmentReasonType
+        """
         self.manual_time_update = AdjustmentReasonType.manual_time_update in adjustment_reasons
         self.external_time_reference_update = AdjustmentReasonType.external_time_reference_update in adjustment_reasons
         self.time_zone_change = AdjustmentReasonType.time_zone_change in adjustment_reasons
@@ -101,7 +105,7 @@ class CurrentTime(ble_data_types.BleCompoundDataType):
 class LocalTimeInfo(ble_data_types.BleCompoundDataType):
     data_stream_types = [ble_data_types.Int8, ble_data_types.Uint8]
 
-    def __init__(self, timezone_offset_hrs=0, dst_offset=DaylightSavingsTimeOffset.standard_time):
+    def __init__(self, timezone_offset_hrs=0.0, dst_offset=DaylightSavingsTimeOffset.standard_time):
         self.timezone_offset = timezone_offset_hrs
         self.dst_offset = dst_offset
 

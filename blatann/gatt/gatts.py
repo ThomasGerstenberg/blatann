@@ -8,6 +8,7 @@ from blatann.waitables.event_waitable import IdBasedEventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.event_type import EventSource
 from blatann.event_args import *
+from blatann.services.ble_data_types import BleDataStream
 from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
 
 
@@ -86,6 +87,8 @@ class GattsCharacteristic(gatt.Characteristic):
         :raises: InvalidOperationException if value length is too long, or notify client set and characteristic
                  is not notifiable
         """
+        if isinstance(value, BleDataStream):
+            value = value.value
         if len(value) > self.max_length:
             raise InvalidOperationException("Attempted to set value of {} with length greater than max "
                                             "(got {}, max {})".format(self.uuid, len(value), self.max_length))

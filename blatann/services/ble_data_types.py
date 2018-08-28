@@ -97,6 +97,13 @@ class BleCompoundDataType(object):
             values.append(value)
         return values
 
+    @classmethod
+    def encoded_size(cls):
+        size = 0
+        for t in cls.data_stream_types:
+            size += t.encoded_size()
+        return size
+
 
 class BleDataType(object):
     @classmethod
@@ -108,6 +115,10 @@ class BleDataType(object):
         """
         :type stream: BleDataStream
         """
+        raise NotImplementedError()
+
+    @classmethod
+    def encoded_size(cls):
         raise NotImplementedError()
 
 
@@ -125,6 +136,10 @@ class DoubleNibble(BleDataType):
         """
         value = struct.unpack("<B", stream.take(1))[0]
         return [value >> 4 & 0x0F, value & 0x0F]
+
+    @classmethod
+    def encoded_size(cls):
+        return 1
 
 
 class UnsignedIntegerBase(BleDataType):
@@ -158,6 +173,10 @@ class UnsignedIntegerBase(BleDataType):
         value_stream = stream.take(cls.byte_count) + "\x00" * (cls._decode_size()-cls.byte_count)
         value = struct.unpack(cls._formatter(), value_stream)[0]
         return value
+
+    @classmethod
+    def encoded_size(cls):
+        return cls.byte_count
 
 
 class SignedIntegerBase(UnsignedIntegerBase):
@@ -312,6 +331,10 @@ class SFloat(BleDataType):
 
         return value
 
+    @classmethod
+    def encoded_size(cls):
+        return 2  # 16-bit
+
 
 class DateTime(BleCompoundDataType):
     data_stream_types = [Uint16, Uint8, Uint8, Uint8, Uint8, Uint8]
@@ -424,6 +447,10 @@ class Bitfield(BleCompoundDataType):
     @classmethod
     def byte_count(cls):
         return cls._encoder_class().byte_count
+
+    @classmethod
+    def encoded_size(cls):
+        return cls.byte_count()
 
     def __repr__(self):
         set_bit_strs = []
