@@ -70,7 +70,7 @@ class BatteryClient(object):
         return EventWaitable(self._on_battery_level_updated_event)
 
     @property
-    def on_battery_level_update_event(self):
+    def on_battery_level_updated(self):
         """
         Event that is generated whenever the battery level on the peripheral is updated, whether
         it is by notification or from reading the characteristic itself.
@@ -123,9 +123,7 @@ class BatteryClient(object):
             logger.error("Failed to decode Battery Level, stream: [{}]".format(event_args.value.encode("hex")))
             logger.exception(e)
 
-        read_complete_event_args = ReadCompleteEventArgs(0, event_args.value, GattStatusCode.success,
-                                                         GattOperationCompleteReason.SUCCESS)
-        decoded_event_args = DecodedReadCompleteEventArgs(read_complete_event_args, decoded_value)
+        decoded_event_args = DecodedReadCompleteEventArgs.from_notification_complete_event_args(event_args, decoded_value)
         self._on_battery_level_updated_event.notify(self, decoded_event_args)
 
     def _on_read_complete(self, characteristic, event_args):
@@ -142,7 +140,7 @@ class BatteryClient(object):
                 logger.error("Failed to decode Battery Level, stream: [{}]".format(event_args.value.encode("hex")))
                 logger.exception(e)
 
-        decoded_event_args = DecodedReadCompleteEventArgs(event_args, decoded_value)
+        decoded_event_args = DecodedReadCompleteEventArgs.from_read_complete_event_args(event_args, decoded_value)
         self._on_battery_level_updated_event.notify(self, decoded_event_args)
 
     @classmethod

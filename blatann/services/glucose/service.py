@@ -21,7 +21,7 @@ class GlucoseServer(object):
         self.database = glucose_database
 
         measurement_char_props = GattsCharacteristicProperties(read=False, notify=True, max_length=20)
-        feature_props = GattsCharacteristicProperties(read=True, max_length=GlucoseFeatures.byte_count(),
+        feature_props = GattsCharacteristicProperties(read=True, max_length=GlucoseFeatures.encoded_size(),
                                                       variable_length=False)
         racp_props = GattsCharacteristicProperties(read=False, write=True, indicate=True, max_length=20,
                                                    variable_length=True, security_level=security_level)

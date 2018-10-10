@@ -1,3 +1,4 @@
+from blatann.gatt import GattStatusCode
 from enum import Enum
 
 
@@ -217,14 +218,25 @@ class DecodedReadCompleteEventArgs(ReadCompleteEventArgs):
     Event Arguments for when a read on a peripheral's characteristic completes and the data stream returned
     is decoded. If unable to decode the value, the bytes read are still returned
     """
-    def __init__(self, read_complete_event_args, decoded_stream=None):
+    def __init__(self, read_id, value, status, reason, decoded_stream=None):
         """
         :param read_complete_event_args: The read complete event args that this wraps
         :type read_complete_event_args: ReadCompleteEventArgs
         :param decoded_stream: The stream which is decoded into an object. This will vary depending on the decoder
         """
-        super(DecodedReadCompleteEventArgs, self).__init__(read_complete_event_args.id, read_complete_event_args.value,
-                                                           read_complete_event_args.status, read_complete_event_args.reason)
-        self.raw_value = read_complete_event_args.value
+        super(DecodedReadCompleteEventArgs, self).__init__(read_id, value, status, reason)
+        self.raw_value = value
         if decoded_stream:
             self.value = decoded_stream
+
+    @staticmethod
+    def from_notification_complete_event_args(noti_complete_event_args, decoded_stream=None):
+        return DecodedReadCompleteEventArgs(0, noti_complete_event_args.value, GattStatusCode.success,
+                                            GattOperationCompleteReason.SUCCESS, decoded_stream)
+
+    @staticmethod
+    def from_read_complete_event_args(read_complete_event_args, decoded_stream=None):
+        return DecodedReadCompleteEventArgs(read_complete_event_args.id, read_complete_event_args.value,
+                                            read_complete_event_args.status, read_complete_event_args.reason,
+                                            decoded_stream)
+

@@ -13,6 +13,24 @@ class DaylightSavingsTimeOffset(IntEnum):
     two_hour_dst = 8
     unknown = 255
 
+    @staticmethod
+    def from_seconds(seconds):
+        """
+        Converts the DST offset in seconds to one of the above enums.
+        Values which do not map directly to an above enum will be mapped to unknown.
+        Valid values are essentially 0, 1800 (1/2 hr), 3600 (1 hr), and 7200 (2 hr)
+
+        :param seconds: DST offset in seconds
+        :return: The corresponding enum value
+        """
+        # Figure out what DST enum to use
+        dst_15_min_incrs = int((seconds / 3600.0) * 4)
+        try:
+            return DaylightSavingsTimeOffset(dst_15_min_incrs)
+        except:
+            # Cannot convert to one of the standard enums, use unknown
+            return DaylightSavingsTimeOffset.unknown
+
 
 class AdjustmentReasonType(IntEnum):
     manual_time_update = 0

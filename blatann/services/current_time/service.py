@@ -1,13 +1,22 @@
 import datetime
-import time
+import logging
 import pytz.reference
+
+from blatann.gatt import GattStatusCode
+from blatann.event_type import EventSource, Event
+from blatann.event_args import DecodedReadCompleteEventArgs
 from blatann.exceptions import InvalidOperationException
+from blatann.services import DecodedReadEventDispatcher
 from blatann.services.current_time.constants import *
 from blatann.services.current_time.data_types import *
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
+from blatann.waitables.event_waitable import IdBasedEventWaitable
+
+logger = logging.getLogger(__name__)
 
 
 class CurrentTimeServer(object):
+
     def __init__(self, service, is_writable=False,
                  enable_local_time_info_char=False, enable_ref_time_info_char=False):
         """
@@ -72,13 +81,7 @@ class CurrentTimeServer(object):
             dst = local_timezone.dst(now).total_seconds()
             # Get the acutal offset by subtracting the DST
             offset -= dst
-
-            # Figure out what DST enum to use
-            dst_15_min_incrs = int((dst/3600.0)*4)
-            try:
-                dst_enum = DaylightSavingsTimeOffset(dst_15_min_incrs)
-            except:
-                dst_enum = DaylightSavingsTimeOffset.unknown
+            dst_enum = DaylightSavingsTimeOffset.from_seconds(dst)
 
             self.set_local_time_info(offset/3600.0, dst_enum)
 
@@ -106,4 +109,81 @@ class CurrentTimeServer(object):
     def add_to_database(cls, gatts_database, is_writable=False,
                         enable_local_time_info_char=False, enable_ref_time_info_char=False):
         service = gatts_database.add_service(CURRENT_TIME_SERVICE_UUID)
-        return CurrentTimeServer(service, is_writable, enable_local_time_info_char, enable_ref_time_info_char)
+        return cls(service, is_writable, enable_local_time_info_char, enable_ref_time_info_char)
+
+
+class CurrentTimeClient(object):
+
+    def __init__(self, gattc_service):
+        """
+        :type gattc_service: blatann.gatt.gattc.GattcService
+        """
+        self._service = gattc_service
+        self._current_time_char = gattc_service.find_characteristic(CURRENT_TIME_CHARACTERISTIC_UUID)
+        self._local_time_info_char = gattc_service.find_characteristic(LOCAL_TIME_INFO_CHARACTERISTIC_UUID)
+        self._ref_info_char = gattc_service.find_characteristic(REFERENCE_INFO_CHARACTERISTIC_UUID)
+        self._on_current_time_updated_event = EventSource("Current Time Update Event")
+        self._on_local_time_info_updated_event = EventSource("Local Time Info Update Event")
+        self._on_reference_info_updated_event = EventSource("Reference Info Update Event")
+
+        self._current_time_dispatcher = DecodedReadEventDispatcher(self, CurrentTime,
+                                                                   self._on_current_time_updated_event, logger)
+        self._local_time_dispatcher = DecodedReadEventDispatcher(self, LocalTimeInfo,
+                                                                 self._on_local_time_info_updated_event, logger)
+        self._ref_time_dispatcher = DecodedReadEventDispatcher(self, ReferenceTimeInfo,
+                                                               self._on_reference_info_updated_event, logger)
+
+    @property
+    def on_current_time_updated(self):
+        """
+        :rtype: Event
+        """
+        return self._on_current_time_updated_event
+
+    @property
+    def on_local_time_info_updated(self):
+        """
+        :rtype: Event
+        """
+        return self._on_local_time_info_updated_event
+
+    @property
+    def on_reference_info_updated(self):
+        """
+        :rtype: Event
+        """
+        return self._on_reference_info_updated_event
+
+    @property
+    def has_local_time_info(self):
+        return self._local_time_info_char is not None
+
+    @property
+    def has_reference_info(self):
+        return self._ref_info_char is not None
+
+    @property
+    def can_enable_notifications(self):
+        return self._current_time_char.subscribable
+
+    @property
+    def can_set_current_time(self):
+        return self._current_time_char.writable
+
+    @property
+    def can_set_local_time_info(self):
+        if not self.has_local_time_info:
+            return False
+        return self._local_time_info_char.writable
+
+    def read_time(self):
+        event = self._current_time_char.read().then(self._current_time_dispatcher)
+        return IdBasedEventWaitable(self._on_current_time_updated_event, event.id)
+
+    def set_time(self, date, adjustment_reason=None):
+        """
+        :type date: datetime.datetime
+        :type adjustment_reason: AdjustmentReason
+        """
+        dt = CurrentTime(date, adjustment_reason)
+        return self._current_time_char.write(dt.encode())

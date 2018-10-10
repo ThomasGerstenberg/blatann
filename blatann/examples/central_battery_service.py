@@ -75,7 +75,7 @@ def main(serial_port):
     logger.info("Battery: {}%".format(battery_percent))
 
     if battery_service.can_enable_notifications:
-        battery_service.on_battery_level_update_event.register(on_battery_level_update)
+        battery_service.on_battery_level_updated.register(on_battery_level_update)
         battery_service.enable_notifications().wait()
 
         wait_duration = 30

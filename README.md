@@ -62,6 +62,8 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] Bonding
 - [ ] Bluetooth Services
     - [X] Device Info Service
+    - [X] Battery Service
+    - [ ] Current Time Service (basic peripheral/central, no extended features)
     - [ ] Glucose Service (Peripheral done, Central untested)
     - [ ] Nordic UART Service
     - More TBD (or on request)
