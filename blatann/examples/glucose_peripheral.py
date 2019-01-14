@@ -98,7 +98,7 @@ def main(serial_port):
     # Create a database to store the readings
     glucose_database = glucose.BasicGlucoseDatabase()
     # Add the service to the BLE database, using the glucose database just created, require encryption at the minimum
-    service = glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.JUST_WORKS)
+    service = glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.MITM)
 
     # Set the features of this "glucose sensor"
     features = glucose.GlucoseFeatures(GlucoseFeatureType.low_battery_detection, GlucoseFeatureType.strip_insertion_error_detection)
@@ -112,7 +112,7 @@ def main(serial_port):
     ble_device.client.on_disconnect.register(on_disconnect)
 
     # Set the connection parameters for the client
-    ble_device.client.set_connection_parameters(15, 30, 4000)
+    ble_device.client.set_connection_parameters(15, 100, 4000)
 
     # Set the function to display the passkey
     ble_device.client.security.on_passkey_display_required.register(display_passkey)
@@ -138,4 +138,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM4")
+    main("COM5")

@@ -27,6 +27,12 @@ class BLEGapAdvParams(object):
 
         return adv_params
 
+    def __repr__(self):
+        return "{!r}(type: {!r}, interval: {!r}ms, timeout: {!r}s)".format(self.__class__.__name__,
+                                                                           self.advertising_type,
+                                                                           self.interval_ms,
+                                                                           self.timeout_s)
+
 
 class BLEGapScanParams(object):
     def __init__(self, interval_ms, window_ms, timeout_s):
@@ -85,15 +91,17 @@ class BLEGapConnParams(object):
                                                                                       self.slave_latency)
 
 
+class BLEGapAddrTypes(IntEnum):
+    public = int(driver.BLE_GAP_ADDR_TYPE_PUBLIC)
+    random_static = int(driver.BLE_GAP_ADDR_TYPE_RANDOM_STATIC)
+    random_private_resolvable = int(driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE)
+    random_private_non_resolvable = int(driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE)
+
+
 class BLEGapAddr(object):
-    class Types(Enum):
-        public = driver.BLE_GAP_ADDR_TYPE_PUBLIC
-        random_static = driver.BLE_GAP_ADDR_TYPE_RANDOM_STATIC
-        random_private_resolvable = driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE
-        random_private_non_resolvable = driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE
 
     def __init__(self, addr_type, addr):
-        assert isinstance(addr_type, BLEGapAddr.Types), 'Invalid argument type'
+        assert isinstance(addr_type, BLEGapAddrTypes), 'Invalid argument type'
         self.addr_type = addr_type
         self.addr = addr
 
@@ -101,7 +109,7 @@ class BLEGapAddr(object):
     def from_c(cls, addr):
         addr_list = util.uint8_array_to_list(addr.addr, driver.BLE_GAP_ADDR_LEN)
         addr_list.reverse()
-        return cls(addr_type=BLEGapAddr.Types(addr.addr_type),
+        return cls(addr_type=BLEGapAddrTypes(addr.addr_type),
                    addr=addr_list)
 
     @classmethod
@@ -109,16 +117,14 @@ class BLEGapAddr(object):
         addr, addr_flag = addr_string.split(',')
         addr_list = [int(i, 16) for i in addr.split(':')]
 
-        # print addr_string, addr_list[-1], addr_list[-1] & 0b11000000, 0b11000000
-        # print addr_string, addr_list[-1], addr_list[-1] & 0b10000000, 0b10000000
         if addr_flag in ['p', 'public']:
-            addr_type = BLEGapAddr.Types.public
+            addr_type = BLEGapAddrTypes.public
         elif (addr_list[0] & 0b11000000) == 0b00000000:
-            addr_type = BLEGapAddr.Types.random_private_non_resolvable
+            addr_type = BLEGapAddrTypes.random_private_non_resolvable
         elif (addr_list[0] & 0b11000000) == 0b01000000:
-            addr_type = BLEGapAddr.Types.random_private_resolvable
+            addr_type = BLEGapAddrTypes.random_private_resolvable
         elif (addr_list[0] & 0b11000000) == 0b11000000:
-            addr_type = BLEGapAddr.Types.random_static
+            addr_type = BLEGapAddrTypes.random_static
         else:
             raise ValueError("Provided random address do not follow rules")  # TODO: Improve error message
 
@@ -132,16 +138,16 @@ class BLEGapAddr(object):
         return addr
 
     def get_addr_type_str(self):
-        if self.addr_type == BLEGapAddr.Types.public:
+        if self.addr_type == BLEGapAddrTypes.public:
             return 'public'
-        elif self.addr_type == BLEGapAddr.Types.random_private_non_resolvable:
+        elif self.addr_type == BLEGapAddrTypes.random_private_non_resolvable:
             return 'nonres'
-        elif self.addr_type == BLEGapAddr.Types.random_private_resolvable:
+        elif self.addr_type == BLEGapAddrTypes.random_private_resolvable:
             return 'res'
-        elif self.addr_type == BLEGapAddr.Types.random_static:
+        elif self.addr_type == BLEGapAddrTypes.random_static:
             return 'static'
         else:
-            return 'err {0:02b}'.format((self.AddressLtlEnd[-1] >> 6) & 0b11)
+            return 'err'
 
     def __eq__(self, other):
         if not isinstance(other, BLEGapAddr):
@@ -158,13 +164,18 @@ class BLEGapAddr(object):
         return value
 
     def get_addr_flag(self):
-        return 'p' if self.addr_type == BLEGapAddr.Types.public else 'r'
+        return {
+            BLEGapAddrTypes.public: "p",
+            BLEGapAddrTypes.random_static: "s",
+            BLEGapAddrTypes.random_private_resolvable: "r",
+            BLEGapAddrTypes.random_private_non_resolvable: "n"
+        }[self.addr_type]
 
     def __str__(self):
         return '{},{}'.format(':'.join(['%02X' % i for i in self.addr]), self.get_addr_flag())
 
     def __repr__(self):
-        return "{}.from_string({})".format(self.__class__.__name__, str(self))
+        return "{}({})".format(self.__class__.__name__, str(self))
 
 
 class BLEAdvData(object):

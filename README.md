@@ -32,7 +32,8 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
 - [ ] SMP
     - [X] Encryption/Authentication process
     - [X] MITM/Passcode pairing support
-    - [ ] Store bonding info
+    - (WIP) Store bonding info
+    - (WIP) Identity resolve
     - [ ] Documentation
 - [ ] GATT Server
     - [x] Characteristic Reads

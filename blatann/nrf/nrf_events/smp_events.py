@@ -60,6 +60,7 @@ class GapEvtSecInfoRequest(GapEvtSec):
             self.__class__.__name__, self.conn_handle, self.peer_addr, self.master_id,
             self.enc_info, self.id_info, self.sign_info)
 
+
 class GapEvtSecParamsRequest(GapEvtSec):
     evt_id = driver.BLE_GAP_EVT_SEC_PARAMS_REQUEST
 
@@ -121,7 +122,8 @@ class GapEvtAuthStatus(GapEvtSec):
                    kdist_peer=BLEGapSecKeyDist.from_c(auth_status.kdist_peer))
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, auth_status={!r}, error_src={!r}, bonded={!r}, sm1_levels={!r}, sm2_levels={!r}, " \
+        return "{}(conn_handle={!r}, auth_status={!r}, error_src={!r}, " \
+               "bonded={!r}, sm1_levels={!r}, sm2_levels={!r}, " \
                "kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__, self.conn_handle, self.auth_status,
                                                          self.error_src, self.bonded,
                                                          self.sm1_levels, self.sm2_levels, self.kdist_own,

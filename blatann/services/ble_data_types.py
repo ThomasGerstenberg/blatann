@@ -188,6 +188,10 @@ class Uint32(UnsignedIntegerBase):
     byte_count = 4
 
 
+class Int32(SignedIntegerBase):
+    byte_count = 4
+
+
 class Uint40(UnsignedIntegerBase):
     byte_count = 5
 
@@ -201,6 +205,10 @@ class Uint56(UnsignedIntegerBase):
 
 
 class Uint64(UnsignedIntegerBase):
+    byte_count = 8
+
+
+class Int64(SignedIntegerBase):
     byte_count = 8
 
 

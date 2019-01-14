@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+import binascii
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.enums import *
@@ -161,7 +162,7 @@ class BLEGapMasterId(object):
         return cls(ediv, rand)
 
     def __repr__(self):
-        return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, self.rand)
+        return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, binascii.hexlify(self.rand))
 
 
 class BLEGapEncryptInfo(object):
@@ -190,7 +191,7 @@ class BLEGapEncryptInfo(object):
     def __repr__(self):
         if not self.ltk:
             return ""
-        return "Encrypt(ltk: {}, lesc: {}, auth: {})".format(self.ltk, self.lesc, self.auth)
+        return "Encrypt(ltk: {}, lesc: {}, auth: {})".format(binascii.hexlify(self.ltk), self.lesc, self.auth)
 
 
 class BLEGapEncryptKey(object):
@@ -247,7 +248,7 @@ class BLEGapIdKey(object):
     def __repr__(self):
         if not self.irk:
             return ""
-        return "irk: {}, peer: {}".format(self.irk, self.peer_addr)
+        return "irk: {}, peer: {}".format(binascii.hexlify(self.irk), self.peer_addr)
 
 
 class BLEGapPublicKey(object):
@@ -269,7 +270,7 @@ class BLEGapPublicKey(object):
     def __repr__(self):
         if not self.key:
             return ""
-        return str(self.key)
+        return binascii.hexlify(self.key)
 
 
 class BLEGapSignKey(object):
@@ -291,7 +292,7 @@ class BLEGapSignKey(object):
     def __repr__(self):
         if not self.key:
             return ""
-        return str(self.key)
+        return binascii.hexlify(self.key)
 
 
 class BLEGapSecKeys(object):
@@ -304,10 +305,10 @@ class BLEGapSecKeys(object):
             sign_key = BLEGapSignKey()
         if not public_key:
             public_key = BLEGapPublicKey()
-        self.enc_key = enc_key
-        self.id_key = id_key
-        self.sign_key = sign_key
-        self.public_key = public_key
+        self.enc_key = enc_key        # type: BLEGapEncryptKey
+        self.id_key = id_key          # type: BLEGapIdKey
+        self.sign_key = sign_key      # type: BLEGapSignKey
+        self.public_key = public_key  # type: BLEGapPublicKey
 
     def to_c(self):
         keys = driver.ble_gap_sec_keys_t()

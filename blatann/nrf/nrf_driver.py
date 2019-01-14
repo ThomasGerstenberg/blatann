@@ -377,6 +377,21 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
+    def ble_gap_sec_info_reply(self, conn_handle, enc_info=None, irk=None, sign_info=None):
+        assert isinstance(enc_info, (BLEGapEncryptInfo, NoneType)), "Invalid argument type"
+        assert isinstance(irk, (BLEGapIdKey, NoneType)), "Invalid argument type"
+        assert isinstance(sign_info, (BLEGapSignKey, NoneType)), "Invalid argument type"
+        if enc_info is not None:
+            enc_info = enc_info.to_c()
+        if irk is not None:
+            irk = irk.to_c()
+        if sign_info is not None:
+            sign_info = sign_info.to_c()
+
+        return driver.sd_ble_gap_sec_info_reply(self.rpc_adapter, conn_handle, enc_info, irk, sign_info)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
     def ble_gap_encrypt(self, conn_handle, ediv, rand, ltk, lesc, auth):
         # TODO: Clean up
         # assert isinstance(sec_params, (BLEGapSecParams, NoneType)), 'Invalid argument type'
