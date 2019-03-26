@@ -97,6 +97,13 @@ class BleCompoundDataType(object):
             values.append(value)
         return values
 
+    @classmethod
+    def encoded_size(cls):
+        size = 0
+        for t in cls.data_stream_types:
+            size += t.encoded_size()
+        return size
+
 
 class BleDataType(object):
     @classmethod
@@ -108,6 +115,10 @@ class BleDataType(object):
         """
         :type stream: BleDataStream
         """
+        raise NotImplementedError()
+
+    @classmethod
+    def encoded_size(cls):
         raise NotImplementedError()
 
 
@@ -125,6 +136,10 @@ class DoubleNibble(BleDataType):
         """
         value = struct.unpack("<B", stream.take(1))[0]
         return [value >> 4 & 0x0F, value & 0x0F]
+
+    @classmethod
+    def encoded_size(cls):
+        return 1
 
 
 class UnsignedIntegerBase(BleDataType):
@@ -158,6 +173,10 @@ class UnsignedIntegerBase(BleDataType):
         value_stream = stream.take(cls.byte_count) + "\x00" * (cls._decode_size()-cls.byte_count)
         value = struct.unpack(cls._formatter(), value_stream)[0]
         return value
+
+    @classmethod
+    def encoded_size(cls):
+        return cls.byte_count
 
 
 class SignedIntegerBase(UnsignedIntegerBase):
@@ -312,6 +331,10 @@ class SFloat(BleDataType):
 
         return value
 
+    @classmethod
+    def encoded_size(cls):
+        return 2  # 16-bit
+
 
 class DateTime(BleCompoundDataType):
     data_stream_types = [Uint16, Uint8, Uint8, Uint8, Uint8, Uint8]
@@ -330,6 +353,42 @@ class DateTime(BleCompoundDataType):
     def decode(cls, stream):
         y, mo, d, h, m, s = super(DateTime, cls).decode(stream)
         return datetime.datetime(y, mo, d, h, m, s)
+
+
+class DayOfWeek(IntEnum):
+    unknown = 0
+    monday = 1
+    tuesday = 2
+    wednesday = 3
+    thursday = 4
+    friday = 5
+    saturday = 6
+    sunday = 7
+
+
+class DayDateTime(BleCompoundDataType):
+    data_stream_types = [DateTime, Uint8]
+
+    def __init__(self, dt):
+        """
+        :type dt: datetime.datetime
+        """
+        self.dt = dt
+
+    def encode(self):
+        stream = DateTime(self.dt).encode()
+        # datetime weekdays are 0-6 (mon-sun), convert to 1-7 (mon-sun)
+        weekday = self.dt.weekday() + 1
+        stream.encode(Uint8, weekday)
+        return stream
+
+    @classmethod
+    def decode(cls, stream):
+        """
+        :rtype: datetime.datetime
+        """
+        dt, day_of_week = super(DayDateTime, cls).decode(stream)
+        return dt  # Do we care about the day of week at this point?
 
 
 class Bitfield(BleCompoundDataType):
@@ -388,6 +447,10 @@ class Bitfield(BleCompoundDataType):
     @classmethod
     def byte_count(cls):
         return cls._encoder_class().byte_count
+
+    @classmethod
+    def encoded_size(cls):
+        return cls.byte_count()
 
     def __repr__(self):
         set_bit_strs = []

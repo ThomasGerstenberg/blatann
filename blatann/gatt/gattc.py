@@ -158,7 +158,7 @@ class GattcCharacteristic(gatt.Characteristic):
         :raises: InvalidOperationException if characteristic not readable
         """
         if not self.readable:
-            raise InvalidStateException("Characteristic {} is not readable".format(self.uuid))
+            raise InvalidOperationException("Characteristic {} is not readable".format(self.uuid))
         read_id = self._manager.read(self.value_handle)
         return IdBasedEventWaitable(self._on_read_complete_event, read_id)
 
@@ -175,7 +175,7 @@ class GattcCharacteristic(gatt.Characteristic):
         :raises: InvalidOperationException if characteristic is not writable
         """
         if not self.writable:
-            raise InvalidStateException("Characteristic {} is not writable".format(self.uuid))
+            raise InvalidOperationException("Characteristic {} is not writable".format(self.uuid))
         write_id = self._manager.write(self.value_handle, bytearray(data))
         return IdBasedEventWaitable(self._on_write_complete_event, write_id)
 
@@ -370,7 +370,7 @@ class GattcDatabase(gatt.GattDatabase):
 
 
 class _ReadTask(object):
-    _id_counter = 0
+    _id_counter = 1
     _lock = threading.Lock()
 
     def __init__(self, handle):
@@ -384,7 +384,7 @@ class _ReadTask(object):
 
 
 class _WriteTask(object):
-    _id_counter = 0
+    _id_counter = 1
     _lock = threading.Lock()
 
     def __init__(self, handle, data):
