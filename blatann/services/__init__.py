@@ -1,10 +1,10 @@
 from blatann.gatt import GattStatusCode
 from blatann.services import ble_data_types
 from blatann.event_args import NotificationReceivedEventArgs, ReadCompleteEventArgs, DecodedReadCompleteEventArgs, \
-    GattOperationCompleteReason
+    WriteEventArgs, DecodedWriteEventArgs
 
 
-class DecodedReadEventDispatcher(object):
+class DecodedReadWriteEventDispatcher(object):
     def __init__(self, owner, ble_type, event_to_raise, logger=None):
         self.owner = owner
         self.ble_type = ble_type
@@ -34,9 +34,13 @@ class DecodedReadEventDispatcher(object):
             decoded_value = self.decode(event_args.value)
             decoded_event_args = DecodedReadCompleteEventArgs.from_notification_complete_event_args(event_args,
                                                                                                     decoded_value)
+        elif isinstance(event_args, WriteEventArgs):
+            decoded_value = self.decode(event_args.value)
+            decoded_event_args = DecodedWriteEventArgs(decoded_value, event_args.value)
         else:
             if self.logger:
                 self.logger.error("Unable to handle unknown event args {}".format(event_args))
             return
 
         self.event_to_raise.notify(self.owner, decoded_event_args)
+

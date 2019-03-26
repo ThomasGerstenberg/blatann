@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class GlucoseServer(object):
-    def __init__(self, service, glucose_database, security_level=SecurityLevel.OPEN):
+    def __init__(self, service, glucose_database, security_level=SecurityLevel.OPEN,
+                 include_context_characteristic=True):
         """
         :type service: GattsService
         :type glucose_database: IGlucoseDatabase
@@ -26,7 +27,12 @@ class GlucoseServer(object):
         racp_props = GattsCharacteristicProperties(read=False, write=True, indicate=True, max_length=20,
                                                    variable_length=True, security_level=security_level)
         self.measurement_characteristic = service.add_characteristic(MEASUREMENT_CHARACTERISTIC_UUID, measurement_char_props)
-        self.context_characteristic = service.add_characteristic(MEASUREMENT_CONTEXT_CHARACTERISTIC_UUID, measurement_char_props)
+        if include_context_characteristic:
+            self.context_characteristic = service.add_characteristic(MEASUREMENT_CONTEXT_CHARACTERISTIC_UUID,
+                                                                     measurement_char_props)
+            self.context_characteristic.on_notify_complete.register(self._on_notify_complete)
+        else:
+            self.context_characteristic = None
         self.feature_characteristic = service.add_characteristic(FEATURE_CHARACTERISTIC_UUID, feature_props)
         self.racp_characteristic = service.add_characteristic(RACP_CHARACTERISTIC_UUID, racp_props)
         self.racp_characteristic.on_write.register(self._on_racp_write)
@@ -35,7 +41,6 @@ class GlucoseServer(object):
         self._active_notifications = []
         self.service.peer.on_disconnect.register(self._on_disconnect)
         self.measurement_characteristic.on_notify_complete.register(self._on_notify_complete)
-        self.context_characteristic.on_notify_complete.register(self._on_notify_complete)
 
     def set_features(self, features):
         """
@@ -52,7 +57,7 @@ class GlucoseServer(object):
                 next_record = self._records_to_report.pop(0)
                 noti_id = self.measurement_characteristic.notify(next_record.encode().value).id
                 self._active_notifications.append(noti_id)
-                if next_record.context and self.context_characteristic.client_subscribed:
+                if next_record.context and self.context_characteristic and self.context_characteristic.client_subscribed:
                     noti_id = self.context_characteristic.notify(next_record.context.encode().value).id
                     self._active_notifications.append(noti_id)
             else:
@@ -156,9 +161,13 @@ class GlucoseServer(object):
         self._records_to_report = []
 
     @classmethod
-    def add_to_database(cls, gatts_database, glucose_database, security_level=SecurityLevel.OPEN):
+    def add_to_database(cls, gatts_database, glucose_database, security_level=SecurityLevel.OPEN,
+                        include_context_characteristic=True):
         """
         :type gatts_database: blatann.gatt.gatts.GattsDatabase
+        :type glucose_database: IGlucoseDatabase
+        :type security_level: SecurityLevel
+        :type include_context_characteristic: bool
         """
         service = gatts_database.add_service(GLUCOSE_SERVICE_UUID)
-        return GlucoseServer(service, glucose_database, security_level)
+        return GlucoseServer(service, glucose_database, security_level, include_context_characteristic)

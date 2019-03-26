@@ -260,7 +260,7 @@ class GattsCharacteristic(gatt.Characteristic):
         elif event.attribute_handle != self.value_handle:
             return
         self._value = bytearray(event.data)
-        self._on_write.notify(self, WriteEventArgs(self.value))
+        self._on_write.notify(self, WriteEventArgs(bytes(self.value)))
 
     def _on_write_auth_request(self, write_event):
         """

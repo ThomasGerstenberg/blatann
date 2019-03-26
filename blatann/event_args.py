@@ -98,6 +98,22 @@ class WriteEventArgs(EventArgs):
         self.value = value
 
 
+class DecodedWriteEventArgs(EventArgs):
+    """
+    Event arguments for when a client has written to a characteristic on the local database
+    and the value has been decoded into a data type
+    """
+    def __init__(self, value, raw_value):
+        """
+        :param value: The decoded value that was written to the characteristic.
+                      This parameter's type depends on the characteristic
+        :param raw_value: The raw bytes that were written
+        :type raw_value: bytes
+        """
+        self.value = value
+        self.raw_value = raw_value
+
+
 class SubscriptionStateChangeEventArgs(EventArgs):
     """
     Event arguments for when a client's subscription state has changed
