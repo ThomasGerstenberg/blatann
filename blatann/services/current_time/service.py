@@ -159,7 +159,7 @@ class CurrentTimeServer(object):
             self._time_delta = datetime.timedelta()
         else:
             delta = date - datetime.datetime.now()
-            if delta.total_seconds() < 1:  #
+            if abs(delta.total_seconds()) < 1:
                 delta = datetime.timedelta()
             self._time_delta = delta
         if characteristic_read_callback:
