@@ -14,7 +14,8 @@ and the associated Connectivity firmware.
 
 This has been tested using both the nRF52832 Dev Kit and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
 
-This API implements against Connectivity Firmware for SoftDevice v3. This does NOT support the nRF51 or SoftDevice v2.
+This API implements against Connectivity Firmware for SoftDevice v3 (nRF5 SDK version 12.3). This does NOT support the nRF51 or SoftDevice v2.
+Additionally the nRF52840 is not compatible since it is not supported by this version of the SoftDevice.
 
 Currently only Python 2.7 is supported. This is a limitation of the `pc-ble-driver-py` library only building the SWIG modules for v2.
 If the aforementioned library ever supports Python 3+, this library will be updated also. Or, if I find spare time and this library
@@ -32,8 +33,12 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
 - [ ] SMP
     - [X] Encryption/Authentication process
     - [X] MITM/Passcode pairing support
-    - (WIP) Store bonding info
-    - (WIP) Identity resolve
+    - [X] Store bonding info
+      - Currently uses pickle which is not secure
+    - [X] Identity resolve
+    - [X] Bonding as Peripheral
+    - [ ] Bonding as Central (implemented, not tested)
+    - [ ] LESC pairing
     - [ ] Documentation
 - [ ] GATT Server
     - [x] Characteristic Reads
@@ -42,6 +47,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [x] Long reads/writes
     - [ ] Characteristic User Description/Presentation format
     - [ ] CCCD Caching
+    - [ ] Custom Read/Write authorization (#10)
     - [ ] Documentation (partial)
 - [ ] GATT Client
     - [X] Database Discovery procedure
@@ -60,7 +66,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [X] Peripheral
     - [ ] Multi-role
     - [X] Passcode Pairing
-    - [ ] Bonding
+    - [X] Bonding (glucose peripheral, no central example)
 - [ ] Bluetooth Services
     - [X] Device Info Service
     - [X] Battery Service

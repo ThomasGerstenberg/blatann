@@ -109,6 +109,11 @@ class BleDevice(NrfDriverObserver):
                                                             max_connected_clients, max_connected_peripherals,
                                                             max_secured_peripherals, attribute_table_size)
 
+    def clear_bonding_data(self):
+        logger.info("Clearing out all bonding information")
+        self.bond_db.delete_all()
+        self.bond_db_loader.save(self.bond_db)
+
     def open(self):
         self.bond_db = self.bond_db_loader.load()
         self.ble_driver.open()
@@ -199,4 +204,3 @@ class BleDevice(NrfDriverObserver):
                 if p.conn_handle == event.conn_handle:
                     del self.connected_peripherals[peer_address]
                     return
-

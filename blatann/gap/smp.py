@@ -1,5 +1,6 @@
 import logging
 import threading
+import enum
 from Crypto.Cipher import AES
 
 from blatann.gap.bond_db import BondingData
@@ -20,6 +21,16 @@ SecurityStatus = nrf_types.BLEGapSecStatus
 
 # Enum of the different Pairing passkeys to be entered by the user (passcode, out-of-band, etc.)
 AuthenticationKeyType = nrf_types.BLEGapAuthKeyType
+
+
+class SecurityLevel(enum.Enum):
+    """
+    Security levels used for defining GATT server characteristics
+    """
+    NO_ACCESS = 0
+    OPEN = 1
+    JUST_WORKS = 2
+    MITM = 3
 
 
 def ah(key, p_rand):
@@ -91,14 +102,18 @@ class SecurityManager(object):
         self.ble_device = ble_device
         self.peer = peer
         self.security_params = security_parameters
-        self._busy = False
+        self._pairing_in_process = False
+        self._initiated_encryption = False
+        self._is_previously_bonded_device = False
         self._on_authentication_complete_event = EventSource("On Authentication Complete", logger)
         self._on_passkey_display_event = EventSource("On Passkey Display", logger)
         self._on_passkey_entry_event = EventSource("On Passkey Entry", logger)
+        self._on_security_level_changed_event = EventSource("Security Level Changed", logger)
         self.peer.on_connect.register(self._on_peer_connected)
         self._auth_key_resolve_thread = threading.Thread()
         self.keyset = nrf_types.BLEGapSecKeyset()
         self.bond_db_entry = None
+        self._security_level = SecurityLevel.NO_ACCESS
 
     """
     Events
@@ -111,9 +126,23 @@ class SecurityManager(object):
         EventArgs type: PairingCompleteEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
+        :rtype: Event
         """
         return self._on_authentication_complete_event
+
+    @property
+    def on_security_level_changed(self):
+        """
+        Event that is triggered when the security/encryption level changes. This can be triggered from
+        a pairing sequence or if a bonded client starts the encryption handshaking using the stored LTKs.
+
+        Note: This event is triggered before on_pairing_complete
+
+        EventArgs type: SecurityLevelChangedEventArgs
+        :return: an Event which can have handlers registered to and deregestestered from
+        :rtype: Event
+        """
+        return self._on_security_level_changed_event
 
     @property
     def on_passkey_display_required(self):
@@ -122,7 +151,7 @@ class SecurityManager(object):
         EventArgs type: PasskeyDisplayEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
+        :rtype: Event
         """
         return self._on_passkey_display_event
 
@@ -133,9 +162,27 @@ class SecurityManager(object):
         EventArgs type: PasskeyEntryEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
+        :rtype: Event
         """
         return self._on_passkey_entry_event
+
+    @property
+    def is_previously_bonded(self):
+        """
+        Gets if the peer this security manager is for was bonded in a previous connection
+
+        :return: True if previously bonded, False if not
+        """
+        return self._is_previously_bonded_device
+
+    @property
+    def security_level(self):
+        """
+        Gets the current security level of the connection
+
+        :rtype: SecurityLevel
+        """
+        return self._security_level
 
     """
     Public Methods
@@ -159,8 +206,9 @@ class SecurityManager(object):
         self.security_params = SecurityParameters(passcode_pairing, io_capabilities, bond, out_of_band,
                                                   reject_pairing_requests)
 
-    def pair(self):
+    def pair(self, force_repairing=False):
         """
+        Starts the encrypting process with the peer. If the peer has already been bonded to,
         Starts the pairing process with the peer given the set security parameters
         and returns a Waitable which will fire when the pairing process completes, whether successful or not.
         Waitable returns two parameters: (Peer, PairingCompleteEventArgs)
@@ -168,14 +216,24 @@ class SecurityManager(object):
         :return: A waitiable that will fire when pairing is complete
         :rtype: blatann.waitables.EventWaitable
         """
-        if self._busy:
+        if self._pairing_in_process or self._initiated_encryption:
             raise InvalidStateException("Security manager busy")
         if self.security_params.reject_pairing_requests:
             raise InvalidOperationException("Cannot initiate pairing while rejecting pairing requests")
 
+        # if in the client role and don't want to force a re-pair, check for bonding data first
+        if self.peer.is_peripheral and not force_repairing:
+            bond_entry = self._find_db_entry(self.peer.peer_address)
+            if bond_entry:
+                logger.info("Re-establishing encryption with peer using LTKs")
+                self.ble_device.ble_driver.ble_gap_encrypt(self.peer.conn_handle,
+                                                           bond_entry.bonding_data.own_ltk.master_id,
+                                                           bond_entry.bonding_data.own_ltk.enc_info)
+                self._initiated_encryption = True
+
         sec_params = self._get_security_params()
         self.ble_device.ble_driver.ble_gap_authenticate(self.peer.conn_handle, sec_params)
-        self._busy = True
+        self._pairing_in_process = True
         return EventWaitable(self.on_pairing_complete)
 
     """
@@ -183,9 +241,13 @@ class SecurityManager(object):
     """
 
     def _on_peer_connected(self, peer, event_args):
-        self._busy = False
+        # Reset the
+        self._pairing_in_process = False
+        self._initiated_encryption = False
+        self._security_level = SecurityLevel.OPEN
         self.peer.driver_event_subscribe(self._on_security_params_request, nrf_events.GapEvtSecParamsRequest)
         self.peer.driver_event_subscribe(self._on_authentication_status, nrf_events.GapEvtAuthStatus)
+        self.peer.driver_event_subscribe(self._on_conn_sec_status, nrf_events.GapEvtConnSecUpdate)
         self.peer.driver_event_subscribe(self._on_auth_key_request, nrf_events.GapEvtAuthKeyRequest)
         self.peer.driver_event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
         self.peer.driver_event_subscribe(self._on_security_info_request, nrf_events.GapEvtSecInfoRequest)
@@ -193,6 +255,7 @@ class SecurityManager(object):
         self.bond_db_entry = self._find_db_entry(self.peer.peer_address)
         if self.bond_db_entry:
             logger.info("Connected to previously bonded device {}".format(self.bond_db_entry.peer_addr))
+            self._is_previously_bonded_device = True
 
     def _find_db_entry(self, peer_address):
         if peer_address.addr_type == nrf_types.BLEGapAddrTypes.random_private_non_resolvable:
@@ -235,7 +298,7 @@ class SecurityManager(object):
         self.ble_device.ble_driver.ble_gap_sec_params_reply(event.conn_handle, status, sec_params, self.keyset)
 
         if not self.security_params.reject_pairing_requests:
-            self._busy = True
+            self._pairing_in_process = True
 
     def _on_security_info_request(self, driver, event):
         """
@@ -259,21 +322,39 @@ class SecurityManager(object):
                 break
 
         if not found_record:
+            logger.info("Unable to find Bonding record for peer master id {}".format(event.master_id))
             self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle)
         else:
             self.bond_db_entry = found_record
             ltk = found_record.bonding_data.own_ltk
-            self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle, ltk.enc_info, None, None)
+            id_key = found_record.bonding_data.peer_id
+            self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle, ltk.enc_info, id_key, None)
+
+    def _on_conn_sec_status(self, driver, event):
+        """
+        :type event: nrf_events.GapEvtConnSecUpdate
+        """
+        self._security_level = SecurityLevel(event.sec_level)
+        self._on_security_level_changed_event.notify(self.peer, SecurityLevelChangedEventArgs(self._security_level))
+        if self._initiated_encryption:
+            self._initiated_encryption = False
+            if event.sec_level > 0 and event.sec_mode > 0:
+                status = SecurityStatus.success
+            else:
+                # Peer failed to find/load the keys, return failure status code
+                status = SecurityStatus.unspecified
+            self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(status, self.security_level))
 
     def _on_authentication_status(self, driver, event):
         """
         :type event: nrf_events.GapEvtAuthStatus
         """
-        self._busy = False
-        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(event.auth_status))
+        self._pairing_in_process = False
+        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(event.auth_status,
+                                                                                          self.security_level))
         # Save keys in the database if authenticated+bonded successfullly
         if event.auth_status == SecurityStatus.success and event.bonded:
-            # Reload the keys from the C Memory space (were updated during the pairing process
+            # Reload the keys from the C Memory space (were updated during the pairing process)
             self.keyset.reload()
 
             # If there wasn't a bond record initially, try again a second time using the new public peer address
@@ -289,6 +370,7 @@ class SecurityManager(object):
                 self.bond_db_entry.bonding_data = BondingData(self.keyset)
                 self.ble_device.bond_db.add(self.bond_db_entry)
             else:  # update the bonding info
+                logger.info("Updating bond key for peer {}".format(self.keyset.peer_keys.id_key.peer_addr))
                 self.bond_db_entry.bonding_data = BondingData(self.keyset)
 
             # TODO: This doesn't belong here..
@@ -306,7 +388,7 @@ class SecurityManager(object):
         :type event: nrf_events.GapEvtAuthKeyRequest
         """
         def resolve(passkey):
-            if not self._busy:
+            if not self._pairing_in_process:
                 return
             if isinstance(passkey, (long, int)):
                 passkey = "{:06d}".format(passkey)
@@ -317,6 +399,7 @@ class SecurityManager(object):
         self._auth_key_resolve_thread = threading.Thread(name="{} Passkey Entry".format(self.peer.conn_handle),
                                                          target=self._on_passkey_entry_event.notify,
                                                          args=(self.peer, PasskeyEntryEventArgs(event.key_type, resolve)))
+        self._auth_key_resolve_thread.daemon = True
         self._auth_key_resolve_thread.start()
 
     def _on_timeout(self, driver, event):
@@ -325,4 +408,5 @@ class SecurityManager(object):
         """
         if event.src != nrf_types.BLEGapTimeoutSrc.security_req:
             return
-        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(SecurityStatus.timeout))
+        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(SecurityStatus.timeout,
+                                                                                          self.security_level))

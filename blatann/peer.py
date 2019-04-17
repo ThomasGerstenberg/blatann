@@ -106,6 +106,13 @@ class Peer(object):
         """
         return isinstance(self, Client)
 
+    @property
+    def is_previously_bonded(self):
+        """
+        Gets if the peer this security manager is for was bonded in a previous connection
+        """
+        return self.security.is_previously_bonded
+
     """
     Events
     """

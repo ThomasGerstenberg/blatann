@@ -35,6 +35,9 @@ class BondDatabase(object):
     def delete(self, db_entry):
         raise NotImplementedError()
 
+    def delete_all(self):
+        raise NotImplementedError()
+
     def __iter__(self):
         """
         :rtype: list[BondDbEntry]

@@ -60,6 +60,7 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
 
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
+        logger.debug("{}{}".format(wrapped.__name__, args))
         err_code = wrapped(*args, **kwargs)
         if err_code != expected:
             try:
@@ -158,7 +159,9 @@ class NrfDriver(object):
     @wrapt.synchronized(api_lock)
     def close(self):
         self._event_thread_join()
-        return driver.sd_rpc_close(self.rpc_adapter)
+        retval = driver.sd_rpc_close(self.rpc_adapter)
+        driver.sd_rpc_adapter_delete(self.rpc_adapter)
+        return retval
 
     def event_subscribe(self, handler, *event_types):
         for event_type in event_types:
@@ -384,7 +387,7 @@ class NrfDriver(object):
         if enc_info is not None:
             enc_info = enc_info.to_c()
         if irk is not None:
-            irk = irk.to_c()
+            irk = irk.to_c().id_info
         if sign_info is not None:
             sign_info = sign_info.to_c()
 

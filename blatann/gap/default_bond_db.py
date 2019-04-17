@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 default_db_file = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db.pkl")
 
 
+# TODO 04.16.2019: Replace pickling with something more secure
 class DefaultBondDatabaseLoader(BondDatabaseLoader):
     def __init__(self, filename=default_db_file):
         self.filename = filename
@@ -71,3 +72,6 @@ class DefaultBondDatabase(BondDatabase):
             if entry.id == db_entry.id:
                 del self._records[i]
                 return
+
+    def delete_all(self):
+        self._records = []
