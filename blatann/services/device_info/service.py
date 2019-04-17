@@ -60,7 +60,7 @@ class _DisClientCharacteristic(_DisCharacteristic):
                 logger.error("Service {}, Characteristic {} failed to decode value on read. Stream: [{}]".format(self.service.uuid, self.uuid, event_args.value.encode("hex")))
                 logger.exception(e)
 
-        decoded_event_args = DecodedReadCompleteEventArgs(event_args, decoded_value)
+        decoded_event_args = DecodedReadCompleteEventArgs.from_read_complete_event_args(event_args, decoded_value)
         self._on_read_complete_event.notify(characteristic, decoded_event_args)
 
     def read(self):

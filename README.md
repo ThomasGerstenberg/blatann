@@ -63,7 +63,13 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] Bonding
 - [ ] Bluetooth Services
     - [X] Device Info Service
-    - [ ] Glucose Service (Peripheral done, Central untested)
+    - [X] Battery Service
+    - [ ] Current Time Service
+       - [X] Peripheral
+       - [ ] Central
+    - [ ] Glucose Service
+       - [X] Peripheral
+       - [ ] Central (Incomplete, untested)
     - [ ] Nordic UART Service
     - More TBD (or on request)
 - [X] License
@@ -78,3 +84,11 @@ can be waited on (with timeout) until the event associated with the function cal
 **NOTE**
 
 This library is very much a work in progress. Interfaces, objects, method names **will** change.
+
+
+### Examples
+
+There are several example scripts which showcase different functionality of the library under `blatann/examples`.
+Examples can be run using `python -m blatann.examples [example_filename] [device_comport]`.
+
+Example usage: `python -m blatann.examples scanner COM3`
