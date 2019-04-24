@@ -23,6 +23,7 @@ _event_classes = [
     GapEvtAuthStatus,
     GapEvtPasskeyDisplay,
     GapEvtSecInfoRequest,
+    GapEvtLescDhKeyRequest,
     # TODO: (not all listed)
     # driver.BLE_GAP_EVT_SEC_REQUEST,
 

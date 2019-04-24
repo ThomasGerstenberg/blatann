@@ -273,6 +273,29 @@ class BLEGapPublicKey(object):
         return binascii.hexlify(self.key)
 
 
+class BLEGapDhKey(object):
+    KEY_LENGTH = driver.BLE_GAP_LESC_DHKEY_LEN
+
+    def __init__(self, key=""):
+        self.key = key
+
+    def to_c(self):
+        key = driver.ble_gap_lesc_dhkey_t()
+        key.key = util.list_to_uint8_array(self.key).cast()
+
+        return key
+
+    @classmethod
+    def from_c(cls, key):
+        key_data = bytearray(util.uint8_array_to_list(key.key, cls.KEY_LENGTH))
+        return cls(key_data)
+
+    def __repr__(self):
+        if not self.key:
+            return ""
+        return binascii.hexlify(self.key)
+
+
 class BLEGapSignKey(object):
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 

@@ -111,6 +111,10 @@ def on_passkey_display(peer, event_args):
     :type event_args: blatann.event_args.PasskeyDisplayEventArgs
     """
     logger.info("Passkey display: {}, match: {}".format(event_args.passkey, event_args.match_request))
+    if event_args.match_request:
+        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]".format(event_args.passkey))
+        match = response.lower().startswith("y")
+        event_args.match_confirm(match)
 
 
 class CountingCharacteristicThread(object):
@@ -181,8 +185,8 @@ def main(serial_port):
     ble_device.open()
 
     # Set up desired security parameters
-    ble_device.client.security.set_security_params(passcode_pairing=False, bond=False,
-                                                   io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=True, lesc_pairing=True,
+                                                   io_capabilities=IoCapabilities.KEYBOARD_DISPLAY, out_of_band=False)
     ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
 
@@ -232,4 +236,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM49")
+    main("COM5")

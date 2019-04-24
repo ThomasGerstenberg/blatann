@@ -151,3 +151,25 @@ class GapEvtPasskeyDisplay(GapEvtSec):
         return "{}(conn_handle={!r}, passkey={!r}, match_request={!r})".format(self.__class__.__name__,
                                                                                self.conn_handle, self.passkey,
                                                                                self.match_request)
+
+
+class GapEvtLescDhKeyRequest(GapEvtSec):
+    evt_id = driver.BLE_GAP_EVT_LESC_DHKEY_REQUEST
+
+    def __init__(self, conn_handle, remote_public_key, oob_required):
+        super(GapEvtLescDhKeyRequest, self).__init__(conn_handle)
+        self.remote_public_key = remote_public_key  # type: BLEGapDhKey
+        self.oob_required = oob_required
+
+    @classmethod
+    def from_c(cls, event):
+        dh_key_request = event.evt.gap_evt.params.lesc_dhkey_request
+        remote_pk = BLEGapPublicKey.from_c(dh_key_request.p_pk_peer)
+        oob_required = bool(dh_key_request.oobd_req)
+        return cls(conn_handle=event.evt.gap_evt.conn_handle,
+                   remote_public_key=remote_pk,
+                   oob_required=oob_required)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, remote key: {!r}, oob? {}".format(self.__class__.__name__, self.conn_handle,
+                                                                       self.remote_public_key, self.oob_required)
