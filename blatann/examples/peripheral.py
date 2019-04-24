@@ -112,7 +112,7 @@ def on_passkey_display(peer, event_args):
     """
     logger.info("Passkey display: {}, match: {}".format(event_args.passkey, event_args.match_request))
     if event_args.match_request:
-        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]".format(event_args.passkey))
+        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
         match = response.lower().startswith("y")
         event_args.match_confirm(match)
 

@@ -38,7 +38,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [X] Identity resolve
     - [X] Bonding as Peripheral
     - [ ] Bonding as Central (implemented, not tested)
-    - [ ] LESC pairing
+    - [X] LESC pairing
     - [ ] Documentation
 - [ ] GATT Server
     - [x] Characteristic Reads
@@ -66,6 +66,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [X] Peripheral
     - [ ] Multi-role
     - [X] Passcode Pairing
+    - [X] LESC Numeric Comparison Pairing (peripheral.py example)
     - [X] Bonding (glucose peripheral, no central example)
 - [ ] Bluetooth Services
     - [X] Device Info Service
