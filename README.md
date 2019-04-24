@@ -66,7 +66,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [X] Peripheral
     - [ ] Multi-role
     - [X] Passcode Pairing
-    - [X] LESC Numeric Comparison Pairing (peripheral.py example)
+    - [X] LESC Numeric Comparison Pairing (glucose peripheral, no central example)
     - [X] Bonding (glucose peripheral, no central example)
 - [ ] Bluetooth Services
     - [X] Device Info Service

@@ -185,7 +185,7 @@ def main(serial_port):
     ble_device.open()
 
     # Set up desired security parameters
-    ble_device.client.security.set_security_params(passcode_pairing=False, bond=True, lesc_pairing=True,
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=False, lesc_pairing=False,
                                                    io_capabilities=IoCapabilities.KEYBOARD_DISPLAY, out_of_band=False)
     ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
