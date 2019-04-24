@@ -15,7 +15,7 @@ from blatann.services.glucose import GlucoseFeatureType
 from blatann.waitables import GenericWaitable
 
 
-logger = setup_logger(level="DEBUG")
+logger = setup_logger(level="INFO")
 
 
 def on_connect(peer, event_args):
@@ -66,7 +66,12 @@ def display_passkey(peer, event_args):
     :param event_args: The event args
     :type event_args: blatann.event_args.PasskeyDisplayEventArgs
     """
-    logger.info("Passkey: {}".format(event_args.passkey))
+    if not event_args.match_request:
+        logger.info("Passkey: {}".format(event_args.passkey))
+    else:
+        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
+        match_confirmed = response.lower().startswith("y")
+        event_args.match_confirm(match_confirmed)
 
 
 def add_fake_glucose_readings(glucose_database, num_records=15):
@@ -133,8 +138,8 @@ def main(serial_port):
     ble_device.client.security.on_security_level_changed.register(on_security_level_changed)
 
     # Set the security parameters for the client
-    ble_device.client.security.set_security_params(passcode_pairing=False, bond=True,
-                                                   io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=True, lesc_pairing=True,
+                                                   io_capabilities=IoCapabilities.KEYBOARD_DISPLAY, out_of_band=False)
 
     # Advertise the Glucose service
     adv_data = advertising.AdvertisingData(local_name="Glucose Test", flags=0x06,

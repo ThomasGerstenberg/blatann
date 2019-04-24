@@ -374,9 +374,11 @@ class NrfDriver(object):
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def ble_gap_auth_key_reply(self, conn_handle, key_type, key):
-        key_buf = util.list_to_uint8_array(key)
-        return driver.sd_ble_gap_auth_key_reply(self.rpc_adapter,
-                                                conn_handle, key_type, key_buf.cast())
+        if key is not None:
+            key_buf = util.list_to_uint8_array(key).cast()
+        else:
+            key_buf = None
+        return driver.sd_ble_gap_auth_key_reply(self.rpc_adapter, conn_handle, key_type, key_buf)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -417,6 +419,14 @@ class NrfDriver(object):
         enc_info.lesc = lesc
         enc_info.auth = auth
         return driver.sd_ble_gap_encrypt(self.rpc_adapter, conn_handle, master_id, enc_info)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_lesc_dhkey_reply(self, conn_handle, dh_key):
+        assert isinstance(dh_key, BLEGapDhKey)
+
+        key = dh_key.to_c()
+        return driver.sd_ble_gap_lesc_dhkey_reply(self.rpc_adapter, conn_handle, key)
 
     """
     GATTS Methods

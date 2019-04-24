@@ -1,7 +1,10 @@
 import logging
 import threading
 import enum
+import binascii
 from Crypto.Cipher import AES
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from blatann.gap.bond_db import BondingData
 from blatann.nrf import nrf_types, nrf_events
@@ -22,6 +25,9 @@ SecurityStatus = nrf_types.BLEGapSecStatus
 # Enum of the different Pairing passkeys to be entered by the user (passcode, out-of-band, etc.)
 AuthenticationKeyType = nrf_types.BLEGapAuthKeyType
 
+# Elliptic Curve used for LE Secure connections
+_lesc_curve = ec.SECP256R1
+
 
 class SecurityLevel(enum.Enum):
     """
@@ -31,6 +37,7 @@ class SecurityLevel(enum.Enum):
     OPEN = 1
     JUST_WORKS = 2
     MITM = 3
+    LESC_MITM = 4
 
 
 def ah(key, p_rand):
@@ -52,6 +59,37 @@ def ah(key, p_rand):
     p_rand = chr(0) * 13 + p_rand
     # Encrypt and return the last 3 bytes
     return cipher.encrypt(p_rand)[-3:]
+
+
+def pubkey_to_raw(public_key):
+    """
+    Converts from a python public key to the raw (x, y) bytes for the nordic
+    """
+    pk = public_key.public_numbers()
+    x = bytearray.fromhex("{:064x}".format(pk.x))
+    y = bytearray.fromhex("{:064x}".format(pk.y))
+
+    # Nordic requires keys in little-endian, rotate
+    pubkey_raw = x[::-1] + y[::-1]
+    return pubkey_raw
+
+
+def pubkey_from_raw(raw_key):
+    """
+    Converts from raw (x, y) bytes to a public key that can be used for the DH request
+    """
+    key_len = len(raw_key)
+    x_raw = raw_key[:key_len/2]
+    y_raw = raw_key[key_len/2:]
+
+    # Nordic transmits keys in little-endian, convert to big-endian
+    x_raw = x_raw[::-1]
+    y_raw = y_raw[::-1]
+
+    x = int(binascii.hexlify(x_raw), 16)
+    y = int(binascii.hexlify(y_raw), 16)
+    public_numbers = ec.EllipticCurvePublicNumbers(x, y, _lesc_curve())
+    return public_numbers.public_key(default_backend())
 
 
 def private_address_resolves(peer_addr, irk):
@@ -81,12 +119,13 @@ class SecurityParameters(object):
     Class representing the desired security parameters for a given connection
     """
     def __init__(self, passcode_pairing=False, io_capabilities=IoCapabilities.KEYBOARD_DISPLAY,
-                 bond=False, out_of_band=False, reject_pairing_requests=False):
+                 bond=False, out_of_band=False, reject_pairing_requests=False, lesc_pairing=False):
         self.passcode_pairing = passcode_pairing
         self.io_capabilities = io_capabilities
         self.bond = bond
         self.out_of_band = out_of_band
         self.reject_pairing_requests = reject_pairing_requests
+        self.lesc_pairing = lesc_pairing
 
 
 class SecurityManager(object):
@@ -114,6 +153,9 @@ class SecurityManager(object):
         self.keyset = nrf_types.BLEGapSecKeyset()
         self.bond_db_entry = None
         self._security_level = SecurityLevel.NO_ACCESS
+        self._private_key = ec.generate_private_key(_lesc_curve, default_backend())
+        self._public_key = self._private_key.public_key()
+        self.keyset.own_keys.public_key.key = pubkey_to_raw(self._public_key)
 
     """
     Events
@@ -188,7 +230,8 @@ class SecurityManager(object):
     Public Methods
     """
 
-    def set_security_params(self, passcode_pairing, io_capabilities, bond, out_of_band, reject_pairing_requests=False):
+    def set_security_params(self, passcode_pairing, io_capabilities, bond, out_of_band, reject_pairing_requests=False,
+                            lesc_pairing=False):
         """
         Sets the security parameters to use with the peer
 
@@ -202,9 +245,10 @@ class SecurityManager(object):
         :type out_of_band: bool
         :param reject_pairing_requests: Flag indicating that all security requests by the peer should be rejected
         :type reject_pairing_requests: bool
+        :param lesc_pairing: Flag indicating that LE Secure Pairing methods are supported
         """
         self.security_params = SecurityParameters(passcode_pairing, io_capabilities, bond, out_of_band,
-                                                  reject_pairing_requests)
+                                                  reject_pairing_requests, lesc_pairing)
 
     def pair(self, force_repairing=False):
         """
@@ -251,6 +295,7 @@ class SecurityManager(object):
         self.peer.driver_event_subscribe(self._on_auth_key_request, nrf_events.GapEvtAuthKeyRequest)
         self.peer.driver_event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
         self.peer.driver_event_subscribe(self._on_security_info_request, nrf_events.GapEvtSecInfoRequest)
+        self.peer.driver_event_subscribe(self._on_lesc_dhkey_request, nrf_events.GapEvtLescDhKeyRequest)
         # Search the bonding DB for this peer's info
         self.bond_db_entry = self._find_db_entry(self.peer.peer_address)
         if self.bond_db_entry:
@@ -279,7 +324,8 @@ class SecurityManager(object):
         keyset_own = nrf_types.BLEGapSecKeyDist(True, True, False, False)
         keyset_peer = nrf_types.BLEGapSecKeyDist(True, True, False, False)
         sec_params = nrf_types.BLEGapSecParams(self.security_params.bond, self.security_params.passcode_pairing,
-                                               False, False, self.security_params.io_capabilities,
+                                               self.security_params.lesc_pairing, False,
+                                               self.security_params.io_capabilities,
                                                self.security_params.out_of_band, 7, 16, keyset_own, keyset_peer)
         return sec_params
 
@@ -329,6 +375,16 @@ class SecurityManager(object):
             ltk = found_record.bonding_data.own_ltk
             id_key = found_record.bonding_data.peer_id
             self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle, ltk.enc_info, id_key, None)
+
+    def _on_lesc_dhkey_request(self, driver, event):
+        """
+        :type event: nrf_events.GapEvtLescDhKeyRequest
+        """
+        peer_public_key = pubkey_from_raw(event.remote_public_key.key)
+        shared_secret = self._private_key.exchange(ec.ECDH(), peer_public_key)
+        # Convert shared secret from big endian to little endian
+        shared_secret = shared_secret[::-1]
+        self.ble_device.ble_driver.ble_gap_lesc_dhkey_reply(event.conn_handle, nrf_types.BLEGapDhKey(shared_secret))
 
     def _on_conn_sec_status(self, driver, event):
         """
@@ -380,8 +436,25 @@ class SecurityManager(object):
         """
         :type event: nrf_events.GapEvtPasskeyDisplay
         """
-        # TODO: Better way to handle match request
-        self._on_passkey_display_event.notify(self.peer, PasskeyDisplayEventArgs(event.passkey, event.match_request))
+        def match_confirm(keys_match):
+            if not self._pairing_in_process:
+                return
+            if keys_match:
+                key_type = nrf_types.BLEGapAuthKeyType.PASSKEY
+            else:
+                key_type = nrf_types.BLEGapAuthKeyType.NONE
+
+            self.ble_device.ble_driver.ble_gap_auth_key_reply(event.conn_handle, key_type, None)
+
+        event_args = PasskeyDisplayEventArgs(event.passkey, event.match_request, match_confirm)
+        if event.match_request:
+            self._auth_key_resolve_thread = threading.Thread(name="{} Passkey Confirm".format(self.peer.conn_handle),
+                                                             target=self._on_passkey_display_event.notify,
+                                                             args=(self.peer, event_args))
+            self._auth_key_resolve_thread.daemon = True
+            self._auth_key_resolve_thread.start()
+        else:
+            self._on_passkey_display_event.notify(self.peer, event_args)
 
     def _on_auth_key_request(self, driver, event):
         """

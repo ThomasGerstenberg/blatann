@@ -85,16 +85,27 @@ class PasskeyEntryEventArgs(EventArgs):
 
 class PasskeyDisplayEventArgs(EventArgs):
     """
-    Event arguments when a passkey needs to be displayed to the user
+    Event arguments when a passkey needs to be displayed to the user.
+    If match_request is set, the user must confirm that the passkeys match on both devices then send back the confirmation
+
     """
-    def __init__(self, passkey, match_request):
+    def __init__(self, passkey, match_request, match_confirm_callback):
         """
         :param passkey: The passkey to display to the user
         :type passkey: str
-        :param match_request: TODO
+        :param match_request: Flag indicating whether or not the user needs to confirm that the passkeys match on both devices
         """
         self.passkey = passkey
         self.match_request = match_request
+        self._match_confirm_callback = match_confirm_callback
+
+    def match_confirm(self, keys_match):
+        """
+        If key matching was requested, this function responds with whether or not the keys matched correctly
+        :param keys_match: True if the keys matched, False if not
+        """
+        if self.match_request:
+            self._match_confirm_callback(keys_match)
 
 
 # Gatt Server Event Args
