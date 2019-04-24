@@ -15,7 +15,7 @@ from blatann.services.glucose import GlucoseFeatureType
 from blatann.waitables import GenericWaitable
 
 
-logger = setup_logger(level="DEBUG")
+logger = setup_logger(level="INFO")
 
 
 def on_connect(peer, event_args):
