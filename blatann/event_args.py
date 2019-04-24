@@ -1,5 +1,5 @@
-from blatann.gatt import GattStatusCode
 from enum import Enum
+from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
 
 
 class GattOperationCompleteReason(Enum):
@@ -47,12 +47,24 @@ class PairingCompleteEventArgs(EventArgs):
     """
     Event arguments when pairing completes, whether it failed or was successful
     """
-    def __init__(self, status):
+    def __init__(self, status, security_level):
         """
         :param status: The pairing status
         :type status: blatann.gap.SecurityStatus
+        :param security_level: The security level after pairing/bonding
+        :type security_level: blatann.gap.smp.SecurityLevel
         """
         self.status = status
+        self.security_level = security_level
+
+
+class SecurityLevelChangedEventArgs(EventArgs):
+    def __init__(self, security_level):
+        """
+        :param security_level: The new security level
+        :type security_level: blatann.gap.smp.SecurityLevel
+        """
+        self.security_level = security_level
 
 
 class PasskeyEntryEventArgs(EventArgs):

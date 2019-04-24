@@ -2,7 +2,7 @@ import logging
 from threading import Lock
 
 from blatann import peer, exceptions
-from blatann.gap import advertising, scanning
+from blatann.gap import advertising, scanning, default_bond_db
 from blatann.gatt import gatts
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
@@ -89,6 +89,9 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
         self._ble_configuration = self.ble_driver.ble_enable_params_setup()
 
+        self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader()
+        self.bond_db = default_bond_db.DefaultBondDatabase()
+
         self.client = peer.Client(self)
         self.connected_peripherals = {}
         self.connecting_peripheral = None
@@ -106,15 +109,25 @@ class BleDevice(NrfDriverObserver):
                                                             max_connected_clients, max_connected_peripherals,
                                                             max_secured_peripherals, attribute_table_size)
 
-    def open(self):
+    def open(self, clear_bonding_data=False):
+        if clear_bonding_data:
+            self.clear_bonding_data()
+        else:
+            self.bond_db = self.bond_db_loader.load()
         self.ble_driver.open()
         self.ble_driver.ble_enable(self._ble_configuration)
 
     def close(self):
+        self.bond_db_loader.save(self.bond_db)
         self.ble_driver.close()
 
     def __del__(self):
         self.close()
+
+    def clear_bonding_data(self):
+        logger.info("Clearing out all bonding information")
+        self.bond_db.delete_all()
+        self.bond_db_loader.save(self.bond_db)
 
     @property
     def database(self):
@@ -194,4 +207,3 @@ class BleDevice(NrfDriverObserver):
                 if p.conn_handle == event.conn_handle:
                     del self.connected_peripherals[peer_address]
                     return
-

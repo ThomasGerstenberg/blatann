@@ -106,6 +106,13 @@ class Peer(object):
         """
         return isinstance(self, Client)
 
+    @property
+    def is_previously_bonded(self):
+        """
+        Gets if the peer this security manager is for was bonded in a previous connection
+        """
+        return self.security.is_previously_bonded
+
     """
     Events
     """
@@ -252,7 +259,7 @@ class Peer(object):
         """
         if not self.connected or self.conn_handle != event.conn_handle:
             return
-        if isinstance(event, nrf_events.GapEvtConnParamUpdateRequest) or self._role == nrf_events.BLEGapRoles.periph:
+        if isinstance(event, nrf_events.GapEvtConnParamUpdateRequest):
             logger.debug("[{}] Conn Params updating to {}".format(self.conn_handle, self._ideal_connection_params))
             self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._ideal_connection_params)
         else:

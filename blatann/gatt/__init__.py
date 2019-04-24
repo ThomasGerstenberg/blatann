@@ -3,6 +3,7 @@ import logging
 import struct
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 from blatann.nrf import nrf_types
+from blatann.gap.smp import SecurityLevel
 
 
 logger = logging.getLogger(__name__)
@@ -16,16 +17,6 @@ GattStatusCode = nrf_types.BLEGattStatusCode
 The two notification types (notification, indication) used when a characteristic is notified from a peripheral
 """
 GattNotificationType = nrf_types.BLEGattHVXType
-
-
-class SecurityLevel(enum.Enum):
-    """
-    Security levels used for defining GATT server characteristics
-    """
-    NO_ACCESS = 0
-    OPEN = 1
-    JUST_WORKS = 2
-    MITM = 3
 
 
 class ServiceType(enum.Enum):

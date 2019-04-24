@@ -40,3 +40,6 @@ _coverage/
 
 # Log Files
 log/
+
+# User-specific config files
+blatann/.user

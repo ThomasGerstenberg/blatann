@@ -22,8 +22,8 @@ _event_classes = [
     GapEvtConnSecUpdate,
     GapEvtAuthStatus,
     GapEvtPasskeyDisplay,
+    GapEvtSecInfoRequest,
     # TODO: (not all listed)
-    # driver.BLE_GAP_EVT_SEC_INFO_REQUEST,
     # driver.BLE_GAP_EVT_SEC_REQUEST,
 
     # Gattc
@@ -55,6 +55,7 @@ _event_classes = [
 ]
 
 _events_by_id = {e.evt_id: e for e in _event_classes}
+
 
 def event_decode(ble_event):
     event_cls = _events_by_id.get(ble_event.header.evt_id, None)

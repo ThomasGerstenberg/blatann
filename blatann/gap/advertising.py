@@ -207,7 +207,7 @@ class Advertiser(object):
         self._auto_restart = False
         self.client = client
         self.ble_device.ble_driver.event_subscribe(self._handle_adv_timeout, nrf_events.GapEvtTimeout)
-        self.ble_device.ble_driver.event_subscribe(self._handle_disconnect, nrf_events.GapEvtDisconnected)
+        self.client.on_disconnect.register(self._handle_disconnect)
         self._on_advertising_timeout = EventSource("Advertising Timeout", logger)
         self._advertise_interval = 100
         self._timeout = self.ADVERTISE_FOREVER
@@ -262,7 +262,7 @@ class Advertiser(object):
         self._timeout = timeout_seconds
         self._advertise_mode = advertise_mode
 
-    def start(self, adv_interval_ms=None, timeout_sec=None, auto_restart=False, advertise_mode=None):
+    def start(self, adv_interval_ms=None, timeout_sec=None, auto_restart=None, advertise_mode=None):
         """
         Starts advertising with the given parameters. If none given, will use the default
 
@@ -283,12 +283,16 @@ class Advertiser(object):
             timeout_sec = self._timeout
         if advertise_mode is None:
             advertise_mode = self._advertise_mode
+        if auto_restart is None:
+            auto_restart = self._auto_restart
+
         self._timeout = timeout_sec
         self._advertise_interval = adv_interval_ms
         self._advertise_mode = advertise_mode
+        self._auto_restart = auto_restart
 
         params = nrf_types.BLEGapAdvParams(adv_interval_ms, timeout_sec, advertise_mode)
-        self._auto_restart = auto_restart
+
         logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, auto_restart))
         self.ble_device.ble_driver.ble_gap_adv_start(params)
         self.advertising = True
@@ -324,5 +328,5 @@ class Advertiser(object):
         """
         :type event: nrf_events.GapEvtDisconnected
         """
-        if event.conn_handle == self.client.conn_handle and self._auto_restart:
+        if self._auto_restart:
             self.start()

@@ -15,7 +15,7 @@ from blatann.services.glucose import GlucoseFeatureType
 from blatann.waitables import GenericWaitable
 
 
-logger = setup_logger(level="INFO")
+logger = setup_logger(level="DEBUG")
 
 
 def on_connect(peer, event_args):
@@ -27,7 +27,7 @@ def on_connect(peer, event_args):
     :param event_args: None
     """
     if peer:
-        logger.info("Connected to peer")
+        logger.info("Connected to {} peer".format("previously-bonded" if peer.is_previously_bonded else "new"))
     else:
         logger.warning("Connection timed out")
 
@@ -42,6 +42,18 @@ def on_disconnect(peer, event_args):
     :type event_args: blatann.event_args.DisconnectionEventArgs
     """
     logger.info("Disconnected from peer, reason: {}".format(event_args.reason))
+
+
+def on_security_level_changed(peer, event_args):
+    """
+    Event callback for when the security level changes on a connection with a peer
+
+    :param peer: The peer the security level changed on
+    :type peer: blatann.peer.Client
+    :param event_args: The event args
+    :type event_args: blatann.event_args.SecurityLevelChangedEventArgs
+    """
+    logger.info("Security level changed to {}".format(event_args.security_level))
 
 
 def display_passkey(peer, event_args):
@@ -98,7 +110,7 @@ def main(serial_port):
     # Create a database to store the readings
     glucose_database = glucose.BasicGlucoseDatabase()
     # Add the service to the BLE database, using the glucose database just created, require encryption at the minimum
-    service = glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.JUST_WORKS)
+    service = glucose.add_glucose_service(ble_device.database, glucose_database, glucose.SecurityLevel.MITM)
 
     # Set the features of this "glucose sensor"
     features = glucose.GlucoseFeatures(GlucoseFeatureType.low_battery_detection, GlucoseFeatureType.strip_insertion_error_detection)
@@ -112,13 +124,16 @@ def main(serial_port):
     ble_device.client.on_disconnect.register(on_disconnect)
 
     # Set the connection parameters for the client
-    ble_device.client.set_connection_parameters(15, 30, 4000)
+    ble_device.client.set_connection_parameters(15, 100, 4000)
 
     # Set the function to display the passkey
     ble_device.client.security.on_passkey_display_required.register(display_passkey)
 
+    # Add a callback for when the security level changes
+    ble_device.client.security.on_security_level_changed.register(on_security_level_changed)
+
     # Set the security parameters for the client
-    ble_device.client.security.set_security_params(passcode_pairing=False, bond=False,
+    ble_device.client.security.set_security_params(passcode_pairing=False, bond=True,
                                                    io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
 
     # Advertise the Glucose service
@@ -138,4 +153,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM49")
+    main("COM5")
