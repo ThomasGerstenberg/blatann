@@ -10,6 +10,9 @@ and the associated Connectivity firmware.
 
 `pip install blatann`
 
+NOTE: if using Windows, you will first need to download and install Microsoft
+Visual C++ 9.0 from [http://aka.ms/vcpython27](http://aka.ms/vcpython27)
+
 #### Supported Devices/Software
 
 This has been tested using both the nRF52832 Dev Kit and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
