@@ -8,7 +8,7 @@ VERSION = "v0.2.4"
 py2 = sys.version_info[0] == 2
 py3 = sys.version_info[0] == 3
 
-_install_requires = ["pc-ble-driver-py", "pycrypto", "pytz"]
+_install_requires = ["pc-ble-driver-py", "cryptography", "pytz"]
 
 if py2:
     _install_requires.extend(["enum34"])
