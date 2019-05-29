@@ -105,31 +105,12 @@ class NrfDriver(object):
         transport_layer = driver.sd_rpc_transport_layer_create(link_layer, 100)
         self.rpc_adapter = driver.sd_rpc_adapter_create(transport_layer)
 
-    # @wrapt.synchronized(api_lock)
-    # @classmethod
-    # def enum_serial_ports(cls):
-    #     MAX_SERIAL_PORTS = 64
-    #     c_descs = [driver.sd_rpc_serial_port_desc_t() for i in range(MAX_SERIAL_PORTS)]
-    #     c_desc_arr = util.list_to_serial_port_desc_array(c_descs)
-    #
-    #     arr_len = driver.new_uint32()
-    #     driver.uint32_assign(arr_len, MAX_SERIAL_PORTS)
-    #
-    #     err_code = driver.sd_rpc_serial_port_enum(c_desc_arr, arr_len)
-    #     if err_code != driver.NRF_SUCCESS:
-    #         raise NordicSemiException('Failed to {}. Error code: {}'.format(func.__name__, err_code))
-    #
-    #     dlen = driver.uint32_value(arr_len)
-    #
-    #     descs = util.serial_port_desc_array_to_list(c_desc_arr, dlen)
-    #     return map(SerialPortDescriptor.from_c, descs)
-
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def open(self):
-        if self._event_thread is not None:
-            logger.error("Trying to open already opened driver")
-            return
+        if self.is_open:
+            logger.warning("Trying to open already opened driver")
+            return driver.NRF_SUCCESS
 
         err_code = driver.sd_rpc_open(self.rpc_adapter,
                                       self._status_handler,
@@ -155,12 +136,16 @@ class NrfDriver(object):
         self._event_stopped.wait(1)
         self._event_thread = None
 
+    @property
+    def is_open(self):
+        return self._event_thread is not None
+
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def close(self):
-        self._event_thread_join()
         retval = driver.sd_rpc_close(self.rpc_adapter)
         driver.sd_rpc_adapter_delete(self.rpc_adapter)
+        self._event_thread_join()
         return retval
 
     def event_subscribe(self, handler, *event_types):
@@ -204,38 +189,23 @@ class NrfDriver(object):
                 self.observers.remove(observer)
 
     def ble_enable_params_setup(self):
-        return BLEEnableParams(vs_uuid_count=10,
-                               service_changed=False,
-                               periph_conn_count=1,
-                               central_conn_count=1,
-                               central_sec_count=1)
+        return BLEEnableParams(vs_uuid_count=10, service_changed=False, periph_conn_count=1,
+                               central_conn_count=1, central_sec_count=1)
 
     def adv_params_setup(self):
-        return BLEGapAdvParams(interval_ms=40,
-                               timeout_s=180)
+        return BLEGapAdvParams(interval_ms=40, timeout_s=180)
 
     def scan_params_setup(self):
-        return BLEGapScanParams(interval_ms=200,
-                                window_ms=150,
-                                timeout_s=10)
+        return BLEGapScanParams(interval_ms=200, window_ms=150, timeout_s=10)
 
     def conn_params_setup(self):
-        return BLEGapConnParams(min_conn_interval_ms=15,
-                                max_conn_interval_ms=30,
-                                conn_sup_timeout_ms=4000,
-                                slave_latency=0)
+        return BLEGapConnParams(min_conn_interval_ms=15, max_conn_interval_ms=30,
+                                conn_sup_timeout_ms=4000, slave_latency=0)
 
     def security_params_setup(self):
-        return BLEGapSecParams(bond=True,
-                               mitm=True,
-                               le_sec_pairing=False,
-                               keypress_noti=False,
-                               io_caps=BLEGapIoCaps.NONE,
-                               oob=False,
-                               min_key_size=8,
-                               max_key_size=16,
-                               kdist_own=BLEGapSecKeyDist(),
-                               kdist_peer=BLEGapSecKeyDist(enc_key=True))
+        return BLEGapSecParams(bond=True, mitm=True, le_sec_pairing=False, keypress_noti=False,
+                               io_caps=BLEGapIoCaps.NONE, oob=False, min_key_size=8,max_key_size=16,
+                               kdist_own=BLEGapSecKeyDist(), kdist_peer=BLEGapSecKeyDist(enc_key=True))
 
     """
     BLE Generic methods
