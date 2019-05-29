@@ -109,7 +109,7 @@ class NrfDriver(object):
     @wrapt.synchronized(api_lock)
     def open(self):
         if self.is_open:
-            logger.error("Trying to open already opened driver")
+            logger.warning("Trying to open already opened driver")
             return driver.NRF_SUCCESS
 
         err_code = driver.sd_rpc_open(self.rpc_adapter,
