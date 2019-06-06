@@ -17,7 +17,7 @@ help:
 all: apidoc html
 
 apidoc:
-	@sphinx-apidoc -e -M -f -o $(SOURCEDIR) $(PYTHON_SOURCE)
+	@sphinx-apidoc -e -M -o $(SOURCEDIR) $(PYTHON_SOURCE)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
