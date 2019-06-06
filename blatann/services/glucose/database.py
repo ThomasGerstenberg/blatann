@@ -48,7 +48,7 @@ class IGlucoseDatabase(object):
 
         :param min_seq_num: The minimum sequence number to get. If None, no minimum is requested
         :param max_seq_num: The maximum sequence number to get. If None, no maximum is requested
-        :return The list of glucose measurement records that fit the parameters
+        :return: The list of glucose measurement records that fit the parameters
         :rtype: list[GlucoseMeasurement]
         """
         raise NotImplementedError()
