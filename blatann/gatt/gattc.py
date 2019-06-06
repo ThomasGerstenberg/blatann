@@ -108,13 +108,13 @@ class GattcCharacteristic(gatt.Characteristic):
         The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
 
         :param on_notification_handler: The handler to be called when an indication or notification is received from
-        the peripheral. Must take three parameters: (GattcCharacteristic this, gatt.GattNotificationType, bytearray data)
+            the peripheral. Must take three parameters: (GattcCharacteristic this, gatt.GattNotificationType, bytearray data)
         :param prefer_indications: If the peripheral supports both indications and notifications,
-                                   will subscribe to indications instead of notifications
+            will subscribe to indications instead of notifications
         :return: A Waitable that will fire when the subscription finishes
         :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if the characteristic cannot be subscribed to
-                (characteristic does not support indications or notifications)
+            (characteristic does not support indications or notifications)
         """
         if not self.subscribable:
             raise InvalidOperationException("Cannot subscribe to Characteristic {}".format(self.uuid))

@@ -177,7 +177,7 @@ class CurrentTimeServer(object):
         :param timezone_hrs: The timezone to report, in hours
         :param dst_offset: The daylight savings time offset
         :type dst_offset: DaylightSavingsTimeOffset
-        :raises InvalidOperationException if the service was not configured with the local time info
+        :raises: InvalidOperationException if the service was not configured with the local time info
         """
         if not self.has_local_time_info:
             raise InvalidOperationException("Current Time service was not initialized with local time info")
@@ -194,7 +194,7 @@ class CurrentTimeServer(object):
         :param accuracy: The accuracy to report
         :type accuracy: TimeAccuracy
         :param hours_since_update: The number of hours since time reference has been updated
-        :raises InvalidOperationException if the service was not configured with the reference info
+        :raises: InvalidOperationException if the service was not configured with the reference info
         """
         if not self.has_reference_time_info:
             raise InvalidOperationException("Current Time service was not initialized with reference info")

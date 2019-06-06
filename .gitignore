@@ -43,3 +43,8 @@ log/
 
 # User-specific config files
 blatann/.user
+
+# Auto-generated documentation
+docs/_build
+docs/source/blatann*.rst
+docs/source/modules.rst
