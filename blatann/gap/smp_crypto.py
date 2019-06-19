@@ -10,7 +10,7 @@ _lesc_curve = ec.SECP256R1
 _backend = default_backend()
 
 
-def lesc_pubkey_to_raw(public_key):
+def lesc_pubkey_to_raw(public_key, little_endian=True):
     """
     Converts from a python public key to the raw (x, y) bytes for the nordic
     """
@@ -19,11 +19,22 @@ def lesc_pubkey_to_raw(public_key):
     y = bytearray.fromhex("{:064x}".format(pk.y))
 
     # Nordic requires keys in little-endian, rotate
-    pubkey_raw = x[::-1] + y[::-1]
+    if little_endian:
+        pubkey_raw = x[::-1] + y[::-1]
+    else:
+        pubkey_raw = x + y
     return pubkey_raw
 
 
-def lesc_pubkey_from_raw(raw_key):
+def lesc_privkey_to_raw(private_key, little_endian=True):
+    pk = private_key.private_numbers()
+    x = bytearray.fromhex("{:032x}".format(pk.private_value))
+    if little_endian:
+        x = x[::-1]
+    return x
+
+
+def lesc_pubkey_from_raw(raw_key, little_endian=True):
     """
     Converts from raw (x, y) bytes to a public key that can be used for the DH request
     """
@@ -32,13 +43,32 @@ def lesc_pubkey_from_raw(raw_key):
     y_raw = raw_key[key_len/2:]
 
     # Nordic transmits keys in little-endian, convert to big-endian
-    x_raw = x_raw[::-1]
-    y_raw = y_raw[::-1]
+    if little_endian:
+        x_raw = x_raw[::-1]
+        y_raw = y_raw[::-1]
 
     x = int(binascii.hexlify(x_raw), 16)
     y = int(binascii.hexlify(y_raw), 16)
     public_numbers = ec.EllipticCurvePublicNumbers(x, y, _lesc_curve())
     return public_numbers.public_key(_backend)
+
+
+def lesc_privkey_from_raw(raw_priv_key, raw_pub_key, little_endian=True):
+    key_len = len(raw_pub_key)
+    x_raw = raw_pub_key[:key_len/2]
+    y_raw = raw_pub_key[key_len/2:]
+
+    if little_endian:
+        x_raw = x_raw[::-1]
+        y_raw = y_raw[::-1]
+        raw_priv_key = raw_priv_key[::-1]
+
+    x = int(binascii.hexlify(x_raw), 16)
+    y = int(binascii.hexlify(y_raw), 16)
+    priv = int(binascii.hexlify(raw_priv_key), 16)
+    public_numbers = ec.EllipticCurvePublicNumbers(x, y, _lesc_curve())
+    priv_numbers = ec.EllipticCurvePrivateNumbers(priv, public_numbers)
+    return priv_numbers.private_key(_backend)
 
 
 def lesc_generate_private_key():
@@ -110,3 +140,14 @@ def private_address_resolves(peer_addr, irk):
     irk = str(irk)[::-1]
     local_hash = ble_ah(irk, p_rand)
     return local_hash == addr_hash
+
+
+# BLE LESC Debug keys, defined in the Core Bluetooth Specification v4.2 Vol.3, Part H, Section 2.3.5.6.1
+# Keys are in big-endian
+_LESC_DEBUG_PRIVATE_KEY_RAW = "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd".decode("hex")
+_LESC_DEBUG_PUBLIC_KEY_X_RAW = "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6".decode("hex")
+_LESC_DEBUG_PUBLIC_KEY_Y_RAW = "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b".decode("hex")
+_LESC_DEBUG_PUBLIC_KEY_RAW = _LESC_DEBUG_PUBLIC_KEY_X_RAW + _LESC_DEBUG_PUBLIC_KEY_Y_RAW
+
+LESC_DEBUG_PRIVATE_KEY = lesc_privkey_from_raw(_LESC_DEBUG_PRIVATE_KEY_RAW, _LESC_DEBUG_PUBLIC_KEY_RAW, little_endian=False)
+LESC_DEBUG_PUBLIC_KEY = LESC_DEBUG_PRIVATE_KEY.public_key()
