@@ -10,7 +10,8 @@ Welcome to Blatann's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+.. toctree::
+    modules
 
 Indices and tables
 ==================
