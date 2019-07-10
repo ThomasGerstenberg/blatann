@@ -190,7 +190,7 @@ class NrfDriver(object):
 
     def ble_enable_params_setup(self):
         return BLEEnableParams(vs_uuid_count=10, service_changed=False, periph_conn_count=1,
-                               central_conn_count=1, central_sec_count=1)
+                               central_conn_count=1, central_sec_count=1, att_mtu_max=247)
 
     def adv_params_setup(self):
         return BLEGapAdvParams(interval_ms=40, timeout_s=180)

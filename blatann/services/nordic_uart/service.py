@@ -3,7 +3,7 @@ from blatann.gatt import MTU_SIZE_DEFAULT, WRITE_BYTE_OVERHEAD
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
 from blatann.event_type import EventSource, Event
 from blatann import exceptions
-from blatann.services.ble_data_types import Uint16
+from blatann.services.ble_data_types import Uint16, BleDataStream
 from blatann.services.nordic_uart.constants import *
 from blatann.waitables.event_waitable import EventWaitable
 
@@ -125,7 +125,7 @@ class NordicUartClient(object):
             self._feature_char.read().then(self._process_feature_value)
 
     def _process_feature_value(self, characteristic, event_args):
-        self._server_characteristic_size = Uint16.decode(event_args.value)
+        self._server_characteristic_size = Uint16.decode(BleDataStream(event_args.value))
         self._init_complete_event.notify(self, None)
 
     def _on_notify_received(self, characteristic, event_args):
@@ -137,6 +137,6 @@ class NordicUartClient(object):
         :type gattc_database: blatann.gatt.gattc.GattcDatabase
         :rtype: NordicUartClient
         """
-        service = gattc_database.find_characteristic(NORDIC_UART_SERVICE_UUID)
+        service = gattc_database.find_service(NORDIC_UART_SERVICE_UUID)
         if service:
             return cls(service)

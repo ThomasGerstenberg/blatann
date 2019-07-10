@@ -23,8 +23,7 @@ def on_connect(peer, event_args):
     :param event_args: None
     """
     if peer:
-        logger.info("Connected to peer, initiating MTU exchange")
-        peer.exchange_mtu()
+        logger.info("Connected to peer")
     else:
         logger.warning("Connection timed out")
 
@@ -74,6 +73,7 @@ def on_tx_complete(service, event_args):
 def main(serial_port):
     ble_device = BleDevice(serial_port)
     # Configure the BLE device to support MTU sizes which allow the max data length extension PDU size
+    # Note this isn't 100% necessary as the default configuration sets the max to this value also
     ble_device.configure(att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE)
     ble_device.open()
 
@@ -88,7 +88,7 @@ def main(serial_port):
     ble_device.client.on_mtu_size_updated.register(on_mtu_size_update)
 
     # Configure the client to prefer the max MTU size
-    ble_device.client.preferred_mtu_size = ble_device.max_att_mtu_size
+    ble_device.client.preferred_mtu_size = ble_device.max_mtu_size
 
     # Advertise the service UUID
     adv_data = advertising.AdvertisingData(flags=0x06, local_name="Nordic UART Server")

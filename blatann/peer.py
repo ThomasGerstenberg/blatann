@@ -65,8 +65,6 @@ class Peer(object):
         self._connection_based_driver_event_handlers = {}
         self._connection_handler_lock = threading.Lock()
         self.security = smp.SecurityManager(self._ble_device, self, security_params)
-        self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
-        self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
 
     """
     Properties
@@ -125,7 +123,7 @@ class Peer(object):
         """
         The maximum allowed MTU size. This is set when initially configuring the BLE Device
         """
-        return self._ble_device.max_att_mtu_size
+        return self._ble_device.max_mtu_size
 
     @property
     def preferred_mtu_size(self):
@@ -144,7 +142,7 @@ class Peer(object):
                              "Minimum is {}".format(mtu_size, MTU_SIZE_MINIMUM))
         if mtu_size > self.max_mtu_size:
             raise ValueError("Invalid MTU size {}. "
-                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_att_mtu_size))
+                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_mtu_size))
         self._preferred_mtu_size = mtu_size
 
     """
@@ -244,7 +242,7 @@ class Peer(object):
             raise ValueError("Invalid mtu size {}".format(mtu_size))
         elif mtu_size > self.max_mtu_size:
             raise ValueError("Invalid MTU size {}. "
-                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_att_mtu_size))
+                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_mtu_size))
 
         self._requested_mtu_size = mtu_size
 
@@ -268,6 +266,8 @@ class Peer(object):
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
         self._ble_device.ble_driver.event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate,
                                                     nrf_events.GapEvtConnParamUpdateRequest)
+        self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
+        self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
         self._on_connect.notify(self)
 
     def _check_driver_event_connection_handle_wrapper(self, func):

@@ -63,6 +63,7 @@ def main(serial_port):
     ble_device = BleDevice(serial_port)
     ble_device.event_logger.suppress(nrf_events.GapEvtAdvReport)
     # Configure the BLE device to support MTU sizes which allow the max data length extension PDU size
+    # Note this isn't 100% necessary as the default configuration sets the max to this value also
     ble_device.configure(att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE)
     ble_device.open()
 
@@ -92,13 +93,17 @@ def main(serial_port):
 
     logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
 
-    logger.info("Exchanging MTU")
-    peer.exchange_mtu(peer.max_mtu_size).wait(10)
-    logger.info("MTU Exchange complete, discovering services")
+    # TODO: MTU Exchange before service discovery currently doesn't work as a central
+    # logger.info("Exchanging MTU")
+    # peer.exchange_mtu(peer.max_mtu_size).wait(10)
+    # logger.info("MTU Exchange complete, discovering services")
 
     # Initiate service discovery and wait for it to complete
     _, event_args = peer.discover_services().wait(10, exception_on_timeout=False)
     logger.info("Service discovery complete! status: {}".format(event_args.status))
+
+    logger.info("Exchanging MTU")
+    peer.exchange_mtu(peer.max_mtu_size).wait(10)
 
     uart_service = nordic_uart.find_nordic_uart_service(peer.database)
     if not uart_service:
@@ -109,6 +114,7 @@ def main(serial_port):
 
     # Initialize the service
     uart_service.initialize().wait(5)
+    uart_service.on_data_received.register(on_data_rx)
 
     while True:
         data = input("Enter data to send to peripheral (q to exit): ")

@@ -3,7 +3,7 @@ from threading import Lock
 
 from blatann import peer, exceptions
 from blatann.gap import advertising, scanning, default_bond_db
-from blatann.gatt import gatts
+from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
@@ -105,7 +105,7 @@ class BleDevice(NrfDriverObserver):
     def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
                   max_connected_clients=1, max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                  att_mtu_max_size=nrf_types.driver.GATT_MTU_SIZE_DEFAULT):
+                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE):
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
 
@@ -145,7 +145,7 @@ class BleDevice(NrfDriverObserver):
         return self._db
 
     @property
-    def max_att_mtu_size(self):
+    def max_mtu_size(self):
         """
         The maximum allowed ATT MTU size that was configured for the device
 
