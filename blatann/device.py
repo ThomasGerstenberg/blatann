@@ -82,8 +82,8 @@ class _UuidManager(object):
 
 
 class BleDevice(NrfDriverObserver):
-    def __init__(self, comport="COM1", baud=115200):
-        self.ble_driver = NrfDriver(comport, baud)
+    def __init__(self, comport="COM1", baud=115200, log_driver_comms=False):
+        self.ble_driver = NrfDriver(comport, baud, log_driver_comms)
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
@@ -104,10 +104,15 @@ class BleDevice(NrfDriverObserver):
 
     def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
                   max_connected_clients=1, max_secured_peripherals=1,
-                  attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT):
+                  attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
+                  att_mtu_max_size=nrf_types.driver.GATT_MTU_SIZE_DEFAULT):
+        if self.ble_driver.is_open:
+            raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
+
         self._ble_configuration = nrf_types.BLEEnableParams(vendor_specific_uuid_count, service_changed,
                                                             max_connected_clients, max_connected_peripherals,
-                                                            max_secured_peripherals, attribute_table_size)
+                                                            max_secured_peripherals, attribute_table_size,
+                                                            att_mtu_max_size)
 
     def open(self, clear_bonding_data=False):
         if clear_bonding_data:
@@ -138,6 +143,15 @@ class BleDevice(NrfDriverObserver):
         :rtype: gatts.GattsDatabase
         """
         return self._db
+
+    @property
+    def max_att_mtu_size(self):
+        """
+        The maximum allowed ATT MTU size that was configured for the device
+
+        :rtype: int
+        """
+        return self._ble_configuration.att_mtu_max
 
     def connect(self, peer_address, connection_params=None):
         """

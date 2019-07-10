@@ -233,6 +233,21 @@ class GattcEvtAttrInfoDiscoveryResponse(GattcEvt):
                                                                         self.attr_info16 or self.attr_info128)
 
 
+class GattcEvtMtuExchangeResponse(GattcEvt):
+    evt_id = driver.BLE_GATTC_EVT_EXCHANGE_MTU_RSP
+
+    def __init__(self, conn_handle, server_mtu):
+        super(GattcEvtMtuExchangeResponse, self).__init__(conn_handle)
+        self.server_mtu = server_mtu
+
+    @classmethod
+    def from_c(cls, event):
+        server_mtu_size = event.evt.gattc_evt.params.exchange_mtu_rsp.server_rx_mtu
+        return cls(event.evt.gattc_evt.conn_handle, server_mtu_size)
+
+    def __repr__(self):
+        return "{}(conn_handle={!r}, server_mtu={})".format(self.__class__.__name__, self.conn_handle, self.server_mtu)
+
 """
 GATTS Events
 """

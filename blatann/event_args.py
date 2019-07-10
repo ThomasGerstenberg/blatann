@@ -279,3 +279,11 @@ class DecodedReadCompleteEventArgs(ReadCompleteEventArgs):
                                             read_complete_event_args.status, read_complete_event_args.reason,
                                             decoded_stream)
 
+
+class MtuSizeUpdatedEventArgs(EventArgs):
+    """
+    Event arguments for when the effective MTU size on a connection is updated
+    """
+    def __init__(self, previous_mtu_size, current_mtu_size):
+        self.previous_mtu_size = previous_mtu_size
+        self.current_mtu_size = current_mtu_size

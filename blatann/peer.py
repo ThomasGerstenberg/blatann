@@ -4,7 +4,7 @@ import enum
 
 from blatann.event_type import EventSource
 from blatann.gap import smp
-from blatann.gatt import gattc, service_discovery
+from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.waitables import connection_waitable, event_waitable
@@ -56,10 +56,17 @@ class Peer(object):
         self.connection_state = PeerState.DISCONNECTED
         self._on_connect = EventSource("On Connect", logger)
         self._on_disconnect = EventSource("On Disconnect", logger)
-        self._mtu_size = 23  # TODO: MTU Exchange procedure
+        self._on_mtu_exchange_complete = EventSource("On MTU Exchange Complete", logger)
+        self._on_mtu_size_updated = EventSource("On MTU Size Updated", logger)
+        self._mtu_size = MTU_SIZE_DEFAULT
+        self._preferred_mtu_size = MTU_SIZE_DEFAULT
+        self._requested_mtu_size = MTU_SIZE_DEFAULT
+
         self._connection_based_driver_event_handlers = {}
         self._connection_handler_lock = threading.Lock()
         self.security = smp.SecurityManager(self._ble_device, self, security_params)
+        self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
+        self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
 
     """
     Properties
@@ -73,15 +80,6 @@ class Peer(object):
         :return: True if connected, False if not
         """
         return self.connection_state == PeerState.CONNECTED
-
-    @property
-    def mtu_size(self):
-        """
-        Gets the current size of the MTU for the peer
-
-        :return: The current MTU size
-        """
-        return self._mtu_size
 
     @property
     def bytes_per_notification(self):
@@ -113,6 +111,42 @@ class Peer(object):
         """
         return self.security.is_previously_bonded
 
+    @property
+    def mtu_size(self):
+        """
+        Gets the current negotiated size of the MTU for the peer
+
+        :return: The current MTU size
+        """
+        return self._mtu_size
+
+    @property
+    def max_mtu_size(self):
+        """
+        The maximum allowed MTU size. This is set when initially configuring the BLE Device
+        """
+        return self._ble_device.max_att_mtu_size
+
+    @property
+    def preferred_mtu_size(self):
+        """
+        Gets the user-set preferred MTU size. Defaults to the Default MTU size (23)
+        """
+        return self._preferred_mtu_size
+
+    @preferred_mtu_size.setter
+    def preferred_mtu_size(self, mtu_size):
+        """
+        Sets the preferred MTU size to use when a MTU Exchange Request is received
+        """
+        if mtu_size < MTU_SIZE_MINIMUM:
+            raise ValueError("Invalid MTU size {}. "
+                             "Minimum is {}".format(mtu_size, MTU_SIZE_MINIMUM))
+        if mtu_size > self.max_mtu_size:
+            raise ValueError("Invalid MTU size {}. "
+                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_att_mtu_size))
+        self._preferred_mtu_size = mtu_size
+
     """
     Events
     """
@@ -138,6 +172,26 @@ class Peer(object):
         :rtype: blatann.event_type.Event
         """
         return self._on_disconnect
+
+    @property
+    def on_mtu_exchange_complete(self):
+        """
+        Event generated when an MTU exchange completes with the peer
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
+        return self._on_mtu_exchange_complete
+
+    @property
+    def on_mtu_size_updated(self):
+        """
+        Event generated when the effective MTU size has been updated on the connection.
+
+        :return: an Event which can have handlers registered to and deregistered from
+        :rtype: blatann.event_type.Event
+        """
+        return self._on_mtu_size_updated
 
     """
     Public Methods
@@ -173,6 +227,29 @@ class Peer(object):
             return
         # Do stuff to set the connection parameters
         self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._ideal_connection_params)
+
+    def exchange_mtu(self, mtu_size=None):
+        """
+        Initiates the MTU Exchange sequence with the peer device.
+
+        If the MTU size is not provided the preferred_mtu_size value will be used
+
+        :param mtu_size: Optional MTU size to use if different from the preferred MTU size
+        :return: A waitable that will fire when the MTU exchange completes
+        :rtype: event_waitable.EventWaitable
+        """
+        if mtu_size is None:
+            mtu_size = self.preferred_mtu_size
+        elif mtu_size < MTU_SIZE_MINIMUM:
+            raise ValueError("Invalid mtu size {}".format(mtu_size))
+        elif mtu_size > self.max_mtu_size:
+            raise ValueError("Invalid MTU size {}. "
+                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_att_mtu_size))
+
+        self._requested_mtu_size = mtu_size
+
+        self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._requested_mtu_size)
+        return event_waitable.EventWaitable(self._on_mtu_exchange_complete)
 
     """
     Internal Library Methods
@@ -265,6 +342,23 @@ class Peer(object):
         else:
             logger.debug("[{}] Updated to {}".format(self.conn_handle, event.conn_params))
         self._current_connection_params = event.conn_params
+
+    def _resolve_mtu_exchange(self, our_mtu, peer_mtu):
+        previous_mtu_size = self._mtu_size
+        self._mtu_size = max(min(our_mtu, peer_mtu), MTU_SIZE_MINIMUM)
+        logger.debug("[{}] MTU Exchange - Ours: {}, Peers: {}, Effective: {}".format(self.conn_handle,
+                                                                                     our_mtu, peer_mtu, self._mtu_size))
+        self._on_mtu_size_updated.notify(self, MtuSizeUpdatedEventArgs(previous_mtu_size, self._mtu_size))
+
+        return previous_mtu_size, self._mtu_size
+
+    def _on_mtu_exchange_request(self, driver, event):
+        self._ble_device.ble_driver.ble_gatts_exchange_mtu_reply(self.conn_handle, self.preferred_mtu_size)
+        self._resolve_mtu_exchange(self.preferred_mtu_size, event.client_mtu)
+
+    def _on_mtu_exchange_response(self, driver, event):
+        previous, current = self._resolve_mtu_exchange(self._requested_mtu_size, event.server_mtu)
+        self._on_mtu_exchange_complete.notify(self, MtuSizeUpdatedEventArgs(previous, current))
 
     def __nonzero__(self):
         return self.conn_handle != BLE_CONN_HANDLE_INVALID
