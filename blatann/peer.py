@@ -230,21 +230,17 @@ class Peer(object):
         """
         Initiates the MTU Exchange sequence with the peer device.
 
-        If the MTU size is not provided the preferred_mtu_size value will be used
+        If the MTU size is not provided the preferred_mtu_size value will be used.
+        If an MTU size is provided the preferred_mtu_size will be updated to this
 
-        :param mtu_size: Optional MTU size to use if different from the preferred MTU size
+        :param mtu_size: Optional MTU size to use. If provided, it will also updated the preferred MTU size
         :return: A waitable that will fire when the MTU exchange completes
         :rtype: event_waitable.EventWaitable
         """
-        if mtu_size is None:
-            mtu_size = self.preferred_mtu_size
-        elif mtu_size < MTU_SIZE_MINIMUM:
-            raise ValueError("Invalid mtu size {}".format(mtu_size))
-        elif mtu_size > self.max_mtu_size:
-            raise ValueError("Invalid MTU size {}. "
-                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_mtu_size))
+        if mtu_size is not None:
+            self.preferred_mtu_size = mtu_size
 
-        self._requested_mtu_size = mtu_size
+        self._requested_mtu_size = self.preferred_mtu_size
 
         self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._requested_mtu_size)
         return event_waitable.EventWaitable(self._on_mtu_exchange_complete)
