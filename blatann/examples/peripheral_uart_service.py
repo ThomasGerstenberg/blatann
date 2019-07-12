@@ -1,7 +1,9 @@
 """
 This example implements Nordic's custom UART service and demonstrates how to configure the MTU size.
 It is configured to use an MTU size based on the Data Length Extensions feature of BLE for maximum throughput.
-This is compatible with the nRF Connect app (Android version tested)
+This is compatible with the nRF Connect app (Android version tested) and the central_uart_service example.
+
+This is a simple example which just echos back any data that the client sends to it.
 """
 from blatann import BleDevice
 from blatann.gap import advertising
@@ -24,6 +26,7 @@ def on_connect(peer, event_args):
     """
     if peer:
         logger.info("Connected to peer")
+        peer.exchange_mtu()
     else:
         logger.warning("Connection timed out")
 

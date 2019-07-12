@@ -1,3 +1,10 @@
+"""
+This example implements Nordic's custom UART service and demonstrates how to configure the MTU size.
+It is configured to use an MTU size based on the Data Length Extensions feature of BLE for maximum throughput.
+This is compatible with the peripheral_uart_service example.
+
+This is a simple example which just echos back any data that the client sends to it.
+"""
 from builtins import input
 from blatann import BleDevice
 from blatann.nrf import nrf_events
@@ -76,7 +83,7 @@ def main(serial_port):
     scan_report = ble_device.scanner.start_scan().wait()
     # Search each peer's advertising data for the Nordic UART Service UUID to be advertised
     for report in scan_report.advertising_peers_found:
-        if nordic_uart.NORDIC_UART_SERVICE_UUID in report.advertise_data.service_uuid128s:
+        if nordic_uart.NORDIC_UART_SERVICE_UUID in report.advertise_data.service_uuid128s and report.device_name == "Nordic UART Server":
             target_address = report.peer_address
             break
 
@@ -93,17 +100,13 @@ def main(serial_port):
 
     logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
 
-    # TODO: MTU Exchange before service discovery currently doesn't work as a central
-    # logger.info("Exchanging MTU")
-    # peer.exchange_mtu(peer.max_mtu_size).wait(10)
-    # logger.info("MTU Exchange complete, discovering services")
-
-    # Initiate service discovery and wait for it to complete
-    _, event_args = peer.discover_services().wait(10, exception_on_timeout=False)
-    logger.info("Service discovery complete! status: {}".format(event_args.status))
-
     logger.info("Exchanging MTU")
     peer.exchange_mtu(peer.max_mtu_size).wait(10)
+    logger.info("MTU Exchange complete, discovering services")
+
+    # Initiate service discovery and wait for it to complete
+    _, event_args = peer.discover_services().wait(exception_on_timeout=False)
+    logger.info("Service discovery complete! status: {}".format(event_args.status))
 
     uart_service = nordic_uart.find_nordic_uart_service(peer.database)
     if not uart_service:

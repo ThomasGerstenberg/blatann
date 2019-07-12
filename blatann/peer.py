@@ -60,7 +60,7 @@ class Peer(object):
         self._on_mtu_size_updated = EventSource("On MTU Size Updated", logger)
         self._mtu_size = MTU_SIZE_DEFAULT
         self._preferred_mtu_size = MTU_SIZE_DEFAULT
-        self._requested_mtu_size = MTU_SIZE_DEFAULT
+        self._negotiated_mtu_size = None
 
         self._connection_based_driver_event_handlers = {}
         self._connection_handler_lock = threading.Lock()
@@ -137,12 +137,7 @@ class Peer(object):
         """
         Sets the preferred MTU size to use when a MTU Exchange Request is received
         """
-        if mtu_size < MTU_SIZE_MINIMUM:
-            raise ValueError("Invalid MTU size {}. "
-                             "Minimum is {}".format(mtu_size, MTU_SIZE_MINIMUM))
-        if mtu_size > self.max_mtu_size:
-            raise ValueError("Invalid MTU size {}. "
-                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_mtu_size))
+        self._validate_mtu_size(mtu_size)
         self._preferred_mtu_size = mtu_size
 
     """
@@ -237,12 +232,16 @@ class Peer(object):
         :return: A waitable that will fire when the MTU exchange completes
         :rtype: event_waitable.EventWaitable
         """
-        if mtu_size is not None:
-            self.preferred_mtu_size = mtu_size
+        # If the MTU size has already been negotiated we need to use the same value
+        # as the previous exchange (Vol 3, Part F 3.4.2.2)
+        if self._negotiated_mtu_size is None:
+            if mtu_size is not None:
+                self._validate_mtu_size(mtu_size)
+                self._negotiated_mtu_size = mtu_size
+            else:
+                self._negotiated_mtu_size = self.preferred_mtu_size
 
-        self._requested_mtu_size = self.preferred_mtu_size
-
-        self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._requested_mtu_size)
+        self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._negotiated_mtu_size)
         return event_waitable.EventWaitable(self._on_mtu_exchange_complete)
 
     """
@@ -255,6 +254,8 @@ class Peer(object):
         """
         self.conn_handle = conn_handle
         self.peer_address = peer_address
+        self._mtu_size = MTU_SIZE_DEFAULT
+        self._negotiated_mtu_size = None
         self._disconnect_waitable = connection_waitable.DisconnectionWaitable(self)
         self.connection_state = PeerState.CONNECTED
         self._current_connection_params = connection_params
@@ -339,6 +340,14 @@ class Peer(object):
             logger.debug("[{}] Updated to {}".format(self.conn_handle, event.conn_params))
         self._current_connection_params = event.conn_params
 
+    def _validate_mtu_size(self, mtu_size):
+        if mtu_size < MTU_SIZE_MINIMUM:
+            raise ValueError("Invalid MTU size {}. "
+                             "Minimum is {}".format(mtu_size, MTU_SIZE_MINIMUM))
+        if mtu_size > self.max_mtu_size:
+            raise ValueError("Invalid MTU size {}. "
+                             "Maximum configured in the BLE device: {}".format(mtu_size, self._ble_device.max_mtu_size))
+
     def _resolve_mtu_exchange(self, our_mtu, peer_mtu):
         previous_mtu_size = self._mtu_size
         self._mtu_size = max(min(our_mtu, peer_mtu), MTU_SIZE_MINIMUM)
@@ -349,11 +358,14 @@ class Peer(object):
         return previous_mtu_size, self._mtu_size
 
     def _on_mtu_exchange_request(self, driver, event):
-        self._ble_device.ble_driver.ble_gatts_exchange_mtu_reply(self.conn_handle, self.preferred_mtu_size)
-        self._resolve_mtu_exchange(self.preferred_mtu_size, event.client_mtu)
+        if self._negotiated_mtu_size is None:
+            self._negotiated_mtu_size = self.preferred_mtu_size
+
+        self._ble_device.ble_driver.ble_gatts_exchange_mtu_reply(self.conn_handle, self._negotiated_mtu_size)
+        self._resolve_mtu_exchange(self._negotiated_mtu_size, event.client_mtu)
 
     def _on_mtu_exchange_response(self, driver, event):
-        previous, current = self._resolve_mtu_exchange(self._requested_mtu_size, event.server_mtu)
+        previous, current = self._resolve_mtu_exchange(self._negotiated_mtu_size, event.server_mtu)
         self._on_mtu_exchange_complete.notify(self, MtuSizeUpdatedEventArgs(previous, current))
 
     def __nonzero__(self):
