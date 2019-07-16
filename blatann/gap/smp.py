@@ -200,6 +200,17 @@ class SecurityManager(object):
         self._pairing_in_process = True
         return EventWaitable(self.on_pairing_complete)
 
+    def use_debug_lesc_key(self):
+        """
+        Changes the security settings to use the debug public/private key-pair for future LESC pairing interactions.
+        The key is defined in the Core Bluetooth Specification v4.2 Vol.3, Part H, Section 2.3.5.6.
+
+        .. warning:: Using this key allows Bluetooth sniffers to be able to decode the encrypted traffic over the air
+        """
+        self._private_key = smp_crypto.LESC_DEBUG_PRIVATE_KEY
+        self._public_key = smp_crypto.LESC_DEBUG_PUBLIC_KEY
+        self.keyset.own_keys.public_key.key = smp_crypto.lesc_pubkey_to_raw(self._public_key)
+
     """
     Private Methods
     """

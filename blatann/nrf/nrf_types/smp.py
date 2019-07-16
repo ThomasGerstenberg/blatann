@@ -149,7 +149,7 @@ class BLEGapMasterId(object):
         self.rand = rand
 
     def to_c(self):
-        rand_array = util.list_to_uint8_array(self.rand).cast()
+        rand_array = util.list_to_uint8_array(self.rand)
         master_id = driver.ble_gap_master_id_t()
         master_id.ediv = self.ediv
         master_id.rand = rand_array.cast()
