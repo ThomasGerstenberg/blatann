@@ -27,7 +27,8 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
 - [ ] GAP
     - [X] BLE Enable parameters
     - [X] BLE Connection parameters (functional, needs some work)
-    - [x] Advertising
+    - [X] Advertising
+    - [X] Data Length Extensions
     - [ ] Scanning (functional, needs some refactoring)
     - [ ] Documentation
 - [ ] SMP
@@ -40,6 +41,8 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] Bonding as Central (implemented, not tested)
     - [X] LESC pairing
     - [ ] Documentation
+- [ ] GATT
+    - [X] Configurable MTU
 - [ ] GATT Server
     - [x] Characteristic Reads
     - [x] Characteristic Writes
@@ -77,7 +80,7 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
     - [ ] Glucose Service
        - [X] Peripheral
        - [ ] Central (Incomplete, untested)
-    - [ ] Nordic UART Service
+    - [X] Nordic UART Service
     - More TBD (or on request)
 - [X] License
 - [ ] Unit Tests
