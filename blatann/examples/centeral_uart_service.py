@@ -76,6 +76,7 @@ def main(serial_port):
 
     # Set scan duration for 4 seconds
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
+    ble_device.set_default_peripheral_connection_params(10, 30, 4000)
     logger.info("Scanning for peripherals advertising UUID {}".format(nordic_uart.NORDIC_UART_SERVICE_UUID))
 
     target_address = None

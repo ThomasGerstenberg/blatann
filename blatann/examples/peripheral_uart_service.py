@@ -92,6 +92,7 @@ def main(serial_port):
 
     # Configure the client to prefer the max MTU size
     ble_device.client.preferred_mtu_size = ble_device.max_mtu_size
+    ble_device.client.set_connection_parameters(10, 30, 4000)
 
     # Advertise the service UUID
     adv_data = advertising.AdvertisingData(flags=0x06, local_name="Nordic UART Server")
