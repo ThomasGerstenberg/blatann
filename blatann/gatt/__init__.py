@@ -9,6 +9,27 @@ from blatann.gap.smp import SecurityLevel
 logger = logging.getLogger(__name__)
 
 """
+The default MTU size that's used when a connection is established
+"""
+MTU_SIZE_DEFAULT = 23
+
+"""
+The minimum allowed MTU size
+"""
+MTU_SIZE_MINIMUM = 23
+
+"""
+The ideal MTU size to use when using the maximum link-layer Data Length Extension setting (251) 
+"""
+MTU_SIZE_FOR_MAX_DLE = 247
+
+# Overhead counts for different ATT processes
+WRITE_BYTE_OVERHEAD = 3
+LONG_WRITE_BYTE_OVERHEAD = 5
+NOTIFICATION_BYTE_OVERHEAD = 3
+READ_BYTE_OVERHEAD = 1
+
+"""
 Status codes that can be returned during GATT Operations (reads, writes, etc.)
 """
 GattStatusCode = nrf_types.BLEGattStatusCode

@@ -190,7 +190,7 @@ class NrfDriver(object):
 
     def ble_enable_params_setup(self):
         return BLEEnableParams(vs_uuid_count=10, service_changed=False, periph_conn_count=1,
-                               central_conn_count=1, central_sec_count=1)
+                               central_conn_count=1, central_sec_count=1, att_mtu_max=247)
 
     def adv_params_setup(self):
         return BLEGapAdvParams(interval_ms=40, timeout_s=180)
@@ -533,11 +533,10 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gattc_exchange_mtu_req(self, conn_handle):
-        logger.debug('Sending GATTC MTU exchange request: {}'.format(self.ble_enable_params.att_mtu))
+    def ble_gattc_exchange_mtu_req(self, conn_handle, att_mtu_size):
         return driver.sd_ble_gattc_exchange_mtu_request(self.rpc_adapter,
                                                         conn_handle,
-                                                        self.ble_enable_params.att_mtu)
+                                                        att_mtu_size)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -554,7 +553,7 @@ class NrfDriver(object):
 
     def _log_message_handler(self, adapter, severity, log_message):
         if self._log_driver_comms:
-            print("LOG [{}]: {}".format(severity, log_message))
+            logger.info("LOG [{}]: {}".format(severity, log_message))
 
     """
     Event handling
