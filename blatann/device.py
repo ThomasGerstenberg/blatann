@@ -135,6 +135,27 @@ class BleDevice(NrfDriverObserver):
         self.bond_db_loader.save(self.bond_db)
 
     @property
+    def address(self):
+        """
+        Gets the MAC address of the BLE device
+
+        :rtype: nrf_types.gap.BLEGapAddr
+        """
+        return self.ble_driver.ble_gap_addr_get()
+
+    @address.setter
+    def address(self, address):
+        """
+        Sets the new address of the device.
+
+        :note: This cannot be performed while the device is advertising, scanning, or initiating a connection
+
+        :param address: The new address
+        :type address: nrf_types.ga.BLEGapAddr
+        """
+        self.ble_driver.ble_gap_addr_set(address)
+
+    @property
     def database(self):
         """
         Gets the local database instance that is accessed by connected clients
