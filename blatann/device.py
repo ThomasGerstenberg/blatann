@@ -151,7 +151,7 @@ class BleDevice(NrfDriverObserver):
         :note: This cannot be performed while the device is advertising, scanning, or initiating a connection
 
         :param address: The new address
-        :type address: nrf_types.ga.BLEGapAddr
+        :type address: nrf_types.gap.BLEGapAddr
         """
         self.ble_driver.ble_gap_addr_set(address)
 
