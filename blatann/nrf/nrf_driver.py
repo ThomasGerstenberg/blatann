@@ -61,13 +61,23 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
         logger.debug("{}{}".format(wrapped.__name__, args))
-        err_code = wrapped(*args, **kwargs)
+        result = wrapped(*args, **kwargs)
+        if isinstance(result, (list, tuple)):
+            err_code = result[0]
+            result = result[1:]
+            if len(result) == 1:
+                result = result[0]
+        else:
+            err_code = result
+            result = None
+
         if err_code != expected:
             try:
                 err_string = 'Error code: {}'.format(NrfError(err_code))
             except ValueError:
                 err_string = 'Error code: 0x{:04x}, {}'.format(err_code, err_code)
             raise NordicSemiException('Failed to {}. {}'.format(wrapped.__name__, err_string))
+        return result
 
     return wrapper(wrapped)
 
@@ -241,6 +251,24 @@ class NrfDriver(object):
     """
     GAP Methods
     """
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_addr_get(self):
+        addr = driver.ble_gap_addr_t()
+        err_code = driver.sd_ble_gap_addr_get(self.rpc_adapter, addr)
+        if err_code == driver.NRF_SUCCESS:
+            addr = BLEGapAddr.from_c(addr)
+        else:
+            addr = None
+        return err_code, addr
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_addr_set(self, address):
+        assert isinstance(address, BLEGapAddr), "Invalid argument type"
+        addr_c = address.to_c()
+        return driver.sd_ble_gap_addr_set(self.rpc_adapter, addr_c)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
