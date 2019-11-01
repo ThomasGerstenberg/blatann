@@ -141,4 +141,46 @@ class GapEvtDisconnected(GapEvt):
                    reason=BLEHci(disconnected_evt.reason))
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, reason={!r})".format(self.__class__.__name__, self.conn_handle, self.reason)
+        return self._repr_format(reason=self.reason)
+
+
+class GapEvtDataLengthUpdate(GapEvt):
+    evt_id = driver.BLE_GAP_EVT_DATA_LENGTH_UPDATE
+
+    def __init__(self, conn_handle, max_tx_bytes, max_rx_bytes, max_tx_time_us, max_rx_time_us):
+        super(GapEvtDataLengthUpdate, self).__init__(conn_handle)
+        self.max_tx_bytes = max_tx_bytes
+        self.max_rx_bytes = max_rx_bytes
+        self.max_tx_time_us = max_tx_time_us
+        self.max_rx_time_us = max_rx_time_us
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gap_evt.conn_handle
+        params = event.evt.gap_evt.params.data_length_update.effective_params
+        return cls(conn_handle, params.max_tx_octets, params.max_rx_octets, params.max_tx_time_us, params.max_rx_time_us)
+
+    def __repr__(self):
+        return self._repr_format(max_tx_bytes=self.max_tx_bytes, max_rx_bytes=self.max_rx_bytes,
+                                 max_tx_time_us=self.max_tx_time_us, max_rx_time_us=self.max_rx_time_us)
+
+
+class GapEvtDataLengthUpdateRequest(GapEvt):
+    evt_id = driver.BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST
+
+    def __init__(self, conn_handle, max_tx_bytes, max_rx_bytes, max_tx_time_us, max_rx_time_us):
+        super(GapEvtDataLengthUpdateRequest, self).__init__(conn_handle)
+        self.max_tx_bytes = max_tx_bytes
+        self.max_rx_bytes = max_rx_bytes
+        self.max_tx_time_us = max_tx_time_us
+        self.max_rx_time_us = max_rx_time_us
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gap_evt.conn_handle
+        params = event.evt.gap_evt.params.data_length_update_request.peer_params
+        return cls(conn_handle, params.max_tx_octets, params.max_rx_octets, params.max_tx_time_us, params.max_rx_time_us)
+
+    def __repr__(self):
+        return self._repr_format(max_tx_bytes=self.max_tx_bytes, max_rx_bytes=self.max_rx_bytes,
+                                 max_tx_time_us=self.max_tx_time_us, max_rx_time_us=self.max_rx_time_us)

@@ -39,10 +39,9 @@ import atexit
 import functools
 import logging
 import wrapt
-import Queue
+import queue
 import traceback
 from threading import Thread, Lock, Event
-from types import NoneType
 
 from blatann.nrf.nrf_events import *
 from blatann.nrf.nrf_types import *
@@ -51,6 +50,8 @@ from pc_ble_driver_py.exceptions import NordicSemiException
 import blatann.nrf.nrf_driver_types as util
 
 logger = logging.getLogger(__name__)
+
+NoneType = type(None)
 
 
 # TODO: Do we really want to raise exceptions all the time?
@@ -90,13 +91,13 @@ class NrfDriverObserver(object):
 class NrfDriver(object):
     api_lock = Lock()
     default_baud_rate = 115200
-    ATT_MTU_DEFAULT = driver.GATT_MTU_SIZE_DEFAULT
+    ATT_MTU_DEFAULT = driver.BLE_GATT_ATT_MTU_DEFAULT
 
     def __init__(self, serial_port, baud_rate=None, log_driver_comms=False):
         if baud_rate is None:
             baud_rate = self.default_baud_rate
 
-        self._events = Queue.Queue()
+        self._events = queue.Queue()
         self._event_thread = None
         self._event_loop = False
         self._event_stopped = Event()
@@ -596,7 +597,7 @@ class NrfDriver(object):
         while self._event_loop:
             try:
                 ble_event = self._events.get(timeout=0.1)
-            except Queue.Empty:
+            except queue.Empty:
                 continue
 
             # logger.info('ble_event.header.evt_id %r', ble_event.header.evt_id)
@@ -606,7 +607,7 @@ class NrfDriver(object):
 
             event = event_decode(ble_event)
             if event is None:
-                logger.warn('unknown ble_event %r (discarded)', ble_event.header.evt_id)
+                logger.warning('unknown ble_event %r (discarded)', ble_event.header.evt_id)
                 continue
 
             # logger.debug('ble_event.header.evt_id %r ----  %r', ble_event.header.evt_id, event)

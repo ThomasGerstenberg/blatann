@@ -1,5 +1,4 @@
 from enum import Enum
-from types import NoneType
 import logging
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
@@ -8,13 +7,15 @@ logger = logging.getLogger(__name__)
 
 BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
 
+NoneType = type(None)
+
 
 class BLEUUIDBase(object):
     BLE_UUID_TYPE_BLE = driver.BLE_UUID_TYPE_BLE
 
     def __init__(self, vs_uuid_base=None, uuid_type=None):
         assert isinstance(vs_uuid_base, (list, NoneType)), 'Invalid argument type'
-        assert isinstance(uuid_type, (int, long, NoneType)), 'Invalid argument type'
+        assert isinstance(uuid_type, (int, NoneType)), 'Invalid argument type'
         if vs_uuid_base is None:
             self.base = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
                          0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB]
@@ -159,7 +160,7 @@ class BLEEnableParams(object):
                  central_conn_count,
                  central_sec_count,
                  attr_tab_size=driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                 att_mtu_max=driver.GATT_MTU_SIZE_DEFAULT):
+                 att_mtu_max=driver.BLE_GATT_ATT_MTU_DEFAULT):
         self.vs_uuid_count = vs_uuid_count
         self.attr_tab_size = attr_tab_size
         self.service_changed = service_changed

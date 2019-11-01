@@ -5,9 +5,7 @@ from blatann.nrf.nrf_events.gatt_events import *
 
 
 _event_classes = [
-    EvtTxComplete,
     EvtUserMemoryRequest,
-    EvtDataLengthChanged,
 
     # Gap
     GapEvtConnected,
@@ -16,6 +14,8 @@ _event_classes = [
     GapEvtAdvReport,
     GapEvtTimeout,
     GapEvtConnParamUpdateRequest,
+    GapEvtDataLengthUpdate,
+    GapEvtDataLengthUpdateRequest,
 
     # SMP
     GapEvtSecParamsRequest,

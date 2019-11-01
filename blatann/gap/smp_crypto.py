@@ -55,8 +55,8 @@ def lesc_pubkey_from_raw(raw_key, little_endian=True):
 
 def lesc_privkey_from_raw(raw_priv_key, raw_pub_key, little_endian=True):
     key_len = len(raw_pub_key)
-    x_raw = raw_pub_key[:key_len/2]
-    y_raw = raw_pub_key[key_len/2:]
+    x_raw = raw_pub_key[:key_len//2]
+    y_raw = raw_pub_key[key_len//2:]
 
     if little_endian:
         x_raw = x_raw[::-1]
@@ -144,9 +144,10 @@ def private_address_resolves(peer_addr, irk):
 
 # BLE LESC Debug keys, defined in the Core Bluetooth Specification v4.2 Vol.3, Part H, Section 2.3.5.6.1
 # Keys are in big-endian
-_LESC_DEBUG_PRIVATE_KEY_RAW = "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd".decode("hex")
-_LESC_DEBUG_PUBLIC_KEY_X_RAW = "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6".decode("hex")
-_LESC_DEBUG_PUBLIC_KEY_Y_RAW = "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b".decode("hex")
+
+_LESC_DEBUG_PRIVATE_KEY_RAW = binascii.unhexlify("3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd")
+_LESC_DEBUG_PUBLIC_KEY_X_RAW = binascii.unhexlify("20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6")
+_LESC_DEBUG_PUBLIC_KEY_Y_RAW = binascii.unhexlify("dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b")
 _LESC_DEBUG_PUBLIC_KEY_RAW = _LESC_DEBUG_PUBLIC_KEY_X_RAW + _LESC_DEBUG_PUBLIC_KEY_Y_RAW
 
 LESC_DEBUG_PRIVATE_KEY = lesc_privkey_from_raw(_LESC_DEBUG_PRIVATE_KEY_RAW, _LESC_DEBUG_PUBLIC_KEY_RAW, little_endian=False)

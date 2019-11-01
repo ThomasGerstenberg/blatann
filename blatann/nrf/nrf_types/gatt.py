@@ -1,6 +1,5 @@
 from enum import Enum
 import logging
-from types import NoneType
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
@@ -8,6 +7,8 @@ from blatann.nrf.nrf_types.smp import *
 from blatann.nrf.nrf_types.enums import *
 
 logger = logging.getLogger(__name__)
+
+NoneType = type(None)
 
 
 BLE_GATT_HANDLE_INVALID = driver.BLE_GATT_HANDLE_INVALID

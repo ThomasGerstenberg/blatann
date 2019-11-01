@@ -24,18 +24,21 @@ class BLEHci(Enum):
     invalid_lmp_parameters = driver.BLE_HCI_STATUS_CODE_INVALID_LMP_PARAMETERS
     unspecified_error = driver.BLE_HCI_STATUS_CODE_UNSPECIFIED_ERROR
     lmp_response_timeout = driver.BLE_HCI_STATUS_CODE_LMP_RESPONSE_TIMEOUT
+    lmp_transaction_collision = driver.BLE_HCI_STATUS_CODE_LMP_ERROR_TRANSACTION_COLLISION
     lmp_pdu_not_allowed = driver.BLE_HCI_STATUS_CODE_LMP_PDU_NOT_ALLOWED
     instant_passed = driver.BLE_HCI_INSTANT_PASSED
     pairintg_with_unit_key_unsupported = driver.BLE_HCI_PAIRING_WITH_UNIT_KEY_UNSUPPORTED
     differen_transaction_collision = driver.BLE_HCI_DIFFERENT_TRANSACTION_COLLISION
     controller_busy = driver.BLE_HCI_CONTROLLER_BUSY
     conn_interval_unacceptable = driver.BLE_HCI_CONN_INTERVAL_UNACCEPTABLE
+    parameter_out_of_mandatory_range = driver.BLE_HCI_PARAMETER_OUT_OF_MANDATORY_RANGE
     directed_advertiser_timeout = driver.BLE_HCI_DIRECTED_ADVERTISER_TIMEOUT
     conn_terminated_due_to_mic_failure = driver.BLE_HCI_CONN_TERMINATED_DUE_TO_MIC_FAILURE
     conn_failed_to_be_established = driver.BLE_HCI_CONN_FAILED_TO_BE_ESTABLISHED
 
 
 class NrfError(Enum):
+    # Generic errors
     success = driver.NRF_SUCCESS
     svc_handler_missing = driver.NRF_ERROR_SVC_HANDLER_MISSING
     softdevice_not_enabled = driver.NRF_ERROR_SOFTDEVICE_NOT_ENABLED
@@ -57,37 +60,32 @@ class NrfError(Enum):
     conn_count = driver.NRF_ERROR_CONN_COUNT
     resources = driver.NRF_ERROR_RESOURCES
 
-    # sdm_lfclk_source_unknown                    = driver.NRF_ERROR_SDM_LFCLK_SOURCE_UNKNOWN
-    # sdm_incorrect_interrupt_configuration       = driver.NRF_ERROR_SDM_INCORRECT_INTERRUPT_CONFIGURATION
-    # sdm_incorrect_clenr0                        = driver.NRF_ERROR_SDM_INCORRECT_CLENR0
-
-    # soc_mutex_already_taken                     = driver.NRF_ERROR_SOC_MUTEX_ALREADY_TAKEN
-    # soc_nvic_interrupt_not_available            = driver.NRF_ERROR_SOC_NVIC_INTERRUPT_NOT_AVAILABLE
-    # soc_nvic_interrupt_priority_not_allowed     = driver.NRF_ERROR_SOC_NVIC_INTERRUPT_PRIORITY_NOT_ALLOWED
-    # soc_nvic_should_not_return                  = driver.NRF_ERROR_SOC_NVIC_SHOULD_NOT_RETURN
-    # soc_power_mode_unknown                      = driver.NRF_ERROR_SOC_POWER_MODE_UNKNOWN
-    # soc_power_pof_threshold_unknown             = driver.NRF_ERROR_SOC_POWER_POF_THRESHOLD_UNKNOWN
-    # soc_power_off_should_not_return             = driver.NRF_ERROR_SOC_POWER_OFF_SHOULD_NOT_RETURN
-    # soc_rand_not_enough_values                  = driver.NRF_ERROR_SOC_RAND_NOT_ENOUGH_VALUES
-    # soc_ppi_invalid_channel                     = driver.NRF_ERROR_SOC_PPI_INVALID_CHANNEL
-    # soc_ppi_invalid_group                       = driver.NRF_ERROR_SOC_PPI_INVALID_GROUP
-
-    # ble_error_not_enabled                       = driver.BLE_ERROR_NOT_ENABLED
-    # ble_error_invalid_conn_handle               = driver.BLE_ERROR_INVALID_CONN_HANDLE
-    # ble_error_invalid_attr_handle               = driver.BLE_ERROR_INVALID_ATTR_HANDLE
-    # ble_error_invalid_role                      = driver.BLE_ERROR_INVALID_ROLE
-
-    # ble_error_gap_uuid_list_mismatch            = driver.BLE_ERROR_GAP_UUID_LIST_MISMATCH
-    # ble_error_gap_discoverable_with_whitelist   = driver.BLE_ERROR_GAP_DISCOVERABLE_WITH_WHITELIST
-    # ble_error_gap_invalid_ble_addr              = driver.BLE_ERROR_GAP_INVALID_BLE_ADDR
-    # ble_error_gap_whitelist_in_use              = driver.BLE_ERROR_GAP_WHITELIST_IN_USE
-    # ble_error_gap_device_identities_in_use      = driver.BLE_ERROR_GAP_DEVICE_IDENTITIES_IN_USE
-    # ble_error_gap_device_identities_duplicate   = driver.BLE_ERROR_GAP_DEVICE_IDENTITIES_DUPLICATE
-
-    # ble_error_gattc_proc_not_permitted          = driver.BLE_ERROR_GATTC_PROC_NOT_PERMITTED
-
-    # ble_error_gatts_invalid_attr_type           = driver.BLE_ERROR_GATTS_INVALID_ATTR_TYPE
-    # ble_error_gatts_sys_attr_missing            = driver.BLE_ERROR_GATTS_SYS_ATTR_MISSING
+    # sdm_lfclk_source_unknown = driver.NRF_ERROR_SDM_LFCLK_SOURCE_UNKNOWN
+    # sdm_incorrect_interrupt_configuration = driver.NRF_ERROR_SDM_INCORRECT_INTERUUPT_CONFIGURATION
+    # sdm_incorrect_clenr0 = driver.NRF_ERROR_SDM_INCORRECT_CLENR0
+    # soc_mutex_already_taken = driver.NRF_ERROR_SOC_MUTEX_ALREADY_TAKEN
+    # soc_nvic_interrupt_not_available = driver.NRF_ERROR_SOC_NVIC_INTERRUPT_NOT_AVAILABLE
+    # soc_nvic_interrupt_priority_not_allowed = driver.NRF_ERROR_SOC_NVIC_INTERRUPT_PRIORITY_NOT_ALLOWED
+    # soc_nvic_should_not_return = driver.NRF_ERROR_SOC_NVIC_SHOULD_NOT_RETURN
+    # soc_power_mode_unknown = driver.NRF_ERROR_SOC_POWER_MODE_UNKNOWN
+    # soc_power_pof_threshold_unknown = driver.NRF_ERROR_SOC_POWER_POF_THRESHOLD_UNKNOWN
+    # soc_power_off_should_not_return = driver.NRF_ERROR_SOC_POWER_OFF_SHOULD_NOT_RETURN
+    # soc_rand_not_enough_values = driver.NRF_ERROR_SOC_RAND_NOT_ENOUGH_VALUES
+    # soc_ppi_invalid_channel = driver.NRF_ERROR_SOC_PPI_INVALID_CHANNEL
+    # soc_ppi_invalid_group = driver.NRF_ERROR_SOC_PPI_INVALID_GROUP
+    # ble_not_enabled = driver.BLE_ERROR_NOT_ENABLED
+    # ble_invalid_conn_handle = driver.BLE_ERROR_INVALID_CONN_HANDLE
+    # ble_invalid_attr_handle = driver.BLE_ERROR_INVALID_ATTR_HANDLE
+    # ble_invalid_role = driver.BLE_ERROR_INVALID_ROLE
+    # ble_gap_uuid_list_mismatch = driver.BLE_ERROR_GAP_UUID_LIST_MISMATCH
+    # ble_gap_discoverable_with_whitelist = driver.BLE_ERROR_GAP_DISCOVERABLE_WITH_WHITELIST
+    # ble_gap_invalid_ble_addr = driver.BLE_ERROR_GAP_INVALID_BLE_ADDR
+    # ble_gap_whitelist_in_use = driver.BLE_ERROR_GAP_WHITELIST_IN_USE
+    # ble_gap_device_identities_in_use = driver.BLE_ERROR_GAP_DEVICE_IDENTITIES_IN_USE
+    # ble_gap_device_identities_duplicate = driver.BLE_ERROR_GAP_DEVICE_IDENTITIES_DUPLICATE
+    # ble_gatts_invalid_attr_type = driver.BLE_ERROR_GATTS_INVALID_ATTR_TYPE
+    # ble_gatts_sys_attr_missing = driver.BLE_ERROR_GATTS_SYS_ATTR_MISSING
+    # ble_gattc_proc_not_permitted = driver.BLE_ERROR_GATTC_PROC_NOT_PERMITTED
 
 
 """
@@ -113,7 +111,6 @@ class BLEGapRoles(IntEnum):
 
 class BLEGapTimeoutSrc(IntEnum):
     advertising = driver.BLE_GAP_TIMEOUT_SRC_ADVERTISING
-    security_req = driver.BLE_GAP_TIMEOUT_SRC_SECURITY_REQUEST
     scan = driver.BLE_GAP_TIMEOUT_SRC_SCAN
     conn = driver.BLE_GAP_TIMEOUT_SRC_CONN
 

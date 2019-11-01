@@ -73,7 +73,7 @@ class Uuid16(Uuid):
     def __init__(self, uuid):
         if isinstance(uuid, str):
             uuid = int(uuid, 16)
-        if not isinstance(uuid, (int, long)) or uuid > 0xFFFF:
+        if not isinstance(uuid, int) or uuid > 0xFFFF:
             raise ValueError("UUID Must be a valid 16-bit integer")
         super(Uuid16, self).__init__(_BLEUUID(uuid))
         self.uuid = uuid

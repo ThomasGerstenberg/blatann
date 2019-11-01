@@ -362,6 +362,22 @@ class GattsEvtHandleValueConfirm(GattsEvt):
         return "{}(conn_handle={!r}, attr_handle={!r})".format(self.__class__.__name__, self.conn_handle, self.attribute_handle)
 
 
+class GattsEvtNotificationTxComplete(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
+
+    def __init__(self, conn_handle, tx_count):
+        super(GattsEvtNotificationTxComplete, self).__init__(conn_handle)
+        self.tx_count = tx_count
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gatts_evt.conn_handle
+        return cls(conn_handle, event.evt.gatts_evt.params.hvn_tx_complete.count)
+
+    def __repr__(self):
+        return self._repr_format(tx_count=self.tx_count)
+
+
 class GattsEvtExchangeMtuRequest(GattsEvt):
     evt_id = driver.BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
 

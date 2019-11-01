@@ -513,7 +513,7 @@ class _NotificationManager(QueuedTasksManagerBase):
         self.ble_device = ble_device
         self.peer = peer
         self._cur_notification = None
-        self.ble_device.ble_driver.event_subscribe(self._on_notify_complete, nrf_events.EvtTxComplete,
+        self.ble_device.ble_driver.event_subscribe(self._on_notify_complete, nrf_events.GattsEvtNotificationTxComplete,
                                                    nrf_events.GattsEvtHandleValueConfirm)
         self.ble_device.ble_driver.event_subscribe(self._on_disconnect, nrf_events.GapEvtDisconnected)
 
