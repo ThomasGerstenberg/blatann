@@ -21,7 +21,7 @@ def _get_time_service_data():
 
 def wait_for_user_stop(stop_event):
     # Thread that just waits for the user to press enter, then signals the event
-    raw_input("Press enter to exit\n")
+    input("Press enter to exit\n")
     stop_event.set()
 
 
@@ -57,4 +57,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM56")
+    main("COM7")

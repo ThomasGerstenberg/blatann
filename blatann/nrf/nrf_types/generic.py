@@ -150,34 +150,3 @@ class BLEUUID(object):
         base[2] = 0
         base[3] = 0
         return cls(value=uuid, base=BLEUUIDBase(base, 0))
-
-
-class BLEEnableParams(object):
-    def __init__(self,
-                 vs_uuid_count,
-                 service_changed,
-                 periph_conn_count,
-                 central_conn_count,
-                 central_sec_count,
-                 attr_tab_size=driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                 att_mtu_max=driver.BLE_GATT_ATT_MTU_DEFAULT):
-        self.vs_uuid_count = vs_uuid_count
-        self.attr_tab_size = attr_tab_size
-        self.service_changed = service_changed
-        self.periph_conn_count = periph_conn_count
-        self.central_conn_count = central_conn_count
-        self.central_sec_count = central_sec_count
-        self.att_mtu_max = att_mtu_max
-
-    def to_c(self):
-        ble_enable_params = driver.ble_enable_params_t()
-        ble_enable_params.common_enable_params.p_conn_bw_counts = None
-        ble_enable_params.common_enable_params.vs_uuid_count = self.vs_uuid_count
-        ble_enable_params.gatt_enable_params.att_mtu = self.att_mtu_max
-        ble_enable_params.gatts_enable_params.attr_tab_size = self.attr_tab_size
-        ble_enable_params.gatts_enable_params.service_changed = self.service_changed
-        ble_enable_params.gap_enable_params.periph_conn_count = self.periph_conn_count
-        ble_enable_params.gap_enable_params.central_conn_count = self.central_conn_count
-        ble_enable_params.gap_enable_params.central_sec_count = self.central_sec_count
-
-        return ble_enable_params

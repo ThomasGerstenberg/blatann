@@ -1,4 +1,5 @@
 import re
+import binascii
 from blatann.nrf.nrf_types import BLEUUID as _BLEUUID
 
 
@@ -32,7 +33,7 @@ class Uuid128(Uuid):
     def _validate_uuid_list(self, uuid):
         if len(uuid) != 16:
             raise ValueError("UUID Must be 16 bytes long")
-        uuid = "".join(chr(u) for u in uuid).encode("hex")
+        uuid = binascii.hexlify(bytes(uuid))
         uuid_sections = uuid[:8], uuid[8:12], uuid[12:16], uuid[16:20], uuid[20:32]
 
         return "{}-{}-{}-{}-{}".format(*uuid_sections)

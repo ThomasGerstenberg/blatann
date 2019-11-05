@@ -37,7 +37,6 @@
 
 import atexit
 import functools
-import logging
 import wrapt
 import queue
 import traceback
@@ -48,6 +47,7 @@ from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_dll_load import driver
 from pc_ble_driver_py.exceptions import NordicSemiException
 import blatann.nrf.nrf_driver_types as util
+from blatann.nrf.nrf_types.config import BleEnableConfig
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +154,8 @@ class NrfDriver(object):
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
     def close(self):
+        if not self.is_open:
+            return driver.NRF_SUCCESS
         retval = driver.sd_rpc_close(self.rpc_adapter)
         driver.sd_rpc_adapter_delete(self.rpc_adapter)
         self._event_thread_join()
@@ -200,8 +202,7 @@ class NrfDriver(object):
                 self.observers.remove(observer)
 
     def ble_enable_params_setup(self):
-        return BLEEnableParams(vs_uuid_count=10, service_changed=False, periph_conn_count=1,
-                               central_conn_count=1, central_sec_count=1, att_mtu_max=247)
+        return BleEnableConfig()
 
     def adv_params_setup(self):
         return BLEGapAdvParams(interval_ms=40, timeout_s=180)
@@ -227,9 +228,14 @@ class NrfDriver(object):
     def ble_enable(self, ble_enable_params=None):
         if not ble_enable_params:
             ble_enable_params = self.ble_enable_params_setup()
-        assert isinstance(ble_enable_params, BLEEnableParams), 'Invalid argument type'
+        assert isinstance(ble_enable_params, BleEnableConfig), 'Invalid argument type'
         self.ble_enable_params = ble_enable_params
-        return driver.sd_ble_enable(self.rpc_adapter, ble_enable_params.to_c(), None)
+        for tag, cfg in self.ble_enable_params.get_configs():
+            err = driver.sd_ble_cfg_set(self.rpc_adapter, tag, cfg, 0)
+            if err != driver.NRF_SUCCESS:
+                return err
+
+        return driver.sd_ble_enable(self.rpc_adapter, None)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -273,11 +279,11 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gap_adv_start(self, adv_params=None):
+    def ble_gap_adv_start(self, adv_params=None, conn_cfg_tag=0):
         if not adv_params:
             adv_params = self.adv_params_setup()
         assert isinstance(adv_params, BLEGapAdvParams), 'Invalid argument type'
-        return driver.sd_ble_gap_adv_start(self.rpc_adapter, adv_params.to_c())
+        return driver.sd_ble_gap_adv_start(self.rpc_adapter, adv_params.to_c(), conn_cfg_tag)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -307,7 +313,7 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gap_connect(self, address, scan_params=None, conn_params=None):
+    def ble_gap_connect(self, address, scan_params=None, conn_params=None, conn_cfg_tag=0):
         assert isinstance(address, BLEGapAddr), 'Invalid argument type'
 
         if not scan_params:
@@ -321,7 +327,8 @@ class NrfDriver(object):
         return driver.sd_ble_gap_connect(self.rpc_adapter,
                                          address.to_c(),
                                          scan_params.to_c(),
-                                         conn_params.to_c())
+                                         conn_params.to_c(),
+                                         conn_cfg_tag)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)

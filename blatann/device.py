@@ -82,7 +82,7 @@ class _UuidManager(object):
 
 
 class BleDevice(NrfDriverObserver):
-    def __init__(self, comport="COM1", baud=115200, log_driver_comms=False):
+    def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False):
         self.ble_driver = NrfDriver(comport, baud, log_driver_comms)
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
@@ -105,14 +105,13 @@ class BleDevice(NrfDriverObserver):
     def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
                   max_connected_clients=1, max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE):
+                  device_name=""):
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
 
-        self._ble_configuration = nrf_types.BLEEnableParams(vendor_specific_uuid_count, service_changed,
-                                                            max_connected_clients, max_connected_peripherals,
-                                                            max_secured_peripherals, attribute_table_size,
-                                                            att_mtu_max_size)
+        self._ble_configuration = nrf_types.BleEnableConfig(vendor_specific_uuid_count, max_connected_clients,
+                                                            max_connected_peripherals, max_secured_peripherals,
+                                                            service_changed, attribute_table_size, device_name)
 
     def open(self, clear_bonding_data=False):
         if clear_bonding_data:
