@@ -112,7 +112,7 @@ def on_passkey_display(peer, event_args):
     """
     logger.info("Passkey display: {}, match: {}".format(event_args.passkey, event_args.match_request))
     if event_args.match_request:
-        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
+        response = input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
         match = response.lower().startswith("y")
         event_args.match_confirm(match)
 
@@ -195,7 +195,7 @@ def main(serial_port):
 
     # Create and add the hex conversion characteristic to the service
     hex_conv_char = service.add_characteristic(constants.HEX_CONVERT_CHAR_UUID,
-                                               constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data")
+                                               constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data".encode("utf8"))
     # Register the callback for when a write occurs and subscription state changes
     hex_conv_char.on_write.register(on_hex_conversion_characteristic_write)
     hex_conv_char.on_subscription_change.register(on_gatts_subscription_state_changed)
@@ -236,4 +236,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM5")
+    main("COM7")
