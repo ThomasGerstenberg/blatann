@@ -147,10 +147,10 @@ class GapEvtDisconnected(GapEvt):
 class GapEvtDataLengthUpdate(GapEvt):
     evt_id = driver.BLE_GAP_EVT_DATA_LENGTH_UPDATE
 
-    def __init__(self, conn_handle, max_tx_bytes, max_rx_bytes, max_tx_time_us, max_rx_time_us):
+    def __init__(self, conn_handle, max_tx_octets, max_rx_octets, max_tx_time_us, max_rx_time_us):
         super(GapEvtDataLengthUpdate, self).__init__(conn_handle)
-        self.max_tx_bytes = max_tx_bytes
-        self.max_rx_bytes = max_rx_bytes
+        self.max_tx_octets = max_tx_octets
+        self.max_rx_octets = max_rx_octets
         self.max_tx_time_us = max_tx_time_us
         self.max_rx_time_us = max_rx_time_us
 
@@ -161,17 +161,17 @@ class GapEvtDataLengthUpdate(GapEvt):
         return cls(conn_handle, params.max_tx_octets, params.max_rx_octets, params.max_tx_time_us, params.max_rx_time_us)
 
     def __repr__(self):
-        return self._repr_format(max_tx_bytes=self.max_tx_bytes, max_rx_bytes=self.max_rx_bytes,
+        return self._repr_format(max_tx_octets=self.max_tx_octets, max_rx_octets=self.max_rx_octets,
                                  max_tx_time_us=self.max_tx_time_us, max_rx_time_us=self.max_rx_time_us)
 
 
 class GapEvtDataLengthUpdateRequest(GapEvt):
     evt_id = driver.BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST
 
-    def __init__(self, conn_handle, max_tx_bytes, max_rx_bytes, max_tx_time_us, max_rx_time_us):
+    def __init__(self, conn_handle, max_tx_octets, max_rx_octets, max_tx_time_us, max_rx_time_us):
         super(GapEvtDataLengthUpdateRequest, self).__init__(conn_handle)
-        self.max_tx_bytes = max_tx_bytes
-        self.max_rx_bytes = max_rx_bytes
+        self.max_tx_octets = max_tx_octets
+        self.max_rx_octets = max_rx_octets
         self.max_tx_time_us = max_tx_time_us
         self.max_rx_time_us = max_rx_time_us
 
@@ -182,5 +182,46 @@ class GapEvtDataLengthUpdateRequest(GapEvt):
         return cls(conn_handle, params.max_tx_octets, params.max_rx_octets, params.max_tx_time_us, params.max_rx_time_us)
 
     def __repr__(self):
-        return self._repr_format(max_tx_bytes=self.max_tx_bytes, max_rx_bytes=self.max_rx_bytes,
+        return self._repr_format(max_tx_octets=self.max_tx_octets, max_rx_octets=self.max_rx_octets,
                                  max_tx_time_us=self.max_tx_time_us, max_rx_time_us=self.max_rx_time_us)
+
+
+class GapEvtPhyUpdate(GapEvt):
+    evt_id = driver.BLE_GAP_EVT_PHY_UPDATE
+
+    def __init__(self, conn_handle, status, tx_phy, rx_phy):
+        super(GapEvtPhyUpdate, self).__init__(conn_handle)
+        self.status = status
+        self.tx_phy = tx_phy
+        self.rx_phy = rx_phy
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gap_evt.conn_handle
+        params = event.evt.gap_evt.params.phy_update
+        try:
+            status = BLEHci(params.status)
+        except:
+            status = params.status
+        return cls(conn_handle, status, BLEGapPhy(params.tx_phy), BLEGapPhy(params.rx_phy))
+
+    def __repr__(self):
+        return self._repr_format(status=self.status, tx_phy=self.tx_phy, rx_phy=self.rx_phy)
+
+
+class GapEvtPhyUpdateRequest(GapEvt):
+    evt_id = driver.BLE_GAP_EVT_PHY_UPDATE_REQUEST
+
+    def __init__(self, conn_handle, tx_phy, rx_phy):
+        super(GapEvtPhyUpdateRequest, self).__init__(conn_handle)
+        self.tx_phy = tx_phy
+        self.rx_phy = rx_phy
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gap_evt.conn_handle
+        params = event.evt.gap_evt.params.phy_update_request.peer_preferred_phys
+        return cls(conn_handle, BLEGapPhy(params.tx_phys), BLEGapPhy(params.rx_phys))
+
+    def __repr__(self):
+        return self._repr_format(tx_phy=self.tx_phy, rx_phy=self.rx_phy)

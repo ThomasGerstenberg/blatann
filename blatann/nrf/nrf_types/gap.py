@@ -266,3 +266,31 @@ class BLEAdvData(object):
 
     def __repr__(self):
         return str(self.records)
+
+
+class BLEGapDataLengthParams(object):
+    def __init__(self, max_tx_octets=0, max_rx_octets=0, max_tx_time_us=0, max_rx_time_us=0):
+        self.max_tx_octets = max_tx_octets
+        self.max_rx_octets = max_rx_octets
+        self.max_tx_time_us = max_tx_time_us
+        self.max_rx_time_us = max_rx_time_us
+
+    def to_c(self):
+        params = driver.ble_gap_data_length_params_t()
+        params.max_tx_octets = self.max_tx_octets
+        params.max_rx_octets = self.max_rx_octets
+        params.max_tx_time_us = self.max_tx_time_us
+        params.max_rx_time_us = self.max_rx_time_us
+        return params
+
+
+class BLEGapPhys(object):
+    def __init__(self, tx_phys=BLEGapPhy.auto, rx_phys=BLEGapPhy.auto):
+        self.tx_phys = tx_phys
+        self.rx_phys = rx_phys
+
+    def to_c(self):
+        params = driver.ble_gap_phys_t()
+        params.tx_phys = self.tx_phys
+        params.rx_phys = self.rx_phys
+        return params

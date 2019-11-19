@@ -6,6 +6,7 @@ This peripheral can be used with one of the central examples running on a separa
 or can be run with the nRF Connect app to explore the contents of the service
 """
 import atexit
+import binascii
 import struct
 import threading
 import time
@@ -55,9 +56,8 @@ def on_hex_conversion_characteristic_write(characteristic, event_args):
     :param event_args: the event arguments
     :type event_args: blatann.event_args.WriteEventArgs
     """
-    logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
-                                                                                   str(event_args.value).encode("hex")))
-    new_value = "{}".format(str(event_args.value).encode("hex"))
+    new_value = binascii.hexlify(event_args.value)
+    logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid, new_value))
     characteristic.set_value(new_value[:characteristic.max_length], notify_client=True)
 
 
@@ -182,6 +182,7 @@ class CountingCharacteristicThread(object):
 def main(serial_port):
     # Create and open the device
     ble_device = BleDevice(serial_port)
+    ble_device.configure()
     ble_device.open()
 
     # Set up desired security parameters
@@ -195,7 +196,7 @@ def main(serial_port):
 
     # Create and add the hex conversion characteristic to the service
     hex_conv_char = service.add_characteristic(constants.HEX_CONVERT_CHAR_UUID,
-                                               constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data".encode("utf8"))
+                                               constants.HEX_CONVERT_CHAR_PROPERTIES, "Test Data")
     # Register the callback for when a write occurs and subscription state changes
     hex_conv_char.on_write.register(on_hex_conversion_characteristic_write)
     hex_conv_char.on_subscription_change.register(on_gatts_subscription_state_changed)

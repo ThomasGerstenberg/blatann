@@ -16,6 +16,8 @@ _event_classes = [
     GapEvtConnParamUpdateRequest,
     GapEvtDataLengthUpdate,
     GapEvtDataLengthUpdateRequest,
+    GapEvtPhyUpdate,
+    GapEvtPhyUpdateRequest,
 
     # SMP
     GapEvtSecParamsRequest,
@@ -49,7 +51,7 @@ _event_classes = [
     GattsEvtReadWriteAuthorizeRequest,
     GattsEvtHandleValueConfirm,
     GattsEvtExchangeMtuRequest,
-    # GattsEvtNotificationTxComplete,
+    GattsEvtNotificationTxComplete,
     # TODO:
     # driver.BLE_GATTS_SYS_ATTR_MISSING
     # driver.BLE_GATTS_EVT_SC_CONFIRM

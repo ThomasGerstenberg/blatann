@@ -44,7 +44,8 @@ class GattsCharacteristic(gatt.Characteristic):
     """
     _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
-    def __init__(self, ble_device, peer, uuid, properties, notification_manager, value="", prefer_indications=True):
+    def __init__(self, ble_device, peer, uuid, properties, notification_manager, value="", prefer_indications=True,
+                 string_encoding="utf8"):
         """
         :param ble_device:
         :param peer:
@@ -54,7 +55,7 @@ class GattsCharacteristic(gatt.Characteristic):
         :param value:
         :param prefer_indications:
         """
-        super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties)
+        super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties, string_encoding)
         self._value = value
         self.prefer_indications = prefer_indications
         self._notification_manager = notification_manager
@@ -81,7 +82,8 @@ class GattsCharacteristic(gatt.Characteristic):
         Sets the value of the characteristic.
 
         :param value: The value to set to. Must be an iterable type such as a str, bytearray, or list of uint8 values.
-                      Length must be less than the characteristic's max length
+                      Length must be less than the characteristic's max length.
+                      If a str is given, it will be encoded using the string_encoding property.
         :param notify_client: Flag whether or not to notify the client. If indications and notifications are not set up
                               for the characteristic, will raise an InvalidOperationException
         :raises: InvalidOperationException if value length is too long, or notify client set and characteristic
@@ -89,6 +91,8 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         if isinstance(value, BleDataStream):
             value = value.value
+        if isinstance(value, str):
+            value = value.encode(self.string_encoding)
         if len(value) > self.max_length:
             raise InvalidOperationException("Attempted to set value of {} with length greater than max "
                                             "(got {}, max {})".format(self.uuid, len(value), self.max_length))
@@ -113,6 +117,10 @@ class GattsCharacteristic(gatt.Characteristic):
                  also contains the ID of the sent notification which is used in the on_notify_complete event
         :rtype: NotificationCompleteEventWaitable
         """
+        if isinstance(data, BleDataStream):
+            value = data.value
+        if isinstance(data, str):
+            value = data.encode(self.string_encoding)
         if not self.notifiable:
             raise InvalidOperationException("Cannot notify client. "
                                             "{} not set up for notifications or indications".format(self.uuid))
@@ -145,7 +153,7 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         Gets the current value of the characteristic
 
-        :rtype: bytearray
+        :rtype: bytes
         """
         return self._value
 
@@ -358,7 +366,7 @@ class GattsService(gatt.Service):
         """
         return self._characteristics
 
-    def add_characteristic(self, uuid, properties, initial_value=""):
+    def add_characteristic(self, uuid, properties, initial_value=b"", prefer_indications=True, string_encoding="utf8"):
         """
         Adds a new characteristic to the service
 
@@ -368,10 +376,17 @@ class GattsService(gatt.Service):
         :type properties: GattsCharacteristicProperties
         :param initial_value: The initial value of the characteristic. May be a string, bytearray, or list of ints
         :type initial_value: str or list or bytearray
+        :param prefer_indications: Flag for choosing indication/notification if a characteristic has
+                                   both indications and notifications available
+        :param string_encoding: The encoding method to use when a string value is provided (utf8, ascii, etc.)
+        :type string_encoding: str
         :return: The characteristic just added to the service
         :rtype: GattsCharacteristic
         """
-        c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, self._notification_manager, initial_value)
+        if isinstance(initial_value, str):
+            initial_value = initial_value.encode(string_encoding)
+        c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, self._notification_manager, initial_value,
+                                prefer_indications, string_encoding)
         # Register UUID
         self.ble_device.uuid_manager.register_uuid(uuid)
 

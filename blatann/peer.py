@@ -261,10 +261,11 @@ class Peer(object):
         self._current_connection_params = connection_params
 
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
-        self._ble_device.ble_driver.event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate,
-                                                    nrf_events.GapEvtConnParamUpdateRequest)
+        self.driver_event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate, nrf_events.GapEvtConnParamUpdateRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
+        self.driver_event_subscribe(self._on_data_length_update_request, nrf_events.GapEvtDataLengthUpdateRequest)
+        self.driver_event_subscribe(self._on_phy_update_request, nrf_events.GapEvtPhyUpdateRequest)
         self._on_connect.notify(self)
 
     def _check_driver_event_connection_handle_wrapper(self, func):
@@ -367,6 +368,12 @@ class Peer(object):
     def _on_mtu_exchange_response(self, driver, event):
         previous, current = self._resolve_mtu_exchange(self._negotiated_mtu_size, event.server_mtu)
         self._on_mtu_exchange_complete.notify(self, MtuSizeUpdatedEventArgs(previous, current))
+
+    def _on_data_length_update_request(self, driver, event):
+        self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle)
+
+    def _on_phy_update_request(self, driver, event):
+        self._ble_device.ble_driver.ble_gap_phy_update(self.conn_handle)
 
     def __nonzero__(self):
         return self.conn_handle != BLE_CONN_HANDLE_INVALID

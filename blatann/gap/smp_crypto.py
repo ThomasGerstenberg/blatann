@@ -110,7 +110,7 @@ def ble_ah(key, p_rand):
         raise ValueError("Prand must be a str or bytes of length 3")
 
     # prepend the prand with 0's to fill up a 16-byte block
-    p_rand = chr(0) * 13 + p_rand
+    p_rand = b"\x00" * 13 + p_rand
 
     cipher = Cipher(algorithms.AES(key), modes.ECB(), _backend)
     encryptor = cipher.encryptor()
@@ -133,11 +133,11 @@ def private_address_resolves(peer_addr, irk):
     :return: True if it resolves, False if not
     """
     # prand consists of the first 3 MSB bytes of the peer address
-    p_rand = str(bytearray(peer_addr.addr[:3]))
+    p_rand = bytes(peer_addr.addr[:3])
     # the calculated hash is the last 3 LSB bytes of the peer address
-    addr_hash = str(bytearray(peer_addr.addr[3:]))
+    addr_hash = bytes(peer_addr.addr[3:])
     # IRK is stored in little-endian bytearray, convert to string and reverse
-    irk = str(irk)[::-1]
+    irk = bytes(irk)[::-1]
     local_hash = ble_ah(irk, p_rand)
     return local_hash == addr_hash
 

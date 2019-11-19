@@ -352,6 +352,18 @@ class NrfDriver(object):
                                               p_scan_data,
                                               scan_data_len)
 
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_data_length_update(self, conn_handle, max_tx_octets=0, max_rx_octets=0, max_tx_time_us=0, max_rx_time_us=0):
+        params = BLEGapDataLengthParams(max_tx_octets, max_rx_octets, max_tx_time_us, max_rx_time_us)
+        return driver.sd_ble_gap_data_length_update(self.rpc_adapter, conn_handle, params.to_c(), None)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_phy_update(self, conn_handle, tx_phy=BLEGapPhy.auto, rx_phy=BLEGapPhy.auto):
+        params = BLEGapPhys(tx_phy, rx_phy)
+        return driver.sd_ble_gap_phy_update(self.rpc_adapter, conn_handle, params.to_c())
+
     """
     SMP Methods
     """

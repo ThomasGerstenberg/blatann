@@ -16,7 +16,7 @@ class BLEEvent(object):
 
     def _repr_format(self, *args, **kwargs):
         kwargs["conn_handle"] = self.conn_handle
-        items = list(args) + ["{!r}={}".format(k, v) for k, v in kwargs]
+        items = list(args) + ["{}={}".format(k, v) for k, v in kwargs.items()]
         inner = ", ".join(items)
         return "{}({})".format(self.__class__.__name__, inner)
 

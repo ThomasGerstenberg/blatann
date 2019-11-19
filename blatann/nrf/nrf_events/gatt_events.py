@@ -392,20 +392,3 @@ class GattsEvtExchangeMtuRequest(GattsEvt):
 
     def __repr__(self):
         return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)
-
-
-# This isn't present in v3.0 of the softdevice. I was looking at the 4.0 softdevice headers :/
-# class GattsEvtNotificationTxComplete(GattsEvt):
-#     evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
-#
-#     def __init__(self, conn_handle, count):
-#         super(GattsEvtNotificationTxComplete, self).__init__(conn_handle)
-#         self.count = count
-#
-#     @classmethod
-#     def from_c(cls, event):
-#         conn_handle = event.evt.gatts_evt.conn_handle
-#         return cls(conn_handle, event.evt.gatts_evt.hvn_tx_complete.count)
-#
-#     def __repr__(self):
-#         return "{}(conn_handle={!r}, count={!r})".format(self.__class__.__name__, self.conn_handle, self.count)

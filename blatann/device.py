@@ -3,7 +3,7 @@ from threading import Lock
 
 from blatann import peer, exceptions
 from blatann.gap import advertising, scanning, default_bond_db
-from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE
+from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
@@ -101,17 +101,21 @@ class BleDevice(NrfDriverObserver):
         self.scanner = scanning.Scanner(self)
         self._db = gatts.GattsDatabase(self, self.client)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
+        self._att_mtu_max = MTU_SIZE_MINIMUM
 
     def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
                   max_connected_clients=1, max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                  device_name=""):
+                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE, device_name=""):
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
+        if device_name and isinstance(device_name, str):
+            device_name = device_name.encode("utf8")
 
         self._ble_configuration = nrf_types.BleEnableConfig(vendor_specific_uuid_count, max_connected_clients,
                                                             max_connected_peripherals, max_secured_peripherals,
                                                             service_changed, attribute_table_size, device_name)
+        self._att_mtu_max = att_mtu_max_size
 
     def open(self, clear_bonding_data=False):
         if clear_bonding_data:
