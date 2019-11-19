@@ -39,8 +39,8 @@ def lesc_pubkey_from_raw(raw_key, little_endian=True):
     Converts from raw (x, y) bytes to a public key that can be used for the DH request
     """
     key_len = len(raw_key)
-    x_raw = raw_key[:key_len/2]
-    y_raw = raw_key[key_len/2:]
+    x_raw = raw_key[:key_len//2]
+    y_raw = raw_key[key_len//2:]
 
     # Nordic transmits keys in little-endian, convert to big-endian
     if little_endian:
