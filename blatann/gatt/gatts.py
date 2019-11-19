@@ -1,7 +1,7 @@
 from collections import namedtuple
 import logging
 import threading
-import queue
+import binascii
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.waitables.event_waitable import IdBasedEventWaitable
@@ -244,7 +244,7 @@ class GattsCharacteristic(gatt.Characteristic):
             new_value = bytearray()
             for chunk in self._queued_write_chunks:
                 new_value += bytearray(chunk.data)
-            logger.debug("New value: 0x{}".format(str(new_value).encode("hex")))
+            logger.debug("New value: 0x{}".format(binascii.hexlify(new_value)))
             self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
                                                            nrf_types.BLEGattsValue(new_value))
             self._value = new_value

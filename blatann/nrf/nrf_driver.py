@@ -47,7 +47,7 @@ from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_dll_load import driver
 from pc_ble_driver_py.exceptions import NordicSemiException
 import blatann.nrf.nrf_driver_types as util
-from blatann.nrf.nrf_types.config import BleEnableConfig
+from blatann.nrf.nrf_types.config import BleEnableConfig, BleConnConfig
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +222,15 @@ class NrfDriver(object):
     """
     BLE Generic methods
     """
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_conn_configure(self, conn_params):
+        assert isinstance(conn_params, BleConnConfig)
+        for tag, cfg in conn_params.get_configs():
+            err = driver.sd_ble_cfg_set(self.rpc_adapter, tag, cfg, 0)
+            if err != driver.NRF_SUCCESS:
+                return err
+        return driver.NRF_SUCCESS
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
@@ -354,9 +363,11 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gap_data_length_update(self, conn_handle, max_tx_octets=0, max_rx_octets=0, max_tx_time_us=0, max_rx_time_us=0):
-        params = BLEGapDataLengthParams(max_tx_octets, max_rx_octets, max_tx_time_us, max_rx_time_us)
-        return driver.sd_ble_gap_data_length_update(self.rpc_adapter, conn_handle, params.to_c(), None)
+    def ble_gap_data_length_update(self, conn_handle, params=None):
+        assert isinstance(params, (BLEGapDataLengthParams, NoneType))
+        if isinstance(params, BLEGapDataLengthParams):
+            params = params.to_c()
+        return driver.sd_ble_gap_data_length_update(self.rpc_adapter, conn_handle, params, None)
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)

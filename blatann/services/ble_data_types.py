@@ -5,15 +5,15 @@ import datetime
 
 
 class BleDataStream(object):
-    def __init__(self, value=""):
+    def __init__(self, value=b""):
         self.value = value
         self.decode_index = 0
 
     def __repr__(self):
-        return self.value
+        return repr(self.value)
 
     def __str__(self):
-        return self.value
+        return repr(self.value)
 
     def __getitem__(self, item):
         return self.value[item]
@@ -170,7 +170,7 @@ class UnsignedIntegerBase(BleDataType):
         """
         :type stream: BleDataStream
         """
-        value_stream = stream.take(cls.byte_count) + "\x00" * (cls._decode_size()-cls.byte_count)
+        value_stream = stream.take(cls.byte_count) + b"\x00" * (cls._decode_size()-cls.byte_count)
         value = struct.unpack(cls._formatter(), value_stream)[0]
         return value
 

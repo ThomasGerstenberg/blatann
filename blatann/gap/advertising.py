@@ -197,7 +197,7 @@ class Advertiser(object):
     # connected to or stopped manually
     ADVERTISE_FOREVER = 0
 
-    def __init__(self, ble_device, client):
+    def __init__(self, ble_device, client, conn_tag=0):
         """
         :type ble_device: blatann.device.BleDevice
         :type client: blatann.peer.Client
@@ -212,6 +212,7 @@ class Advertiser(object):
         self._advertise_interval = 100
         self._timeout = self.ADVERTISE_FOREVER
         self._advertise_mode = AdvertisingMode.connectable_undirected
+        self._conn_tag = conn_tag
 
     @property
     def on_advertising_timeout(self):
@@ -294,7 +295,7 @@ class Advertiser(object):
         params = nrf_types.BLEGapAdvParams(adv_interval_ms, timeout_sec, advertise_mode)
 
         logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, auto_restart))
-        self.ble_device.ble_driver.ble_gap_adv_start(params)
+        self.ble_device.ble_driver.ble_gap_adv_start(params, self._conn_tag)
         self.advertising = True
         return ClientConnectionWaitable(self.ble_device, self.client)
 

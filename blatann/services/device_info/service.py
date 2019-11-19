@@ -1,3 +1,4 @@
+import binascii
 import logging
 from blatann.services import ble_data_types
 from blatann.services.device_info.constants import *
@@ -57,7 +58,8 @@ class _DisClientCharacteristic(_DisCharacteristic):
                 stream = ble_data_types.BleDataStream(event_args.value)
                 decoded_value = self.data_class.decode(stream)
             except Exception as e:  # TODO not so generic
-                logger.error("Service {}, Characteristic {} failed to decode value on read. Stream: [{}]".format(self.service.uuid, self.uuid, event_args.value.encode("hex")))
+                logger.error("Service {}, Characteristic {} failed to decode value on read. "
+                             "Stream: [{}]".format(self.service.uuid, self.uuid, binascii.hexlify(event_args.value)))
                 logger.exception(e)
 
         decoded_event_args = DecodedReadCompleteEventArgs.from_read_complete_event_args(event_args, decoded_value)

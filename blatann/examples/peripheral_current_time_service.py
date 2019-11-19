@@ -1,6 +1,7 @@
 """
 This example demonstrates using Bluetooth SIG's defined Current Time service as a peripheral.
 """
+import binascii
 import datetime
 from blatann import BleDevice
 from blatann.gap import advertising
@@ -48,7 +49,7 @@ def on_current_time_write(characteristic, event_args):
     """
     # event_args.value is of type current_time.CurrentTime
     logger.info("Current time written to, new value: {}. "
-                "Raw: {}".format(event_args.value, event_args.raw_value.encode("hex")))
+                "Raw: {}".format(event_args.value, binascii.hexlify(event_args.raw_value)))
 
 
 def on_local_time_info_write(characteristic, event_args):
@@ -61,7 +62,7 @@ def on_local_time_info_write(characteristic, event_args):
     """
     # event_args.value is of type current_time.LocalTimeInfo
     logger.info("Local Time info written to, new value: {}. "
-                "Raw: {}".format(event_args.value, event_args.raw_value.encode("hex")))
+                "Raw: {}".format(event_args.value, binascii.hexlify(event_args.raw_value)))
 
 
 def main(serial_port):
@@ -126,4 +127,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM5")
+    main("COM7")

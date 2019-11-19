@@ -1,3 +1,4 @@
+import binascii
 import logging
 from blatann.services.battery.constants import *
 from blatann.services.battery.data_types import *
@@ -120,7 +121,7 @@ class BatteryClient(object):
             stream = ble_data_types.BleDataStream(event_args.value)
             decoded_value = BatteryLevel.decode(stream)
         except Exception as e:  # TODO not so generic
-            logger.error("Failed to decode Battery Level, stream: [{}]".format(event_args.value.encode("hex")))
+            logger.error("Failed to decode Battery Level, stream: [{}]".format(binascii.hexlify(event_args.value)))
             logger.exception(e)
 
         decoded_event_args = DecodedReadCompleteEventArgs.from_notification_complete_event_args(event_args, decoded_value)
@@ -137,7 +138,7 @@ class BatteryClient(object):
                 stream = ble_data_types.BleDataStream(event_args.value)
                 decoded_value = BatteryLevel.decode(stream)
             except Exception as e:  # TODO not so generic
-                logger.error("Failed to decode Battery Level, stream: [{}]".format(event_args.value.encode("hex")))
+                logger.error("Failed to decode Battery Level, stream: [{}]".format(binascii.hexlify(event_args.value)))
                 logger.exception(e)
 
         decoded_event_args = DecodedReadCompleteEventArgs.from_read_complete_event_args(event_args, decoded_value)

@@ -264,3 +264,55 @@ class BleEnableConfig(object):
         yield self.get_device_name_cfg()
         yield self.get_service_changed_cfg()
         yield self.get_attr_tab_size_cfg()
+
+
+class BleConnConfig(object):
+    DEFAULT_CONN_TAG = 1
+
+    def __init__(self, conn_tag=DEFAULT_CONN_TAG,
+                 conn_count=driver.BLE_GAP_CONN_COUNT_DEFAULT,
+                 event_length=driver.BLE_GAP_EVENT_LENGTH_DEFAULT,
+                 write_cmd_tx_queue_size=driver.BLE_GATTC_WRITE_CMD_TX_QUEUE_SIZE_DEFAULT,
+                 hvn_tx_queue_size=driver.BLE_GATTS_HVN_TX_QUEUE_SIZE_DEFAULT,
+                 max_att_mtu=driver.BLE_GATT_ATT_MTU_DEFAULT):  # TODO: L2CAP config
+        self.conn_tag = conn_tag
+        self.conn_count = conn_count
+        self.event_length = event_length
+        self.write_cmd_tx_queue_size = write_cmd_tx_queue_size
+        self.hvn_tx_queue_size = hvn_tx_queue_size
+        self.max_att_mtu = max_att_mtu
+
+    def get_gap_config(self):
+        config = driver.ble_cfg_t()
+        config.conn_cfg.conn_cfg_tag = self.conn_tag
+        cfg = config.conn_cfg.params.gap_conn_cfg
+        cfg.conn_count = self.conn_count
+        cfg.event_length = self.event_length
+        return driver.BLE_CONN_CFG_GAP, config
+
+    def get_gatt_config(self):
+        config = driver.ble_cfg_t()
+        config.conn_cfg.conn_cfg_tag = self.conn_tag
+        cfg = config.conn_cfg.params.gatt_conn_cfg
+        cfg.att_mtu = self.max_att_mtu
+        return driver.BLE_CONN_CFG_GATT, config
+
+    def get_gattc_config(self):
+        config = driver.ble_cfg_t()
+        config.conn_cfg.conn_cfg_tag = self.conn_tag
+        cfg = config.conn_cfg.params.gattc_conn_cfg
+        cfg.write_cmd_tx_queue_size = self.write_cmd_tx_queue_size
+        return driver.BLE_CONN_CFG_GATTC, config
+
+    def get_gatts_config(self):
+        config = driver.ble_cfg_t()
+        config.conn_cfg.conn_cfg_tag = self.conn_tag
+        cfg = config.conn_cfg.params.gatts_conn_cfg
+        cfg.hvn_tx_queue_size = self.hvn_tx_queue_size
+        return driver.BLE_CONN_CFG_GATTS, config
+
+    def get_configs(self):
+        yield self.get_gap_config()
+        yield self.get_gatt_config()
+        yield self.get_gattc_config()
+        yield self.get_gatts_config()
