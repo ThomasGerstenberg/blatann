@@ -32,7 +32,7 @@ class GattcCharacteristic(gatt.Characteristic):
         self.value_handle = value_handle
         self.cccd_handle = cccd_handle
         self._manager = read_write_manager
-        self._value = ""
+        self._value = b""
 
         self._on_notification_event = EventSource("On Notification", logger)
         self._on_read_complete_event = EventSource("On Read Complete", logger)
@@ -53,6 +53,7 @@ class GattcCharacteristic(gatt.Characteristic):
         The current value of the characteristic
 
         :return: The last known value of the characteristic
+        :rtype: bytes
         """
         return self._value
 
@@ -169,14 +170,18 @@ class GattcCharacteristic(gatt.Characteristic):
 
         The Waitable returns two parameters: (GattcCharacteristic this, WriteCompleteEventArgs event args)
 
-        :param data: The data to write. Can be a string, bytearray, or anything that can be converted to a bytearray
+        :param data: The data to write. Can be a string, bytes, or anything that can be converted to bytes
+        :type data: str or bytes or bytearray
         :return: A waitable that returns when the write finishes
         :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if characteristic is not writable
         """
+        if isinstance(data, str):
+            data = data.encode(self.string_encoding)
+
         if not self.writable:
             raise InvalidOperationException("Characteristic {} is not writable".format(self.uuid))
-        write_id = self._manager.write(self.value_handle, bytearray(data))
+        write_id = self._manager.write(self.value_handle, bytes(data))
         return IdBasedEventWaitable(self._on_write_complete_event, write_id)
 
     """

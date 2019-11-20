@@ -62,14 +62,18 @@ def main(serial_port):
         if dis.has(char):
             logger.info("Reading characteristic: {}...".format(char))
             char, event_args = dis.get(char).wait()
-            logger.info("Value: {}".format(event_args.value))
+            if isinstance(event_args.value, bytes):
+                value = event_args.value.decode("utf8")
+            else:
+                value = event_args.value
+            logger.info("Value: {}".format(value))
 
     # Example 2:
     # Read specific characteristics, if present in the service
     if dis.has_software_revision:
         char, event_args = dis.get_software_revision().wait()
         sw_version = event_args.value
-        logger.info("Software Version: {}".format(sw_version))
+        logger.info("Software Version: {}".format(sw_version.decode("utf8")))
     if dis.has_pnp_id:
         char, event_args = dis.get_pnp_id().wait()
         pnp_id = event_args.value  # type: device_info.PnpId

@@ -156,6 +156,7 @@ class NrfDriver(object):
     def close(self):
         if not self.is_open:
             return driver.NRF_SUCCESS
+        driver.sd_rpc_conn_reset(self.rpc_adapter, 0)
         retval = driver.sd_rpc_close(self.rpc_adapter)
         driver.sd_rpc_adapter_delete(self.rpc_adapter)
         self._event_thread_join()
