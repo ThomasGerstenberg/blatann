@@ -90,7 +90,7 @@ class NrfDriverObserver(object):
 
 class NrfDriver(object):
     api_lock = Lock()
-    default_baud_rate = 115200
+    default_baud_rate = 1000000
     ATT_MTU_DEFAULT = driver.BLE_GATT_ATT_MTU_DEFAULT
 
     def __init__(self, serial_port, baud_rate=None, log_driver_comms=False):
