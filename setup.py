@@ -3,11 +3,11 @@ from setuptools import setup, find_packages
 import sys
 
 
-VERSION = "v0.2.8"
+VERSION = "v0.3.0-alpha"
 
 py3 = sys.version_info[0] == 3
 
-_install_requires = ["pc-ble-driver-py>=0.12", "cryptography", "pytz"]
+_install_requires = ["pc-ble-driver-py>=0.13", "cryptography", "pytz"]
 
 setup(
     name="blatann",
