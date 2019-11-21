@@ -40,7 +40,7 @@ class GattcEvtReadResponse(GattcEvt):
         if status == BLEGattStatusCode.read_not_permitted:
             self.data = None
         elif isinstance(data, str):
-            self.data = map(ord, data)
+            self.data = list(map(ord, data))
         else:
             self.data = data
 
@@ -73,7 +73,7 @@ class GattcEvtHvx(GattcEvt):
         self.attr_handle = attr_handle
         self.hvx_type = hvx_type
         if isinstance(data, str):
-            self.data = map(ord, data)
+            self.data = list(map(ord, data))
         else:
             self.data = data
 
@@ -105,7 +105,7 @@ class GattcEvtWriteResponse(GattcEvt):
         self.write_op = write_op
         self.offset = offset
         if isinstance(data, str):
-            self.data = map(ord, data)
+            self.data = list(map(ord, data))
         else:
             self.data = data
 

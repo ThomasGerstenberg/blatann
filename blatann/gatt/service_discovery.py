@@ -214,7 +214,8 @@ class _CharacteristicDiscoverer(_Discoverer):
             return
 
         service = self._state.current_service
-        map(service.char_add, event.characteristics)
+        for c in event.characteristics:
+            service.char_add(c)
         last_char = event.characteristics[-1]
         if last_char.handle_value == service.end_handle:
             self._state.service_index += 1
@@ -285,7 +286,8 @@ class _DescriptorDiscoverer(_Discoverer):
         self._state.reset()
         self._state.services = services
         # Compile the characteristics into a single list so its easier to iterate
-        map(self._state.characteristics.extend, [s.chars for s in services])
+        for s in services:
+            self._state.characteristics.extend(s.chars)
         self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
         on_complete_waitable = EventWaitable(self.on_complete)
         if not self._state.characteristics:
