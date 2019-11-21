@@ -38,6 +38,7 @@ class QueuedTasksManagerBase(object):
                 except Exception as e:
                     logger.exception(e)
                     self._handle_task_failure(task, e)
+                task = self._get_next()
 
             if not task:
                 self._in_process.clear()

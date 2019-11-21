@@ -17,7 +17,7 @@ class GattOperationCompleteReason(Enum):
     # The client unsubscribed from the characteristic before the notification was sent
     CLIENT_UNSUBSCRIBED = 4
     # Unknown Failure
-    FAILED = 4
+    FAILED = 5
 
 
 class EventArgs(object):

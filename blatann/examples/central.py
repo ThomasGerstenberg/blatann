@@ -125,4 +125,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM4")
+    main("COM9")

@@ -392,10 +392,10 @@ class SecurityManager(object):
         def resolve(passkey):
             if not self._pairing_in_process:
                 return
-            if isinstance(passkey, (long, int)):
-                passkey = "{:06d}".format(passkey)
-            elif isinstance(passkey, unicode):
-                passkey = str(passkey)
+            if isinstance(passkey, int):
+                passkey = "{:06d}".format(passkey).encode("ascii")
+            elif isinstance(passkey, str):
+                passkey = passkey.encode("ascii")
             self.ble_device.ble_driver.ble_gap_auth_key_reply(self.peer.conn_handle, event.key_type, passkey)
 
         self._auth_key_resolve_thread = threading.Thread(name="{} Passkey Entry".format(self.peer.conn_handle),

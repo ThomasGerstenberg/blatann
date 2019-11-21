@@ -117,6 +117,19 @@ def on_passkey_display(peer, event_args):
         event_args.match_confirm(match)
 
 
+def on_passkey_entry(peer, passkey_event_args):
+    """
+    Callback for when the user is requested to enter a passkey to resume the pairing process.
+    Requests the user to enter the passkey and resolves the event with the passkey entered
+
+    :param peer: the peer the passkey is for
+    :param passkey_event_args:
+    :type passkey_event_args: blatann.event_args.PasskeyEntryEventArgs
+    """
+    passkey = input("Enter passkey: ")
+    passkey_event_args.resolve(passkey)
+
+
 class CountingCharacteristicThread(object):
     """
     Thread which updates the counting characteristic and notifies
@@ -187,9 +200,10 @@ def main(serial_port):
 
     # Set up desired security parameters
     ble_device.client.security.set_security_params(passcode_pairing=False, bond=False, lesc_pairing=False,
-                                                   io_capabilities=IoCapabilities.KEYBOARD_DISPLAY, out_of_band=False)
+                                                   io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
     ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
+    ble_device.client.security.on_passkey_required.register(on_passkey_entry)
 
     # Create and add the math service
     service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
@@ -237,4 +251,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM7")
+    main("COM8")
