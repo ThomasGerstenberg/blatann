@@ -117,7 +117,6 @@ class BleDevice(NrfDriverObserver):
                                                             max_connected_peripherals, max_secured_peripherals,
                                                             service_changed, attribute_table_size, device_name)
         self._default_conn_config.max_att_mtu = att_mtu_max_size
-        self._default_conn_config.conn_count = max_connected_peripherals + max_connected_clients
 
     def open(self, clear_bonding_data=False):
         if clear_bonding_data:
@@ -125,6 +124,7 @@ class BleDevice(NrfDriverObserver):
         else:
             self.bond_db = self.bond_db_loader.load()
         self.ble_driver.open()
+        self._default_conn_config.conn_count = self._ble_configuration.central_role_count + self._ble_configuration.periph_role_count
         self.ble_driver.ble_conn_configure(self._default_conn_config)
         self.ble_driver.ble_enable(self._ble_configuration)
 

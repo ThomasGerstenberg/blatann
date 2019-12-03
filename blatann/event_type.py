@@ -1,7 +1,11 @@
+from typing import TypeVar, Generic, Callable
 from threading import Lock
 
+TSender = TypeVar("TSender")
+TEvent = TypeVar("TEvent")
 
-class Event(object):
+
+class Event(Generic[TSender, TEvent]):
     """
     Represents an event that can have handlers registered and deregistered.
     All handlers registered to an event should take in two parameters: the event sender and the event arguments.
@@ -12,12 +16,13 @@ class Event(object):
         self._handler_lock = Lock()
         self._handlers = []
 
-    def register(self, handler):
+    def register(self, handler: Callable[[TSender, TEvent], None]):
         """
         Registers a handler to be called whenever the event is emitted.
         If the given handler is already registered, function does nothing
 
         :param handler: The handler to register
+        :type handler: Callable[TObj, TEvent]
         """
         with self._handler_lock:
             if handler not in self._handlers:
@@ -48,7 +53,7 @@ class EventSource(Event):
         with self._handler_lock:
             self._handlers = []
 
-    def notify(self, sender, event_args=None):
+    def notify(self, sender: TSender, event_args: TEvent = None):
         """
         Notifies all clients with the given arguments and keyword-arguments
         """

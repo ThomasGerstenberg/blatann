@@ -16,11 +16,14 @@ def main(serial_port):
     # Set scanning for 4 seconds
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
 
-    # Start scanning and wait for it to complete
-    scan_report = ble_device.scanner.start_scan().wait()
-    print("")
-    logger.info("Finished scanning. Scan reports:")
+    # Start scanning and iterate through the reports as they're received
+    for report in ble_device.scanner.start_scan().scan_reports:
+        if not report.duplicate:
+            logger.info(report)
 
+    scan_report = ble_device.scanner.scan_report
+    print("\n")
+    logger.info("Finished scanning. Scan reports by peer address:")
     # Iterate through all the peers found and print out the reports
     for report in scan_report.advertising_peers_found:
         logger.info(report)
@@ -30,4 +33,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM9")
+    main("COM7")
