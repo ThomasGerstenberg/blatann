@@ -248,6 +248,22 @@ class GattcEvtMtuExchangeResponse(GattcEvt):
     def __repr__(self):
         return "{}(conn_handle={!r}, server_mtu={})".format(self.__class__.__name__, self.conn_handle, self.server_mtu)
 
+
+class GattcEvtTimeout(GattcEvt):
+    evt_id = driver.BLE_GATTC_EVT_TIMEOUT
+
+    def __init__(self, conn_handle, source):
+        super(GattcEvtTimeout, self).__init__(conn_handle)
+        self.source = source
+
+    @classmethod
+    def from_c(cls, event):
+        source = event.evt.gattc_evt.params.timeout.src
+        return cls(event.evt.gattc_evt.conn_handle, source)
+
+    def __repr__(self):
+        return self._repr_format(source=self.source)
+
 """
 GATTS Events
 """
@@ -392,3 +408,19 @@ class GattsEvtExchangeMtuRequest(GattsEvt):
 
     def __repr__(self):
         return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)
+
+
+class GattsEvtTimeout(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_TIMEOUT
+
+    def __init__(self, conn_handle, source):
+        super(GattsEvtTimeout, self).__init__(conn_handle)
+        self.source = source
+
+    @classmethod
+    def from_c(cls, event):
+        source = event.evt.gatts_evt.params.timeout.src
+        return cls(event.evt.gatts_evt.conn_handle, source)
+
+    def __repr__(self):
+        return self._repr_format(source=self.source)

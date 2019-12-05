@@ -418,6 +418,7 @@ class _ReadWriteManager(QueuedTasksManagerBase):
         self.on_write_complete = EventSource("Gattc Write Complete", logger)
         self._reader.on_read_complete.register(self._read_complete)
         self._writer.on_write_complete.register(self._write_complete)
+        self._reader.peer.driver_event_subscribe(self._on_timeout, nrf_events.GattcEvtTimeout)
 
     def read(self, handle):
         read_task = _ReadTask(handle)
@@ -458,6 +459,9 @@ class _ReadWriteManager(QueuedTasksManagerBase):
 
     def _on_disconnect(self, sender, event_args):
         self._clear_all(GattOperationCompleteReason.SERVER_DISCONNECTED)
+
+    def _on_timeout(self, sender, event_args):
+        self._clear_all(GattOperationCompleteReason.TIMEOUT)
 
     def _read_complete(self, sender, event_args):
         """

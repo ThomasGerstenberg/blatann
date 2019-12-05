@@ -18,6 +18,8 @@ class GattOperationCompleteReason(Enum):
     CLIENT_UNSUBSCRIBED = 4
     # Unknown Failure
     FAILED = 5
+    # The peer failed to respond to the ATT operation
+    TIMED_OUT = 6
 
 
 class EventArgs(object):

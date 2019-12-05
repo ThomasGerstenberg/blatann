@@ -531,6 +531,7 @@ class _NotificationManager(QueuedTasksManagerBase):
         self.ble_device.ble_driver.event_subscribe(self._on_notify_complete, nrf_events.GattsEvtNotificationTxComplete,
                                                    nrf_events.GattsEvtHandleValueConfirm)
         self.ble_device.ble_driver.event_subscribe(self._on_disconnect, nrf_events.GapEvtDisconnected)
+        self.ble_device.ble_driver.event_subscribe(self._on_timeout, nrf_events.GattsEvtTimeout)
 
     def notify(self, characteristic, handle, event_on_complete, data=None):
         notification = _Notification(characteristic, handle, event_on_complete, data)
@@ -568,3 +569,6 @@ class _NotificationManager(QueuedTasksManagerBase):
 
     def _on_disconnect(self, driver, event):
         self._clear_all(NotificationCompleteEventArgs.Reason.CLIENT_DISCONNECTED)
+
+    def _on_timeout(self, driver, event):
+        self._clear_all(NotificationCompleteEventArgs.Reason.TIMED_OUT)

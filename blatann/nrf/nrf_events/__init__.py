@@ -38,12 +38,12 @@ _event_classes = [
     GattcEvtWriteResponse,
     GattcEvtHvx,
     GattcEvtAttrInfoDiscoveryResponse,
+    GattcEvtMtuExchangeResponse,
+    GattcEvtTimeout,
     # TODO:
     # driver.BLE_GATTC_EVT_REL_DISC_RSP
     # driver.BLE_GATTC_EVT_CHAR_VAL_BY_UUID_READ_RSP
     # driver.BLE_GATTC_EVT_CHAR_VALS_READ_RSP
-    GattcEvtMtuExchangeResponse,
-    # driver.BLE_GATTC_EVT_TIMEOUT
     # driver.BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE
 
     # Gatts
@@ -52,10 +52,10 @@ _event_classes = [
     GattsEvtHandleValueConfirm,
     GattsEvtExchangeMtuRequest,
     GattsEvtNotificationTxComplete,
+    GattsEvtTimeout,
     # TODO:
     # driver.BLE_GATTS_SYS_ATTR_MISSING
     # driver.BLE_GATTS_EVT_SC_CONFIRM
-    # driver.BLE_GATTS_EVT_TIMEOUT
 ]
 
 _events_by_id = {e.evt_id: e for e in _event_classes}
