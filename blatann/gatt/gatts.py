@@ -1,12 +1,15 @@
+from __future__ import annotations
+from typing import Optional, List, Iterable
 from collections import namedtuple
 import logging
 import threading
 import binascii
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
-from blatann.waitables.event_waitable import IdBasedEventWaitable
+from blatann.uuid import Uuid
+from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
-from blatann.event_type import EventSource
+from blatann.event_type import EventSource, Event
 from blatann.event_args import *
 from blatann.services.ble_data_types import BleDataStream
 from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
@@ -44,7 +47,7 @@ class GattsCharacteristic(gatt.Characteristic):
     """
     _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
-    def __init__(self, ble_device, peer, uuid, properties, notification_manager, value="", prefer_indications=True,
+    def __init__(self, ble_device, peer, uuid, properties, notification_manager, value=b"", prefer_indications=True,
                  string_encoding="utf8"):
         """
         :param ble_device:
@@ -77,7 +80,7 @@ class GattsCharacteristic(gatt.Characteristic):
     Public Methods
     """
 
-    def set_value(self, value, notify_client=False):
+    def set_value(self, value, notify_client=False) -> Optional[EventWaitable[GattsCharacteristic, NotificationCompleteEventArgs]]:
         """
         Sets the value of the characteristic.
 
@@ -88,6 +91,7 @@ class GattsCharacteristic(gatt.Characteristic):
                               for the characteristic, will raise an InvalidOperationException
         :raises: InvalidOperationException if value length is too long, or notify client set and characteristic
                  is not notifiable
+        :return: If notify_client is true, this method will return the waitable for when the notification is sent to the client
         """
         if isinstance(value, BleDataStream):
             value = value.value
@@ -105,9 +109,9 @@ class GattsCharacteristic(gatt.Characteristic):
         self._value = value
 
         if notify_client and self.client_subscribed and not self._read_in_process:
-            self.notify(None)
+            return self.notify(None)
 
-    def notify(self, data):
+    def notify(self, data) -> EventWaitable[GattsCharacteristic, NotificationCompleteEventArgs]:
         """
         Notifies the client with the data provided without setting the data into the characteristic value.
         If data is not provided (None), will notify with the currently-set value of the characteristic
@@ -135,30 +139,28 @@ class GattsCharacteristic(gatt.Characteristic):
     """
 
     @property
-    def max_length(self):
+    def max_length(self) -> int:
         """
         The max possible the value the characteristic can be set to
         """
         return self._properties.max_len
 
     @property
-    def notifiable(self):
+    def notifiable(self) -> bool:
         """
         Gets if the characteristic is set up to asynchonously notify clients via notifications or indications
         """
         return self._properties.indicate or self._properties.notify
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         """
         Gets the current value of the characteristic
-
-        :rtype: bytes
         """
         return self._value
 
     @property
-    def client_subscribed(self):
+    def client_subscribed(self) -> bool:
         """
         Gets if the client is currently subscribed (notify or indicate) to this characteristic
         """
@@ -169,19 +171,18 @@ class GattsCharacteristic(gatt.Characteristic):
     """
 
     @property
-    def on_write(self):
+    def on_write(self) -> Event[GattsCharacteristic, WriteEventArgs]:
         """
         Event generated whenever a client writes to this characteristic.
 
         EventArgs type: WriteEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_write
 
     @property
-    def on_read(self):
+    def on_read(self) -> Event[GattsCharacteristic, None]:
         """
         Event generated whenever a client requests to read from this characteristic. At this point, the application
         may choose to update the value of the characteristic to a new value using set_value.
@@ -195,12 +196,11 @@ class GattsCharacteristic(gatt.Characteristic):
         EventArgs type: None
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_read
 
     @property
-    def on_subscription_change(self):
+    def on_subscription_change(self) -> Event[GattsCharacteristic, SubscriptionStateChangeEventArgs]:
         """
         Event that is generated whenever a client changes its subscription state of the characteristic
         (notify, indicate, none).
@@ -208,19 +208,13 @@ class GattsCharacteristic(gatt.Characteristic):
         EventArgs type: SubscriptionStateChangeEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_sub_change
 
     @property
-    def on_notify_complete(self):
+    def on_notify_complete(self) -> Event[GattsCharacteristic, NotificationCompleteEventArgs]:
         """
         Event that is generated when a notification or indication sent to the client is successfully sent
-
-        EventArgs type:
-
-        :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_notify_complete
 
@@ -358,28 +352,24 @@ class GattsService(gatt.Service):
         self._notification_manager = notification_manager
 
     @property
-    def characteristics(self):
+    def characteristics(self) -> List[GattsCharacteristic]:
         """
         Gets the list of characteristics in this service
-
-        :rtype: list of GattsCharacteristic
         """
         return self._characteristics
 
-    def add_characteristic(self, uuid, properties, initial_value=b"", prefer_indications=True, string_encoding="utf8"):
+    def add_characteristic(self, uuid: Uuid, properties: GattsCharacteristicProperties,
+                           initial_value=b"", prefer_indications=True, string_encoding="utf8"):
         """
         Adds a new characteristic to the service
 
         :param: The UUID of the characteristic to add
-        :type uuid: blatann.uuid.Uuid
         :param properties: The characteristic's properties
-        :type properties: GattsCharacteristicProperties
         :param initial_value: The initial value of the characteristic. May be a string, bytearray, or list of ints
         :type initial_value: str or list or bytearray
         :param prefer_indications: Flag for choosing indication/notification if a characteristic has
                                    both indications and notifications available
         :param string_encoding: The encoding method to use when a string value is provided (utf8, ascii, etc.)
-        :type string_encoding: str
         :return: The characteristic just added to the service
         :rtype: GattsCharacteristic
         """
@@ -432,16 +422,15 @@ class GattsDatabase(gatt.GattDatabase):
         self._notification_manager = _NotificationManager(ble_device, peer)
 
     @property
-    def services(self):
+    def services(self) -> List[GattsService]:
         """
         Gets the list of services registered in the database
 
         :return: list of services in the database
-        :rtype: list of GattsService
         """
         return self._services
 
-    def iter_services(self):
+    def iter_services(self) -> Iterable[GattsService]:
         """
         Iterates through all of the registered services in the database
 
@@ -451,14 +440,13 @@ class GattsDatabase(gatt.GattDatabase):
         for s in self.services:
             yield s
 
-    def add_service(self, uuid, service_type=gatt.ServiceType.PRIMARY):
+    def add_service(self, uuid: Uuid, service_type=gatt.ServiceType.PRIMARY) -> GattsService:
         """
         Adds a service to the local database
 
-        :type uuid: blatann.uuid.Uuid
-        :type service_type: gatt.ServiceType
+        :param uuid: The UUID for the service
+        :param service_type: The type of service (primary or secondary)
         :return: The added and newly created service
-        :rtype: GattsService
         """
         # Register UUID
         self.ble_device.uuid_manager.register_uuid(uuid)

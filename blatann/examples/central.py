@@ -6,7 +6,7 @@ before moving on to the rest of the program
 This is designed to work alongside the peripheral example running on a separate nordic chip
 """
 import struct
-from blatann import BleDevice, uuid
+from blatann import BleDevice
 from blatann.gap import smp
 from blatann.examples import example_utils, constants
 from blatann.nrf import nrf_events
@@ -21,6 +21,7 @@ def on_counting_char_notification(characteristic, event_args):
     the value and logs it out
 
     :param characteristic: The characteristic the notification was on (counting characteristic)
+    :type characteristic: blatann.gatt.gattc.GattcCharacteristic
     :param event_args: The event arguments
     :type event_args: blatann.event_args.NotificationReceivedEventArgs
     """
@@ -84,7 +85,7 @@ def main(serial_port):
                                       bond=False, out_of_band=False)
     # Register the callback for when a passkey needs to be entered by the user
     peer.security.on_passkey_required.register(on_passkey_entry)
-    # Wait up to 60 secomds for the pairing process
+    # Wait up to 60 seconds for the pairing process
     peer.security.pair().wait(60)
 
     # Find the counting characteristic

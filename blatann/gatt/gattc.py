@@ -1,7 +1,10 @@
+from __future__ import annotations
 import logging
 import threading
+from typing import Callable, List, Optional, Iterable
 
 from blatann import gatt
+from blatann.uuid import Uuid
 from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter
@@ -48,38 +51,37 @@ class GattcCharacteristic(gatt.Characteristic):
     """
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         """
         The current value of the characteristic
 
         :return: The last known value of the characteristic
-        :rtype: bytes
         """
         return self._value
 
     @property
-    def readable(self):
+    def readable(self) -> bool:
         """
         Gets if the characteristic can be read from
         """
         return self._properties.read
 
     @property
-    def writable(self):
+    def writable(self) -> bool:
         """
         Gets if the characteristic can be written to
         """
         return self._properties.write
 
     @property
-    def subscribable(self):
+    def subscribable(self) -> bool:
         """
         Gets if the characteristic can be subscribed to
         """
         return self._properties.notify or self._properties.indicate
 
     @property
-    def subscribed(self):
+    def subscribed(self) -> bool:
         """
         Gets if the characteristic is currently subscribed to
         """
@@ -90,18 +92,19 @@ class GattcCharacteristic(gatt.Characteristic):
     """
 
     @property
-    def on_read_complete(self):
+    def on_read_complete(self) -> Event[GattcCharacteristic, ReadCompleteEventArgs]:
         return self._on_read_complete_event
 
     @property
-    def on_write_complete(self):
+    def on_write_complete(self) -> Event[GattcCharacteristic, WriteCompleteEventArgs]:
         return self._on_write_complete_event
 
     """
     Public Methods
     """
 
-    def subscribe(self, on_notification_handler, prefer_indications=False):
+    def subscribe(self, on_notification_handler: Callable[[GattcCharacteristic, NotificationReceivedEventArgs], None],
+                  prefer_indications=False) -> EventWaitable[GattcCharacteristic, SubscriptionWriteCompleteEventArgs]:
         """
         Subscribes to the characteristic's indications or notifications, depending on what's available and the
         prefer_indications setting. Returns a Waitable that executes when the subscription on the peripheral finishes.
@@ -109,11 +112,10 @@ class GattcCharacteristic(gatt.Characteristic):
         The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
 
         :param on_notification_handler: The handler to be called when an indication or notification is received from
-            the peripheral. Must take three parameters: (GattcCharacteristic this, gatt.GattNotificationType, bytearray data)
+            the peripheral. Must take two parameters: (GattcCharacteristic this, NotificationReceivedEventArgs event args)
         :param prefer_indications: If the peripheral supports both indications and notifications,
             will subscribe to indications instead of notifications
         :return: A Waitable that will fire when the subscription finishes
-        :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if the characteristic cannot be subscribed to
             (characteristic does not support indications or notifications)
         """
@@ -128,7 +130,7 @@ class GattcCharacteristic(gatt.Characteristic):
         write_id = self._manager.write(self.cccd_handle, gatt.SubscriptionState.to_buffer(value))
         return IdBasedEventWaitable(self._on_cccd_write_complete_event, write_id)
 
-    def unsubscribe(self):
+    def unsubscribe(self) -> EventWaitable[GattcCharacteristic, SubscriptionWriteCompleteEventArgs]:
         """
         Unsubscribes from indications and notifications from the characteristic and clears out all handlers
         for the characteristic's on_notification event handler. Returns a Waitable that executes when the unsubscription
@@ -137,7 +139,6 @@ class GattcCharacteristic(gatt.Characteristic):
         The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
 
         :return: A Waitable that will fire when the unsubscription finishes
-        :rtype: blatann.waitables.EventWaitable
         """
         if not self.subscribable:
             raise InvalidOperationException("Cannot subscribe to Characteristic {}".format(self.uuid))
@@ -147,7 +148,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
         return IdBasedEventWaitable(self._on_cccd_write_complete_event, write_id)
 
-    def read(self):
+    def read(self) -> EventWaitable[GattcCharacteristic, ReadCompleteEventArgs]:
         """
         Initiates a read of the characteristic and returns a Waitable that executes when the read finishes with
         the data read.
@@ -155,7 +156,6 @@ class GattcCharacteristic(gatt.Characteristic):
         The Waitable returns two parameters: (GattcCharacteristic this, ReadCompleteEventArgs event args)
 
         :return: A waitable that will fire when the read finishes
-        :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if characteristic not readable
         """
         if not self.readable:
@@ -163,7 +163,7 @@ class GattcCharacteristic(gatt.Characteristic):
         read_id = self._manager.read(self.value_handle)
         return IdBasedEventWaitable(self._on_read_complete_event, read_id)
 
-    def write(self, data):
+    def write(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
         """
         Initiates a write of the data provided to the characteristic and returns a Waitable that executes
         when the write completes.
@@ -173,7 +173,6 @@ class GattcCharacteristic(gatt.Characteristic):
         :param data: The data to write. Can be a string, bytes, or anything that can be converted to bytes
         :type data: str or bytes or bytearray
         :return: A waitable that returns when the write finishes
-        :rtype: blatann.waitables.EventWaitable
         :raises: InvalidOperationException if characteristic is not writable
         """
         if isinstance(data, str):
@@ -265,7 +264,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
 class GattcService(gatt.Service):
     @property
-    def characteristics(self):
+    def characteristics(self) -> List[GattcCharacteristic]:
         """
         Gets the list of characteristics within the service
 
@@ -273,14 +272,12 @@ class GattcService(gatt.Service):
         """
         return self._characteristics
 
-    def find_characteristic(self, characteristic_uuid):
+    def find_characteristic(self, characteristic_uuid: Uuid) -> Optional[GattcCharacteristic]:
         """
         Finds the characteristic matching the given UUID inside the service. If not found, returns None
 
         :param characteristic_uuid: The UUID of the characteristic to find
-        :type characteristic_uuid: blatann.uuid.Uuid
         :return: The characteristic if found, otherwise None
-        :rtype: GattcCharacteristic
         """
         for c in self.characteristics:
             if c.uuid == characteristic_uuid:
@@ -318,13 +315,13 @@ class GattcDatabase(gatt.GattDatabase):
         self._read_write_manager = _ReadWriteManager(self._reader, self._writer)
 
     @property
-    def services(self):
+    def services(self) -> List[GattcService]:
         """
         :rtype: list of GattcService
         """
         return self._services
 
-    def find_service(self, service_uuid):
+    def find_service(self, service_uuid: Uuid) -> Optional[GattcService]:
         """
         Finds the characteristic matching the given UUID inside the database. If not found, returns None
 
@@ -350,7 +347,7 @@ class GattcDatabase(gatt.GattDatabase):
             if c.uuid == characteristic_uuid:
                 return c
 
-    def iter_characteristics(self):
+    def iter_characteristics(self) -> Iterable[GattcCharacteristic]:
         """
         Iterates through all the characteristics in the database
 

@@ -69,7 +69,8 @@ def on_gatts_subscription_state_changed(characteristic, event_args):
     :type characteristic: blatann.gatt.gatts.GattsCharacteristic
     :type event_args: blatann.event_args.SubscriptionStateChangeEventArgs
     """
-    logger.info("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, event_args.subscription_state))
+    logger.info("Subscription state changed - characteristic: {}, state: {}".format(
+        characteristic.uuid, event_args.subscription_state))
 
 
 def on_time_char_read(characteristic, event_args):
@@ -173,7 +174,7 @@ class CountingCharacteristicThread(object):
     def run(self):
         while not self._stop_event.is_set():
             try:
-                if not self.characteristic.client_subscribed: # Do nothing until a client is subscribed
+                if not self.characteristic.client_subscribed:  # Do nothing until a client is subscribed
                     time.sleep(1)
                     continue
                 # Increment the value and pack it

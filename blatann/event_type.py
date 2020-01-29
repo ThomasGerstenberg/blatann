@@ -22,7 +22,6 @@ class Event(Generic[TSender, TEvent]):
         If the given handler is already registered, function does nothing
 
         :param handler: The handler to register
-        :type handler: Callable[TObj, TEvent]
         """
         with self._handler_lock:
             if handler not in self._handlers:

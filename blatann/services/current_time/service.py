@@ -1,14 +1,15 @@
+from __future__ import annotations
 import datetime
 import logging
 import pytz.reference
 
 from blatann.event_type import EventSource, Event
 from blatann.exceptions import InvalidOperationException
-from blatann.services import DecodedReadWriteEventDispatcher
+from blatann.services import DecodedReadWriteEventDispatcher, DecodedReadCompleteEventArgs, DecodedWriteEventArgs
 from blatann.services.current_time.constants import *
 from blatann.services.current_time.data_types import *
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
-from blatann.waitables.event_waitable import IdBasedEventWaitable
+from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ class CurrentTimeServer(object):
         logger.info(event_args)
 
     @property
-    def is_writable(self):
+    def is_writable(self) -> bool:
         """
         Gets whether or not the service was configured to allow writes to the Current Time and Local Time Info
         characteristics
@@ -81,36 +82,32 @@ class CurrentTimeServer(object):
         return self._is_writable
 
     @property
-    def has_local_time_info(self):
+    def has_local_time_info(self) -> bool:
         """
         Gets whether or not the service was configured to show the Local Time Info characteristic
         """
         return self._has_local_time_info
 
     @property
-    def has_reference_time_info(self):
+    def has_reference_time_info(self) -> bool:
         """
         Gets whether or not the service was configured to show the Reference Time Info characteristic
         """
         return self._has_ref_time_info
 
     @property
-    def on_current_time_write(self):
+    def on_current_time_write(self) -> Event[CurrentTimeServer, DecodedWriteEventArgs[CurrentTime]]:
         """
         Event that is triggered when a client writes to the Current Time Characteristic.
         Event emits a DecodedWriteEventArgs argument where the value is of type current_time.CurrentTime
-
-        :rtype: Event
         """
         return self._on_current_time_write_event
 
     @property
-    def on_local_time_info_write(self):
+    def on_local_time_info_write(self) -> Event[CurrentTimeServer, DecodedWriteEventArgs[LocalTimeInfo]]:
         """
         Event that is triggered when a client writes to the Local Time Info Characteristic (if present).
         Event emits a DecodedWriteEventArgs argument where the value is of type current_time.LocalTimeInfo
-
-        :rtype: Event
         """
         return self._on_local_time_info_write_event
 
@@ -230,54 +227,59 @@ class CurrentTimeClient(object):
                                                                     self._on_reference_info_updated_event, logger)
 
     @property
-    def on_current_time_updated(self):
+    def on_current_time_updated(self) -> Event[CurrentTimeClient, DecodedReadCompleteEventArgs[CurrentTime]]:
         """
-        :rtype: Event
+        Event triggered when the server has updated its current time
         """
         return self._on_current_time_updated_event
 
     @property
-    def on_local_time_info_updated(self):
+    def on_local_time_info_updated(self) -> Event[CurrentTimeClient, DecodedReadCompleteEventArgs[LocalTimeInfo]]:
         """
-        :rtype: Event
+        Event triggered when the server has updated its local time info
         """
         return self._on_local_time_info_updated_event
 
     @property
-    def on_reference_info_updated(self):
+    def on_reference_info_updated(self) -> Event[CurrentTimeClient, DecodedReadCompleteEventArgs[ReferenceTimeInfo]]:
         """
-        :rtype: Event
+        Event triggered when the server has updated its reference time info
         """
         return self._on_reference_info_updated_event
 
     @property
-    def has_local_time_info(self):
+    def has_local_time_info(self) -> bool:
         return self._local_time_info_char is not None
 
     @property
-    def has_reference_info(self):
+    def has_reference_info(self) -> bool:
         return self._ref_info_char is not None
 
     @property
-    def can_enable_notifications(self):
+    def can_enable_notifications(self) -> bool:
         return self._current_time_char.subscribable
 
     @property
-    def can_set_current_time(self):
+    def can_set_current_time(self) -> bool:
         return self._current_time_char.writable
 
     @property
-    def can_set_local_time_info(self):
+    def can_set_local_time_info(self) -> bool:
         if not self.has_local_time_info:
             return False
         return self._local_time_info_char.writable
 
-    def read_time(self):
+    def read_time(self) -> EventWaitable[CurrentTimeClient, DecodedReadCompleteEventArgs[CurrentTime]]:
+        """
+        Reads the time from the server
+        """
         event = self._current_time_char.read().then(self._current_time_dispatcher)
         return IdBasedEventWaitable(self._on_current_time_updated_event, event.id)
 
     def set_time(self, date, adjustment_reason=None):
         """
+        Sets the time on the server to the datetime provided
+
         :type date: datetime.datetime
         :type adjustment_reason: AdjustmentReason
         """

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import binascii
 import logging
 from blatann.services.battery.constants import *
@@ -28,18 +29,18 @@ class BatteryServer(object):
         self._batt_characteristic = service.add_characteristic(BATTERY_LEVEL_CHARACTERISTIC_UUID,
                                                                battery_level_char_props)
 
-    def set_battery_level(self, battery_percent, notify_client=True):
+    def set_battery_level(self, battery_percent: int, notify_client=True):
         """
         Sets the new battery level in the service
 
-        :param battery_percent: The new battery percent (integer)
+        :param battery_percent: The new battery percent
         :param notify_client: Whether or not to notify the connected client with the updated value
         """
         battery_percent = int(battery_percent)
         if battery_percent < 0 or battery_percent > 100:
             raise ValueError("Battery % must be between 0 and 100, got {}".format(battery_percent))
         notify_client = notify_client and self._batt_characteristic.notifiable
-        self._batt_characteristic.set_value(BatteryLevel.encode(battery_percent), notify_client)
+        return self._batt_characteristic.set_value(BatteryLevel.encode(battery_percent), notify_client)
 
     @classmethod
     def add_to_database(cls, gatts_database, enable_notifications=False, security_level=SecurityLevel.OPEN):
@@ -59,32 +60,29 @@ class BatteryClient(object):
         self._batt_characteristic = gattc_service.find_characteristic(BATTERY_LEVEL_CHARACTERISTIC_UUID)
         self._on_battery_level_updated_event = EventSource("Battery Level Update Event")
 
-    def read(self):
+    def read(self) -> EventWaitable[BatteryClient, DecodedReadCompleteEventArgs[int]]:
         """
         Reads the Battery level characteristic.
 
         :return: A waitable for when the read completes, which waits for the on_battery_level_update_event to be
                  emitted
-        :rtype: EventWaitable
         """
         self._batt_characteristic.read().then(self._on_read_complete)
         return EventWaitable(self._on_battery_level_updated_event)
 
     @property
-    def on_battery_level_updated(self):
+    def on_battery_level_updated(self) -> Event[BatteryClient, DecodedReadCompleteEventArgs[int]]:
         """
         Event that is generated whenever the battery level on the peripheral is updated, whether
         it is by notification or from reading the characteristic itself.
 
         The DecodedReadCompleteEventArgs value given is the integer battery percent received. If the read failed
         or failed to decode, the value will be equal to the raw bytes received.
-
-        :rtype: Event
         """
         return self._on_battery_level_updated_event
 
     @property
-    def can_enable_notifications(self):
+    def can_enable_notifications(self) -> bool:
         """
         Checks if the battery level characteristic allows notifications to be subscribed to
 
