@@ -1,8 +1,9 @@
+from __future__ import annotations
 import logging
 import threading
 import enum
 
-from blatann.event_type import EventSource
+from blatann.event_type import EventSource, Event
 from blatann.gap import smp
 from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events
@@ -145,29 +146,27 @@ class Peer(object):
     """
 
     @property
-    def on_connect(self):
+    def on_connect(self) -> Event[Peer, None]:
         """
         Event generated when the peer connects to the local device
 
         Event Args: None
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_connect
 
     @property
-    def on_disconnect(self):
+    def on_disconnect(self) -> Event[Peer, DisconnectionEventArgs]:
         """
         Event generated when the peer disconnects from the local device
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_disconnect
 
     @property
-    def on_mtu_exchange_complete(self):
+    def on_mtu_exchange_complete(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
         Event generated when an MTU exchange completes with the peer
 
@@ -177,7 +176,7 @@ class Peer(object):
         return self._on_mtu_exchange_complete
 
     @property
-    def on_mtu_size_updated(self):
+    def on_mtu_size_updated(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
         Event generated when the effective MTU size has been updated on the connection.
 

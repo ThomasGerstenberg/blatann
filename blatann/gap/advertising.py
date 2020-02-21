@@ -23,11 +23,12 @@ class Advertiser(object):
         :type client: blatann.peer.Client
         """
         self.ble_device = ble_device
-        self.advertising = False
+        self._is_advertising = False
         self._auto_restart = False
         self.client = client
         self.ble_device.ble_driver.event_subscribe(self._handle_adv_timeout, nrf_events.GapEvtTimeout)
         self.client.on_disconnect.register(self._handle_disconnect)
+        self.client.on_connect.register(self._handle_connect)
         self._on_advertising_timeout = EventSource("Advertising Timeout", logger)
         self._advertise_interval = 100
         self._timeout = self.ADVERTISE_FOREVER
@@ -44,6 +45,10 @@ class Advertiser(object):
         :rtype: Event
         """
         return self._on_advertising_timeout
+
+    @property
+    def is_advertising(self):
+        return self._is_advertising
 
     def set_advertise_data(self, advertise_data=AdvertisingData(), scan_response=AdvertisingData()):
         """
@@ -96,7 +101,7 @@ class Advertiser(object):
                  Waitable Returns a peer.Client() object
         :rtype: ClientConnectionWaitable
         """
-        if self.advertising:
+        if self._is_advertising:
             self._stop()
         if adv_interval_ms is None:
             adv_interval_ms = self._advertise_interval
@@ -116,7 +121,7 @@ class Advertiser(object):
 
         logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, auto_restart))
         self.ble_device.ble_driver.ble_gap_adv_start(params, self._conn_tag)
-        self.advertising = True
+        self._is_advertising = True
         return ClientConnectionWaitable(self.ble_device, self.client)
 
     def stop(self):
@@ -127,9 +132,9 @@ class Advertiser(object):
         self._stop()
 
     def _stop(self):
-        if not self.advertising:
+        if not self._is_advertising:
             return
-        self.advertising = False
+        self._is_advertising = False
         try:
             self.ble_device.ble_driver.ble_gap_adv_stop()
         except Exception:
@@ -140,14 +145,14 @@ class Advertiser(object):
         :type event: nrf_events.GapEvtTimeout
         """
         if event.src == nrf_events.BLEGapTimeoutSrc.advertising:
-            self.advertising = False
+            self._is_advertising = False
             self._on_advertising_timeout.notify(self)
             if self._auto_restart:
                 self.start()
 
-    def _handle_disconnect(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtDisconnected
-        """
+    def _handle_connect(self, peer, event):
+        self._is_advertising = False
+
+    def _handle_disconnect(self, peer, event):
         if self._auto_restart:
             self.start()

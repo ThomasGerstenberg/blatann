@@ -24,7 +24,7 @@ This library has been tested using both the nRF52 Dev Kits, the nRF52840 USB Don
 \* I have not personally tested the nRF52840 compatibility for v0.2.x, only heard second-hand accounts of it working. v0.3+ has been tested with the nRF52840 USB Dongle
 
 When using the nRF52840, it should be flashed using the S132/SoftDevice v5 connectivity images. Both hex files and DFU packages are distributed by default
-with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.1) and also inside `pc-ble-driver-py` install, allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop)
+with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.1) and is also bundled with `pc-ble-driver-py` install, allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop)
 
 ### Roadmap
 
@@ -95,8 +95,9 @@ with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-dri
 
 
 The library aims to support both event-driven and procedural program styles. It takes similar paradigms from C#/.NET's event function signatures,
-where event handlers are passed  `object sender, EventArgs e`. In addition, asynchronous function calls return a `Waitable` object which
-can be waited on (with timeout) until the event associated with the function call returns.
+where event handlers are passed  `object sender, EventArgs e` parameters.
+Additionally, all asynchronous function calls return a `Waitable` object which can be waited on (with timeout)
+until the event associated with the function call returns.
 
 **NOTE**
 
