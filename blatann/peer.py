@@ -273,8 +273,8 @@ class Peer(object):
             :param driver:
             :type event: blatann.nrf.nrf_events.BLEEvent
             """
-            logger.debug("Got event: {} for peer {}".format(event, self.conn_handle))
             if self.connected and self.conn_handle == event.conn_handle:
+                logger.debug("Got event: {} for peer {}".format(event, self.conn_handle))
                 func(driver, event)
         return wrapper
 
