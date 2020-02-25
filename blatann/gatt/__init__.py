@@ -105,7 +105,8 @@ class Characteristic(object):
     """
     Abstract class that represents a BLE characteristic (both remote and local)
     """
-    def __init__(self, ble_device, peer, uuid, properties):
+    def __init__(self, ble_device, peer, uuid, properties,
+                 default_string_encoding="utf8"):
         """
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peer
@@ -120,6 +121,23 @@ class Characteristic(object):
         self.cccd_handle = BLE_GATT_HANDLE_INVALID
         self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
         self._properties = properties
+        self._string_encoding = default_string_encoding
+
+    @property
+    def string_encoding(self):
+        """
+        The default method for encoding strings into bytes when a string is provided as a value
+        """
+        return self._string_encoding
+
+    @string_encoding.setter
+    def string_encoding(self, encoding):
+        """
+        Sets how the characteristic value is encoded when provided a string
+
+        :param encoding: the encoding to use (utf8, ascii, etc.)
+        """
+        self._string_encoding = encoding
 
     def __repr__(self):
         return "Characteristic({}, {}".format(self.uuid, self._properties)

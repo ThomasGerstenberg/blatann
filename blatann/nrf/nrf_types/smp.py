@@ -223,7 +223,7 @@ class BLEGapEncryptKey(object):
 class BLEGapIdKey(object):
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 
-    def __init__(self, irk="", peer_addr=None):
+    def __init__(self, irk=b"", peer_addr=None):
         self.irk = irk
         self.peer_addr = peer_addr
 
@@ -248,13 +248,13 @@ class BLEGapIdKey(object):
     def __repr__(self):
         if not self.irk:
             return ""
-        return "irk: {}, peer: {}".format(binascii.hexlify(self.irk), self.peer_addr)
+        return "irk: {}, peer: {}".format(binascii.hexlify(self.key).decode("ascii"), self.peer_addr)
 
 
 class BLEGapPublicKey(object):
     KEY_LENGTH = driver.BLE_GAP_LESC_P256_PK_LEN
 
-    def __init__(self, key=""):
+    def __init__(self, key=b""):
         self.key = key
 
     def to_c(self):
@@ -270,13 +270,13 @@ class BLEGapPublicKey(object):
     def __repr__(self):
         if not self.key:
             return ""
-        return binascii.hexlify(self.key)
+        return binascii.hexlify(self.key).decode("ascii")
 
 
 class BLEGapDhKey(object):
     KEY_LENGTH = driver.BLE_GAP_LESC_DHKEY_LEN
 
-    def __init__(self, key=""):
+    def __init__(self, key=b""):
         self.key = key
 
     def to_c(self):
@@ -293,13 +293,13 @@ class BLEGapDhKey(object):
     def __repr__(self):
         if not self.key:
             return ""
-        return binascii.hexlify(self.key)
+        return binascii.hexlify(self.key).decode("ascii")
 
 
 class BLEGapSignKey(object):
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 
-    def __init__(self, key=""):
+    def __init__(self, key=b""):
         self.key = key
 
     def to_c(self):
@@ -315,7 +315,7 @@ class BLEGapSignKey(object):
     def __repr__(self):
         if not self.key:
             return ""
-        return binascii.hexlify(self.key)
+        return binascii.hexlify(self.key).decode("ascii")
 
 
 class BLEGapSecKeys(object):

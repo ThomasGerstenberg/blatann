@@ -1,7 +1,12 @@
+from typing import TypeVar, Generic, Tuple
 from blatann.waitables.waitable import Waitable
 
 
-class EventWaitable(Waitable):
+TSender = TypeVar("TSender")
+TEvent = TypeVar("TEvent")
+
+
+class EventWaitable(Waitable, Generic[TSender, TEvent]):
     def __init__(self, event):
         """
         :type event: blatann.event_type.Event
@@ -17,7 +22,7 @@ class EventWaitable(Waitable):
     def _on_timeout(self):
         self._event.deregister(self._on_event)
 
-    def wait(self, timeout=None, exception_on_timeout=True):
+    def wait(self, timeout=None, exception_on_timeout=True) -> Tuple[TSender, TEvent]:
         res = super(EventWaitable, self).wait(timeout, exception_on_timeout)
         if res is None:  # Timeout, send None, None for the sender and event_args
             return None, None

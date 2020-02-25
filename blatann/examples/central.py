@@ -6,7 +6,7 @@ before moving on to the rest of the program
 This is designed to work alongside the peripheral example running on a separate nordic chip
 """
 import struct
-from blatann import BleDevice, uuid
+from blatann import BleDevice
 from blatann.gap import smp
 from blatann.examples import example_utils, constants
 from blatann.nrf import nrf_events
@@ -21,6 +21,7 @@ def on_counting_char_notification(characteristic, event_args):
     the value and logs it out
 
     :param characteristic: The characteristic the notification was on (counting characteristic)
+    :type characteristic: blatann.gatt.gattc.GattcCharacteristic
     :param event_args: The event arguments
     :type event_args: blatann.event_args.NotificationReceivedEventArgs
     """
@@ -76,7 +77,7 @@ def main(serial_port):
         :param passkey_event_args:
         :type passkey_event_args: blatann.event_args.PasskeyEntryEventArgs
         """
-        passkey = raw_input("Enter peripheral passkey: ")
+        passkey = input("Enter peripheral passkey: ")
         passkey_event_args.resolve(passkey)
 
     # Setup the security parameters
@@ -84,7 +85,7 @@ def main(serial_port):
                                       bond=False, out_of_band=False)
     # Register the callback for when a passkey needs to be entered by the user
     peer.security.on_passkey_required.register(on_passkey_entry)
-    # Wait up to 60 secomds for the pairing process
+    # Wait up to 60 seconds for the pairing process
     peer.security.pair().wait(60)
 
     # Find the counting characteristic
@@ -101,7 +102,7 @@ def main(serial_port):
     if hex_convert_char:
         # Generate some data ABCDEFG... Then, incrementally send increasing lengths of strings.
         # i.e. first send 'A', then 'AB', then 'ABC'...
-        data_to_convert = bytearray(ord('A') + i for i in range(12))
+        data_to_convert = bytes(ord('A') + i for i in range(12))
         for i in range(len(data_to_convert)):
             data_to_send = data_to_convert[:i+1]
             logger.info("Converting to hex data: '{}'".format(data_to_send))
@@ -114,7 +115,7 @@ def main(serial_port):
             # Write was successful, when we read the characteristic the peripheral should have converted the string
             # Once again, initiate a read and wait up to 5 seconds for the read to complete
             char, event_args = hex_convert_char.read().wait(5, False)
-            logger.info("Hex: '{}'".format(event_args.value))
+            logger.info("Hex: '{}'".format(event_args.value.decode("ascii")))
     else:
         logger.warning("Failed to find hex convert char")
 
@@ -125,4 +126,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM4")
+    main("COM9")

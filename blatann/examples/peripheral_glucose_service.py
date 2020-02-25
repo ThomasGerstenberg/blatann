@@ -69,7 +69,7 @@ def display_passkey(peer, event_args):
     if not event_args.match_request:
         logger.info("Passkey: {}".format(event_args.passkey))
     else:
-        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
+        response = input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
         match_confirmed = response.lower().startswith("y")
         event_args.match_confirm(match_confirmed)
 
@@ -158,4 +158,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM5")
+    main("COM8")

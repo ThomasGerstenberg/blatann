@@ -39,8 +39,8 @@ def lesc_pubkey_from_raw(raw_key, little_endian=True):
     Converts from raw (x, y) bytes to a public key that can be used for the DH request
     """
     key_len = len(raw_key)
-    x_raw = raw_key[:key_len/2]
-    y_raw = raw_key[key_len/2:]
+    x_raw = raw_key[:key_len//2]
+    y_raw = raw_key[key_len//2:]
 
     # Nordic transmits keys in little-endian, convert to big-endian
     if little_endian:
@@ -55,8 +55,8 @@ def lesc_pubkey_from_raw(raw_key, little_endian=True):
 
 def lesc_privkey_from_raw(raw_priv_key, raw_pub_key, little_endian=True):
     key_len = len(raw_pub_key)
-    x_raw = raw_pub_key[:key_len/2]
-    y_raw = raw_pub_key[key_len/2:]
+    x_raw = raw_pub_key[:key_len//2]
+    y_raw = raw_pub_key[key_len//2:]
 
     if little_endian:
         x_raw = x_raw[::-1]
@@ -110,7 +110,7 @@ def ble_ah(key, p_rand):
         raise ValueError("Prand must be a str or bytes of length 3")
 
     # prepend the prand with 0's to fill up a 16-byte block
-    p_rand = chr(0) * 13 + p_rand
+    p_rand = b"\x00" * 13 + p_rand
 
     cipher = Cipher(algorithms.AES(key), modes.ECB(), _backend)
     encryptor = cipher.encryptor()
@@ -133,20 +133,21 @@ def private_address_resolves(peer_addr, irk):
     :return: True if it resolves, False if not
     """
     # prand consists of the first 3 MSB bytes of the peer address
-    p_rand = str(bytearray(peer_addr.addr[:3]))
+    p_rand = bytes(peer_addr.addr[:3])
     # the calculated hash is the last 3 LSB bytes of the peer address
-    addr_hash = str(bytearray(peer_addr.addr[3:]))
+    addr_hash = bytes(peer_addr.addr[3:])
     # IRK is stored in little-endian bytearray, convert to string and reverse
-    irk = str(irk)[::-1]
+    irk = bytes(irk)[::-1]
     local_hash = ble_ah(irk, p_rand)
     return local_hash == addr_hash
 
 
 # BLE LESC Debug keys, defined in the Core Bluetooth Specification v4.2 Vol.3, Part H, Section 2.3.5.6.1
 # Keys are in big-endian
-_LESC_DEBUG_PRIVATE_KEY_RAW = "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd".decode("hex")
-_LESC_DEBUG_PUBLIC_KEY_X_RAW = "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6".decode("hex")
-_LESC_DEBUG_PUBLIC_KEY_Y_RAW = "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b".decode("hex")
+
+_LESC_DEBUG_PRIVATE_KEY_RAW = binascii.unhexlify("3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd")
+_LESC_DEBUG_PUBLIC_KEY_X_RAW = binascii.unhexlify("20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6")
+_LESC_DEBUG_PUBLIC_KEY_Y_RAW = binascii.unhexlify("dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b")
 _LESC_DEBUG_PUBLIC_KEY_RAW = _LESC_DEBUG_PUBLIC_KEY_X_RAW + _LESC_DEBUG_PUBLIC_KEY_Y_RAW
 
 LESC_DEBUG_PRIVATE_KEY = lesc_privkey_from_raw(_LESC_DEBUG_PRIVATE_KEY_RAW, _LESC_DEBUG_PUBLIC_KEY_RAW, little_endian=False)

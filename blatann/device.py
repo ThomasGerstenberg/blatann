@@ -3,7 +3,7 @@ from threading import Lock
 
 from blatann import peer, exceptions
 from blatann.gap import advertising, scanning, default_bond_db
-from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE
+from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
@@ -82,12 +82,13 @@ class _UuidManager(object):
 
 
 class BleDevice(NrfDriverObserver):
-    def __init__(self, comport="COM1", baud=115200, log_driver_comms=False):
+    def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False):
         self.ble_driver = NrfDriver(comport, baud, log_driver_comms)
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
         self._ble_configuration = self.ble_driver.ble_enable_params_setup()
+        self._default_conn_config = nrf_types.BleConnConfig()
 
         self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader()
         self.bond_db = default_bond_db.DefaultBondDatabase()
@@ -97,22 +98,25 @@ class BleDevice(NrfDriverObserver):
         self.connecting_peripheral = None
 
         self.uuid_manager = _UuidManager(self.ble_driver)
-        self.advertiser = advertising.Advertiser(self, self.client)
+        self.advertiser = advertising.Advertiser(self, self.client, self._default_conn_config.conn_tag)
         self.scanner = scanning.Scanner(self)
         self._db = gatts.GattsDatabase(self, self.client)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
+        self._att_mtu_max = MTU_SIZE_MINIMUM
 
     def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
                   max_connected_clients=1, max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE):
+                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE, device_name=""):
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
+        if device_name and isinstance(device_name, str):
+            device_name = device_name.encode("utf8")
 
-        self._ble_configuration = nrf_types.BLEEnableParams(vendor_specific_uuid_count, service_changed,
-                                                            max_connected_clients, max_connected_peripherals,
-                                                            max_secured_peripherals, attribute_table_size,
-                                                            att_mtu_max_size)
+        self._ble_configuration = nrf_types.BleEnableConfig(vendor_specific_uuid_count, max_connected_clients,
+                                                            max_connected_peripherals, max_secured_peripherals,
+                                                            service_changed, attribute_table_size, device_name)
+        self._default_conn_config.max_att_mtu = att_mtu_max_size
 
     def open(self, clear_bonding_data=False):
         if clear_bonding_data:
@@ -120,6 +124,8 @@ class BleDevice(NrfDriverObserver):
         else:
             self.bond_db = self.bond_db_loader.load()
         self.ble_driver.open()
+        self._default_conn_config.conn_count = self._ble_configuration.central_role_count + self._ble_configuration.periph_role_count
+        self.ble_driver.ble_conn_configure(self._default_conn_config)
         self.ble_driver.ble_enable(self._ble_configuration)
 
     def close(self):
@@ -172,7 +178,7 @@ class BleDevice(NrfDriverObserver):
 
         :rtype: int
         """
-        return self._ble_configuration.att_mtu_max
+        return self._default_conn_config.max_att_mtu
 
     def connect(self, peer_address, connection_params=None):
         """
@@ -198,7 +204,8 @@ class BleDevice(NrfDriverObserver):
 
         self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params)
         periph_connection_waitable = PeripheralConnectionWaitable(self, self.connecting_peripheral)
-        self.ble_driver.ble_gap_connect(peer_address)
+        self.ble_driver.ble_gap_connect(peer_address, conn_params=connection_params,
+                                        conn_cfg_tag=self._default_conn_config.conn_tag)
         return periph_connection_waitable
 
     def set_default_peripheral_connection_params(self, min_interval_ms, max_interval_ms, timeout_ms, slave_latency=0):

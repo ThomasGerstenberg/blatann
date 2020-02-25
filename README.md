@@ -12,18 +12,25 @@ and the associated Connectivity firmware.
 
 #### Supported Devices/Software
 
-This has been tested using both the nRF52832 Dev Kit and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
+This library has been tested using both the nRF52 Dev Kits, the nRF52840 USB Dongle and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
 
-This API implements against Connectivity Firmware for SoftDevice v3 (nRF5 SDK version 12.3). This does NOT support the nRF51 or SoftDevice v2.
-Additionally the nRF52840 is not compatible since it is not supported by this version of the SoftDevice.
+**Supported Versions:**
 
-Currently only Python 2.7 is supported. This is a limitation of the `pc-ble-driver-py` library only building the SWIG modules for v2.
-If the aforementioned library ever supports Python 3+, this library will be updated also. Or, if I find spare time and this library
-is stable I'll work on building the modules myself and remove pc-ble-driver-py as a dependency altogether.
+| Blatann Version | Python Version | SoftDevice Version | pc-ble-driver-py Version | Supported Devices                                                                                    |
+|-----------------|----------------|--------------------|--------------------------|------------------------------------------------------------------------------------------------------|
+| v0.2.x          | 2.7 Only       | v3                 | <=0.11.4                 | nRF52832 Dev Kit<br>ABSniffer BLE Dongle<br>nRF52840 Dev Kit/Dongle (using S132 connectivity image)* |
+| v0.3+           | 3.7+           | v5                 | \>=0.12.0                | Same as above                                                                                        |
 
+\* I have not personally tested the nRF52840 compatibility for v0.2.x, only heard second-hand accounts of it working. v0.3+ has been tested with the nRF52840 USB Dongle
+
+When using the nRF52840, it should be flashed using the S132/SoftDevice v5 connectivity images. Both hex files and DFU packages are distributed by default
+with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.1) and is also bundled with `pc-ble-driver-py` install, allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop)
 
 ### Roadmap
 
+- [ ] Documentation
+    - [ ] ReadTheDocs integration (started, needs refinement)
+    - [ ] Better type hinting
 - [ ] GAP
     - [X] BLE Enable parameters
     - [X] BLE Connection parameters (functional, needs some work)
@@ -88,8 +95,9 @@ is stable I'll work on building the modules myself and remove pc-ble-driver-py a
 
 
 The library aims to support both event-driven and procedural program styles. It takes similar paradigms from C#/.NET's event function signatures,
-where event handlers are passed  `object sender, EventArgs e`. In addition, asynchronous function calls return a `Waitable` object which
-can be waited on (with timeout) until the event associated with the function call returns.
+where event handlers are passed  `object sender, EventArgs e` parameters.
+Additionally, all asynchronous function calls return a `Waitable` object which can be waited on (with timeout)
+until the event associated with the function call returns.
 
 **NOTE**
 

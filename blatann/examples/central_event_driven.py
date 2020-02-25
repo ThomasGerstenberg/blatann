@@ -41,7 +41,7 @@ class HexConverterTest(object):
         self.waitable = waitable
         self.i = 1
         # Generate some data, "ABCDEFG..."
-        self.data_to_convert = bytearray(ord('A') + i for i in range(12))
+        self.data_to_convert = bytes(ord('A') + i for i in range(12))
 
     def start(self):
         """
@@ -74,7 +74,7 @@ class HexConverterTest(object):
         :param event_args: The read event args
         :type event_args: blatann.event_args.ReadCompleteEventArgs
         """
-        logger.info("Hex: '{}'".format(event_args.value))
+        logger.info("Hex: '{}'".format(event_args.value.decode("ascii")))
         self.i += 1
         if self.i > len(self.data_to_convert):
             # Done, notify the main thread that we are done
@@ -149,7 +149,7 @@ class MyPeripheralConnection(object):
         :param event_args: The event args
         :type event_args: blatann.event_args.PasskeyEntryEventArgs
         """
-        passkey = raw_input("Enter peripheral passkey: ")
+        passkey = input("Enter peripheral passkey: ")
         event_args.resolve(passkey)
 
     def _on_pair_complete(self, peer, event_args):
@@ -184,7 +184,7 @@ class MyPeripheralConnection(object):
             """
         # Unpack as a little-endian, 4-byte integer
         current_count = struct.unpack("<I", event_args.value)[0]
-        logger.info("Counting char notification. Curent count: {}".format(current_count))
+        logger.info("Counting char notification. Current count: {}".format(current_count))
 
 
 class ConnectionManager(object):
@@ -280,4 +280,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM4")
+    main("COM9")

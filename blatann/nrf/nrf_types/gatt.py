@@ -1,6 +1,5 @@
 from enum import Enum
 import logging
-from types import NoneType
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
@@ -8,6 +7,8 @@ from blatann.nrf.nrf_types.smp import *
 from blatann.nrf.nrf_types.enums import *
 
 logger = logging.getLogger(__name__)
+
+NoneType = type(None)
 
 
 BLE_GATT_HANDLE_INVALID = driver.BLE_GATT_HANDLE_INVALID
@@ -68,7 +69,7 @@ class BLEGattService(object):
         self.uuid = uuid
         self.start_handle = start_handle
         self.end_handle = end_handle
-        self.chars = list()
+        self.chars = []
 
     @classmethod
     def from_c(cls, gattc_service):
@@ -81,6 +82,10 @@ class BLEGattService(object):
         self.chars.append(char)
         if len(self.chars) > 1:
             self.chars[-2].end_handle = char.handle_decl - 1
+
+    def __repr__(self):
+        return "{}(uuid={}, start_handle={}, end_handle={})".format(self.__class__.__name__, self.uuid,
+                                                                    self.start_handle, self.end_handle)
 
 
 class BLEGattCharacteristic(object):
@@ -102,6 +107,12 @@ class BLEGattCharacteristic(object):
                    handle_decl=gattc_char.handle_decl,
                    handle_value=gattc_char.handle_value,
                    char_props=BLEGattCharacteristicProperties.from_c(gattc_char.char_props))
+
+    def __repr__(self):
+        return "{}(uuid={}, handle_decl={}, handle_value={}, data_decl={}, data_value={}, end_handle={})".format(
+            self.__class__.__name__, self.uuid, self.handle_decl, self.handle_value,
+            self.data_decl, self.data_value, self.end_handle
+        )
 
 
 class BleGattHandle(object):

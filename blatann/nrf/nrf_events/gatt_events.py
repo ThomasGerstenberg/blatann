@@ -40,7 +40,7 @@ class GattcEvtReadResponse(GattcEvt):
         if status == BLEGattStatusCode.read_not_permitted:
             self.data = None
         elif isinstance(data, str):
-            self.data = map(ord, data)
+            self.data = list(map(ord, data))
         else:
             self.data = data
 
@@ -73,7 +73,7 @@ class GattcEvtHvx(GattcEvt):
         self.attr_handle = attr_handle
         self.hvx_type = hvx_type
         if isinstance(data, str):
-            self.data = map(ord, data)
+            self.data = list(map(ord, data))
         else:
             self.data = data
 
@@ -105,7 +105,7 @@ class GattcEvtWriteResponse(GattcEvt):
         self.write_op = write_op
         self.offset = offset
         if isinstance(data, str):
-            self.data = map(ord, data)
+            self.data = list(map(ord, data))
         else:
             self.data = data
 
@@ -248,6 +248,22 @@ class GattcEvtMtuExchangeResponse(GattcEvt):
     def __repr__(self):
         return "{}(conn_handle={!r}, server_mtu={})".format(self.__class__.__name__, self.conn_handle, self.server_mtu)
 
+
+class GattcEvtTimeout(GattcEvt):
+    evt_id = driver.BLE_GATTC_EVT_TIMEOUT
+
+    def __init__(self, conn_handle, source):
+        super(GattcEvtTimeout, self).__init__(conn_handle)
+        self.source = source
+
+    @classmethod
+    def from_c(cls, event):
+        source = event.evt.gattc_evt.params.timeout.src
+        return cls(event.evt.gattc_evt.conn_handle, source)
+
+    def __repr__(self):
+        return self._repr_format(source=self.source)
+
 """
 GATTS Events
 """
@@ -362,6 +378,22 @@ class GattsEvtHandleValueConfirm(GattsEvt):
         return "{}(conn_handle={!r}, attr_handle={!r})".format(self.__class__.__name__, self.conn_handle, self.attribute_handle)
 
 
+class GattsEvtNotificationTxComplete(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
+
+    def __init__(self, conn_handle, tx_count):
+        super(GattsEvtNotificationTxComplete, self).__init__(conn_handle)
+        self.tx_count = tx_count
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gatts_evt.conn_handle
+        return cls(conn_handle, event.evt.gatts_evt.params.hvn_tx_complete.count)
+
+    def __repr__(self):
+        return self._repr_format(tx_count=self.tx_count)
+
+
 class GattsEvtExchangeMtuRequest(GattsEvt):
     evt_id = driver.BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
 
@@ -378,18 +410,17 @@ class GattsEvtExchangeMtuRequest(GattsEvt):
         return "{}(conn_handle={!r}, client_mtu={!r})".format(self.__class__.__name__, self.conn_handle, self.client_mtu)
 
 
-# This isn't present in v3.0 of the softdevice. I was looking at the 4.0 softdevice headers :/
-# class GattsEvtNotificationTxComplete(GattsEvt):
-#     evt_id = driver.BLE_GATTS_EVT_HVN_TX_COMPLETE
-#
-#     def __init__(self, conn_handle, count):
-#         super(GattsEvtNotificationTxComplete, self).__init__(conn_handle)
-#         self.count = count
-#
-#     @classmethod
-#     def from_c(cls, event):
-#         conn_handle = event.evt.gatts_evt.conn_handle
-#         return cls(conn_handle, event.evt.gatts_evt.hvn_tx_complete.count)
-#
-#     def __repr__(self):
-#         return "{}(conn_handle={!r}, count={!r})".format(self.__class__.__name__, self.conn_handle, self.count)
+class GattsEvtTimeout(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_TIMEOUT
+
+    def __init__(self, conn_handle, source):
+        super(GattsEvtTimeout, self).__init__(conn_handle)
+        self.source = source
+
+    @classmethod
+    def from_c(cls, event):
+        source = event.evt.gatts_evt.params.timeout.src
+        return cls(event.evt.gatts_evt.conn_handle, source)
+
+    def __repr__(self):
+        return self._repr_format(source=self.source)

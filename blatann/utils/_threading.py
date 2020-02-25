@@ -4,14 +4,14 @@ import threading
 def _or(self, other):
     if isinstance(self, _OrEvent):
         events = self.events[:]
-    elif isinstance(self, threading._Event):
+    elif isinstance(self, threading.Event):
         events = [self]
     else:
         raise ValueError("Incompatible Event type to OR with")
 
     if isinstance(other, _OrEvent):
         events.extend(other.events)
-    elif isinstance(other, threading._Event):
+    elif isinstance(other, threading.Event):
         events.append(other)
     else:
         raise ValueError("Incompatible Event type to OR with")
@@ -31,7 +31,7 @@ def _or_clear(self):
         h()
 
 
-class _OrEvent(threading._Event):
+class _OrEvent(threading.Event):
     def __init__(self, *events):
         super(_OrEvent, self).__init__()
         self.events = []
@@ -67,4 +67,4 @@ class _OrEvent(threading._Event):
         return _or(self, other)
 
 
-threading._Event.__or__ = _or
+threading.Event.__or__ = _or

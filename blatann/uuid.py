@@ -1,4 +1,5 @@
 import re
+import binascii
 from blatann.nrf.nrf_types import BLEUUID as _BLEUUID
 
 
@@ -27,19 +28,19 @@ class Uuid128(Uuid):
         r = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
         if not r.match(uuid):
             raise ValueError("Invalid UUID String. Must be in format of '00112233-aabb-ccdd-eeff-445566778899")
-        return [ord(o) for o in uuid.replace("-", "").decode("hex")]
+        return binascii.unhexlify(uuid.replace("-", ""))
 
     def _validate_uuid_list(self, uuid):
         if len(uuid) != 16:
             raise ValueError("UUID Must be 16 bytes long")
-        uuid = "".join(chr(u) for u in uuid).encode("hex")
+        uuid = binascii.hexlify(bytes(uuid)).decode("ascii")
         uuid_sections = uuid[:8], uuid[8:12], uuid[12:16], uuid[16:20], uuid[20:32]
 
         return "{}-{}-{}-{}-{}".format(*uuid_sections)
 
     @property
     def uuid_base(self):
-        uuid_base = self.uuid[:]
+        uuid_base = list(self.uuid[:])
         uuid_base[2] = 0
         uuid_base[3] = 0
         return uuid_base
@@ -53,7 +54,7 @@ class Uuid128(Uuid):
             uuid16 = int(uuid16, 16)
         elif isinstance(uuid16, Uuid16):
             uuid16 = uuid16.uuid
-        if not isinstance(uuid16, (int, long)) or uuid16 > 0xFFFF:
+        if not isinstance(uuid16, int) or uuid16 > 0xFFFF:
             raise ValueError("UUID must be specified as a 16-bit number (0 - 0xFFFF) or a 4 character hex-string")
         uuid = self.uuid_base
         uuid[2] = uuid16 >> 8 & 0xFF
@@ -73,7 +74,7 @@ class Uuid16(Uuid):
     def __init__(self, uuid):
         if isinstance(uuid, str):
             uuid = int(uuid, 16)
-        if not isinstance(uuid, (int, long)) or uuid > 0xFFFF:
+        if not isinstance(uuid, int) or uuid > 0xFFFF:
             raise ValueError("UUID Must be a valid 16-bit integer")
         super(Uuid16, self).__init__(_BLEUUID(uuid))
         self.uuid = uuid

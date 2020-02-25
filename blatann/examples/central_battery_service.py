@@ -79,7 +79,7 @@ def main(serial_port):
         battery_service.enable_notifications().wait()
 
         wait_duration = 30
-        logger.info("Waiting {} seconds for any battery notifications")
+        logger.info("Waiting {} seconds for any battery notifications".format(wait_duration))
         time.sleep(wait_duration)
 
     # Clean up
@@ -89,4 +89,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM4")
+    main("COM9")

@@ -1,8 +1,9 @@
+from __future__ import annotations
 import logging
 import threading
 import enum
 
-from blatann.event_type import EventSource
+from blatann.event_type import EventSource, Event
 from blatann.gap import smp
 from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events
@@ -145,29 +146,27 @@ class Peer(object):
     """
 
     @property
-    def on_connect(self):
+    def on_connect(self) -> Event[Peer, None]:
         """
         Event generated when the peer connects to the local device
 
         Event Args: None
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_connect
 
     @property
-    def on_disconnect(self):
+    def on_disconnect(self) -> Event[Peer, DisconnectionEventArgs]:
         """
         Event generated when the peer disconnects from the local device
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_disconnect
 
     @property
-    def on_mtu_exchange_complete(self):
+    def on_mtu_exchange_complete(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
         Event generated when an MTU exchange completes with the peer
 
@@ -177,7 +176,7 @@ class Peer(object):
         return self._on_mtu_exchange_complete
 
     @property
-    def on_mtu_size_updated(self):
+    def on_mtu_size_updated(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
         Event generated when the effective MTU size has been updated on the connection.
 
@@ -261,10 +260,11 @@ class Peer(object):
         self._current_connection_params = connection_params
 
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
-        self._ble_device.ble_driver.event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate,
-                                                    nrf_events.GapEvtConnParamUpdateRequest)
+        self.driver_event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate, nrf_events.GapEvtConnParamUpdateRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
+        self.driver_event_subscribe(self._on_data_length_update_request, nrf_events.GapEvtDataLengthUpdateRequest)
+        self.driver_event_subscribe(self._on_phy_update_request, nrf_events.GapEvtPhyUpdateRequest)
         self._on_connect.notify(self)
 
     def _check_driver_event_connection_handle_wrapper(self, func):
@@ -273,8 +273,8 @@ class Peer(object):
             :param driver:
             :type event: blatann.nrf.nrf_events.BLEEvent
             """
-            logger.debug("Got event: {} for peer {}".format(event, self.conn_handle))
             if self.connected and self.conn_handle == event.conn_handle:
+                logger.debug("Got event: {} for peer {}".format(event, self.conn_handle))
                 func(driver, event)
         return wrapper
 
@@ -367,6 +367,12 @@ class Peer(object):
     def _on_mtu_exchange_response(self, driver, event):
         previous, current = self._resolve_mtu_exchange(self._negotiated_mtu_size, event.server_mtu)
         self._on_mtu_exchange_complete.notify(self, MtuSizeUpdatedEventArgs(previous, current))
+
+    def _on_data_length_update_request(self, driver, event):
+        self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle)
+
+    def _on_phy_update_request(self, driver, event):
+        self._ble_device.ble_driver.ble_gap_phy_update(self.conn_handle)
 
     def __nonzero__(self):
         return self.conn_handle != BLE_CONN_HANDLE_INVALID

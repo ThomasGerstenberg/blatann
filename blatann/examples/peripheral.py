@@ -6,6 +6,7 @@ This peripheral can be used with one of the central examples running on a separa
 or can be run with the nRF Connect app to explore the contents of the service
 """
 import atexit
+import binascii
 import struct
 import threading
 import time
@@ -55,9 +56,8 @@ def on_hex_conversion_characteristic_write(characteristic, event_args):
     :param event_args: the event arguments
     :type event_args: blatann.event_args.WriteEventArgs
     """
-    logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid,
-                                                                                   str(event_args.value).encode("hex")))
-    new_value = "{}".format(str(event_args.value).encode("hex"))
+    new_value = binascii.hexlify(event_args.value)
+    logger.info("Got characteristic write - characteristic: {}, data: 0x{}".format(characteristic.uuid, new_value))
     characteristic.set_value(new_value[:characteristic.max_length], notify_client=True)
 
 
@@ -69,7 +69,8 @@ def on_gatts_subscription_state_changed(characteristic, event_args):
     :type characteristic: blatann.gatt.gatts.GattsCharacteristic
     :type event_args: blatann.event_args.SubscriptionStateChangeEventArgs
     """
-    logger.info("Subscription state changed - characteristic: {}, state: {}".format(characteristic.uuid, event_args.subscription_state))
+    logger.info("Subscription state changed - characteristic: {}, state: {}".format(
+        characteristic.uuid, event_args.subscription_state))
 
 
 def on_time_char_read(characteristic, event_args):
@@ -112,9 +113,22 @@ def on_passkey_display(peer, event_args):
     """
     logger.info("Passkey display: {}, match: {}".format(event_args.passkey, event_args.match_request))
     if event_args.match_request:
-        response = raw_input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
+        response = input("Passkey: {}, do both devices show same passkey? [y/n]\n".format(event_args.passkey))
         match = response.lower().startswith("y")
         event_args.match_confirm(match)
+
+
+def on_passkey_entry(peer, passkey_event_args):
+    """
+    Callback for when the user is requested to enter a passkey to resume the pairing process.
+    Requests the user to enter the passkey and resolves the event with the passkey entered
+
+    :param peer: the peer the passkey is for
+    :param passkey_event_args:
+    :type passkey_event_args: blatann.event_args.PasskeyEntryEventArgs
+    """
+    passkey = input("Enter passkey: ")
+    passkey_event_args.resolve(passkey)
 
 
 class CountingCharacteristicThread(object):
@@ -160,7 +174,7 @@ class CountingCharacteristicThread(object):
     def run(self):
         while not self._stop_event.is_set():
             try:
-                if not self.characteristic.client_subscribed: # Do nothing until a client is subscribed
+                if not self.characteristic.client_subscribed:  # Do nothing until a client is subscribed
                     time.sleep(1)
                     continue
                 # Increment the value and pack it
@@ -182,13 +196,15 @@ class CountingCharacteristicThread(object):
 def main(serial_port):
     # Create and open the device
     ble_device = BleDevice(serial_port)
+    ble_device.configure()
     ble_device.open()
 
     # Set up desired security parameters
     ble_device.client.security.set_security_params(passcode_pairing=False, bond=False, lesc_pairing=False,
-                                                   io_capabilities=IoCapabilities.KEYBOARD_DISPLAY, out_of_band=False)
+                                                   io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
     ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
+    ble_device.client.security.on_passkey_required.register(on_passkey_entry)
 
     # Create and add the math service
     service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
@@ -236,4 +252,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM5")
+    main("COM8")

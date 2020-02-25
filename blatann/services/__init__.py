@@ -1,3 +1,4 @@
+import binascii
 from blatann.gatt import GattStatusCode
 from blatann.services import ble_data_types
 from blatann.event_args import NotificationReceivedEventArgs, ReadCompleteEventArgs, DecodedReadCompleteEventArgs, \
@@ -18,7 +19,7 @@ class DecodedReadWriteEventDispatcher(object):
         except Exception as e:
             if self.logger:
                 self.logger.error("Failed to decode into {} type, stream: [{}]".format(self.ble_type.__name__,
-                                                                                       data.encode("hex")))
+                                                                                       binascii.hexlify(data)))
                 self.logger.exception(e)
         return None
 

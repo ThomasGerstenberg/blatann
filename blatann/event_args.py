@@ -1,5 +1,9 @@
+from typing import TypeVar, Generic
 from enum import Enum
 from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
+
+
+TDecodedValue = TypeVar("TDecodedValue")
 
 
 class GattOperationCompleteReason(Enum):
@@ -17,7 +21,9 @@ class GattOperationCompleteReason(Enum):
     # The client unsubscribed from the characteristic before the notification was sent
     CLIENT_UNSUBSCRIBED = 4
     # Unknown Failure
-    FAILED = 4
+    FAILED = 5
+    # The peer failed to respond to the ATT operation
+    TIMED_OUT = 6
 
 
 class EventArgs(object):
@@ -121,17 +127,16 @@ class WriteEventArgs(EventArgs):
         self.value = value
 
 
-class DecodedWriteEventArgs(EventArgs):
+class DecodedWriteEventArgs(EventArgs, Generic[TDecodedValue]):
     """
     Event arguments for when a client has written to a characteristic on the local database
     and the value has been decoded into a data type
     """
-    def __init__(self, value, raw_value):
+    def __init__(self, value: TDecodedValue, raw_value: bytes):
         """
         :param value: The decoded value that was written to the characteristic.
                       This parameter's type depends on the characteristic
         :param raw_value: The raw bytes that were written
-        :type raw_value: bytes
         """
         self.value = value
         self.raw_value = raw_value
@@ -252,12 +257,12 @@ class DatabaseDiscoveryCompleteEventArgs(EventArgs):
         self.status = status
 
 
-class DecodedReadCompleteEventArgs(ReadCompleteEventArgs):
+class DecodedReadCompleteEventArgs(ReadCompleteEventArgs, Generic[TDecodedValue]):
     """
     Event Arguments for when a read on a peripheral's characteristic completes and the data stream returned
     is decoded. If unable to decode the value, the bytes read are still returned
     """
-    def __init__(self, read_id, value, status, reason, decoded_stream=None):
+    def __init__(self, read_id, value, status, reason, decoded_stream: TDecodedValue = None):
         """
         :param read_complete_event_args: The read complete event args that this wraps
         :type read_complete_event_args: ReadCompleteEventArgs

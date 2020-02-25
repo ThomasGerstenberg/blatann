@@ -3,16 +3,11 @@ from setuptools import setup, find_packages
 import sys
 
 
-VERSION = "v0.2.8"
+VERSION = "v0.3.0-rc.1"
 
-py2 = sys.version_info[0] == 2
 py3 = sys.version_info[0] == 3
 
-_install_requires = ["pc-ble-driver-py<=0.11.4", "cryptography", "pytz"]
-
-if py2:
-    _install_requires.extend(["enum34"])
-
+_install_requires = ["pc-ble-driver-py>=0.13", "cryptography", "pytz"]
 
 setup(
     name="blatann",
@@ -24,4 +19,5 @@ setup(
     keywords="ble bluetooth nrf52 nordic",
     packages=find_packages(exclude=["test", "test.*"]),
     install_requires=_install_requires,
+    python_requires=">=3.7.*",
 )
