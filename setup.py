@@ -1,11 +1,14 @@
 
 from setuptools import setup, find_packages
-import sys
+from os import path
 
 
-VERSION = "v0.3.0-rc.1"
+VERSION = "v0.3.0-rc.3"
 
-py3 = sys.version_info[0] == 3
+HERE = path.dirname(__file__)
+with open(path.join(HERE, "README.md"), "r", encoding="utf-8") as f:
+    long_description = f.read().replace("\r", "")
+
 
 _install_requires = ["pc-ble-driver-py>=0.13", "cryptography", "pytz"]
 
@@ -20,4 +23,11 @@ setup(
     packages=find_packages(exclude=["test", "test.*"]),
     install_requires=_install_requires,
     python_requires=">=3.7.*",
+    long_description_content_type="text/markdown",
+    long_description=long_description,
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent",
+    ],
 )
