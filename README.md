@@ -110,3 +110,18 @@ There are several example scripts which showcase different functionality of the 
 Examples can be run using `python -m blatann.examples [example_filename] [device_comport]`.
 
 Example usage: `python -m blatann.examples scanner COM3`
+
+### Running Tests
+
+The integrated tests can be ran using the builtin `unittest` runner and depends on a few environment variables to find the connected Nordic devices.
+
+At a minimum, two nordic devices are required to run the unit tests. These are specified using environment variables:
+
+- `BLATANN_DEV_1` - Serial port of the first Nordic device
+- `BLATANN_DEV_2` - Serial port of the second Nordic device
+
+Optionally a third `BLATANN_DEV_3` can be specified to run tests which require more than two devices. If this environment variable is not defined, tests which require 3 devices are skipped.
+
+In order to speed up the tests, `BLATANN_TEST_QUICK=1` can be defined to skip long-running tests. Note that test cases which are defined as "long-running" is subjective and relative--the test suite will still take awhile to run (length TBD), but in general test cases which take longer than 20 seconds are skipped.
+
+The tests can also be ran through the makefile using `make run-tests`.
