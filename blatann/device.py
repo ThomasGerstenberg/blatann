@@ -129,8 +129,9 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.ble_enable(self._ble_configuration)
 
     def close(self):
-        self.bond_db_loader.save(self.bond_db)
-        self.ble_driver.close()
+        if self.ble_driver.is_open:
+            self.ble_driver.close()
+            self.bond_db_loader.save(self.bond_db)
 
     def __del__(self):
         self.close()

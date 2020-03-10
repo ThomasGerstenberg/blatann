@@ -1,5 +1,6 @@
 from typing import TypeVar, Generic, Callable
 from threading import Lock
+import contextlib
 
 TSender = TypeVar("TSender")
 TEvent = TypeVar("TEvent")
@@ -65,3 +66,18 @@ class EventSource(Event):
             except Exception as e:
                 if self._logger:
                     self._logger.exception(e)
+
+
+@contextlib.contextmanager
+def event_subscriber(event: Event, subscriber: Callable):
+    """
+    Helper context which will subscribe a function to an event and deregister it once the context is exited
+
+    :param event: The event to subscribe to
+    :param subscriber: The subscriber function
+    """
+    event.register(subscriber)
+    try:
+        yield
+    finally:
+        event.deregister(subscriber)

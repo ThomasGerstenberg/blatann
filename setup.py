@@ -10,7 +10,9 @@ with open(path.join(HERE, "README.md"), "r", encoding="utf-8") as f:
     long_description = f.read().replace("\r", "")
 
 
-_install_requires = ["pc-ble-driver-py>=0.13", "cryptography", "pytz"]
+with open("requirements.txt") as f:
+    install_requires = [line.strip() for line in f if line.strip()]
+
 
 setup(
     name="blatann",
@@ -20,8 +22,8 @@ setup(
     author="Thomas Gerstenberg",
     email="tgerst6@gmail.com",
     keywords="ble bluetooth nrf52 nordic",
-    packages=find_packages(exclude=["test", "test.*"]),
-    install_requires=_install_requires,
+    packages=find_packages(exclude=["tests", "tests.*"]),
+    install_requires=install_requires,
     python_requires=">=3.7.*",
     long_description_content_type="text/markdown",
     long_description=long_description,

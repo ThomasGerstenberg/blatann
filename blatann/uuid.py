@@ -1,5 +1,6 @@
 import re
 import binascii
+import secrets
 from blatann.nrf.nrf_types import BLEUUID as _BLEUUID
 
 
@@ -9,6 +10,9 @@ class Uuid(object):
 
     def __eq__(self, other):
         return str(self) == str(other)
+
+    def __repr__(self):
+        return str(self)
 
 
 class Uuid128(Uuid):
@@ -81,3 +85,21 @@ class Uuid16(Uuid):
 
     def __str__(self):
         return "{:x}".format(self.uuid)
+
+
+def generate_random_uuid16() -> Uuid16:
+    """
+    Generates a random 16-bit UUID
+
+    :return: The generated 16-bit UUID
+    """
+    return Uuid16(secrets.randbits(16))
+
+
+def generate_random_uuid128() -> Uuid128:
+    """
+    Generates a new, randomized 128-bit UUID
+
+    :return: The generated 128-bit UUID
+    """
+    return Uuid128(list(secrets.randbits(128).to_bytes(16, "little")))
