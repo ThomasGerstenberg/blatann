@@ -21,6 +21,7 @@ class Stopwatch(object):
     def __init__(self):
         self._t_start = 0
         self._t_stop = 0
+        self._t_mark = 0
         self._is_running = False
 
     def start(self):
@@ -32,6 +33,14 @@ class Stopwatch(object):
         if self._is_running:
             self._t_stop = time.time_ns()
             self._is_running = False
+
+    def mark(self):
+        if self._is_running:
+            self._t_mark = time.time_ns()
+
+    @property
+    def is_running(self):
+        return self._is_running
 
     @property
     def start_time(self):
@@ -58,7 +67,9 @@ class Stopwatch(object):
         if self._t_start == 0:
             raise RuntimeError("Timer was never started")
         if self._is_running:
-            return time.time_ns() - self._t_start
+            if self._t_mark == 0:
+                return time.time_ns() - self._t_start
+            return self._t_mark - self._t_start
         return self._t_stop - self._t_start
 
     def __enter__(self):
