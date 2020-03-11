@@ -61,7 +61,7 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
 
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
-        logger.debug("{}{}".format(wrapped.__name__, args))
+        logger.debug("[{}] {}{}".format(instance.serial_port, wrapped.__name__, args))
         result = wrapped(*args, **kwargs)
         if isinstance(result, (list, tuple)):
             err_code = result[0]
@@ -115,6 +115,10 @@ class NrfDriver(object):
         link_layer = driver.sd_rpc_data_link_layer_create_bt_three_wire(phy_layer, 100)
         transport_layer = driver.sd_rpc_transport_layer_create(link_layer, 100)
         self.rpc_adapter = driver.sd_rpc_adapter_create(transport_layer)
+
+    @property
+    def serial_port(self):
+        return self._serial_port
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)

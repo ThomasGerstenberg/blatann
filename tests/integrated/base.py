@@ -5,6 +5,7 @@ from unittest import TestCase, SkipTest
 
 from blatann import BleDevice
 from blatann.gap.default_bond_db import DefaultBondDatabaseLoader
+from blatann.nrf import nrf_events
 from blatann.utils import setup_logger
 
 HERE = os.path.dirname(__file__)
@@ -24,6 +25,7 @@ def _configure_device(dev_number, config, optional=False):
     dev = BleDevice(comport)
     dev.bond_db_loader = DefaultBondDatabaseLoader(BOND_DB_FILE_FMT.format(dev_number))
     dev.configure(**config)
+    dev.event_logger.suppress(nrf_events.GapEvtAdvReport)
     return dev
 
 

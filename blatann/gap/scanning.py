@@ -42,7 +42,7 @@ class Scanner(object):
         """
         return self._on_scan_timeout
 
-    def set_default_scan_params(self, interval_ms=200, window_ms=150, timeout_seconds=10):
+    def set_default_scan_params(self, interval_ms=200, window_ms=150, timeout_seconds=10, active_scanning=True):
         """
         Sets the default scan parameters so they do not have to be specified each time a scan is started.
         Reference the Bluetooth specification for valid ranges for parameters.
@@ -51,10 +51,12 @@ class Scanner(object):
         :param window_ms: How long within a single scan interval to be actively listening for advertising packets,
                           in milliseconds
         :param timeout_seconds: How long to advertise for, in seconds
+        :param active_scanning: Whether or not to fetch scan response packets from advertisers
         """
         self._default_scan_params.interval_ms = interval_ms
         self._default_scan_params.window_ms = window_ms
         self._default_scan_params.timeout_s = timeout_seconds
+        self._default_scan_params.active = active_scanning
 
     def start_scan(self, scan_parameters=None, clear_scan_reports=True):
         """
@@ -80,8 +82,6 @@ class Scanner(object):
         """
         Stops an active scan
         """
-        if not self.scanning:
-            return
         self.scanning = False
 
         try:

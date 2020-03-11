@@ -20,13 +20,25 @@ class Event(Generic[TSender, TEvent]):
     def register(self, handler: Callable[[TSender, TEvent], None]):
         """
         Registers a handler to be called whenever the event is emitted.
-        If the given handler is already registered, function does nothing
+        If the given handler is already registered, function does nothing.
+
+        This function can be used in a `with` context block which will automatically deregister the handler
+        when the context is exited.
+
+        Example usage:
+        ```
+        with device.client.on_connected.register(my_connected_handler):
+            Do something
+        ```
 
         :param handler: The handler to register
+
+        :return: a context block that can be used to automatically unsubscribe the handler
         """
         with self._handler_lock:
             if handler not in self._handlers:
                 self._handlers.append(handler)
+        return EventSubscriptionContext(self, handler)
 
     def deregister(self, handler):
         """
@@ -68,16 +80,13 @@ class EventSource(Event):
                     self._logger.exception(e)
 
 
-@contextlib.contextmanager
-def event_subscriber(event: Event, subscriber: Callable):
-    """
-    Helper context which will subscribe a function to an event and deregister it once the context is exited
+class EventSubscriptionContext(object):
+    def __init__(self, event, subscriber):
+        self._event = event
+        self._subscriber = subscriber
 
-    :param event: The event to subscribe to
-    :param subscriber: The subscriber function
-    """
-    event.register(subscriber)
-    try:
-        yield
-    finally:
-        event.deregister(subscriber)
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._event.deregister(self._subscriber)

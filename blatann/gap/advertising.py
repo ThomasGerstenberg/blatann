@@ -117,12 +117,15 @@ class Advertiser(object):
         self._advertise_mode = advertise_mode
         self._auto_restart = auto_restart
 
-        params = nrf_types.BLEGapAdvParams(adv_interval_ms, timeout_sec, advertise_mode)
+        self._start()
 
-        logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, auto_restart))
+        return ClientConnectionWaitable(self.ble_device, self.client)
+
+    def _start(self):
+        params = nrf_types.BLEGapAdvParams(self._advertise_interval, self._timeout, self._advertise_mode)
+        logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, self._auto_restart))
         self.ble_device.ble_driver.ble_gap_adv_start(params, self._conn_tag)
         self._is_advertising = True
-        return ClientConnectionWaitable(self.ble_device, self.client)
 
     def stop(self):
         """
@@ -132,8 +135,6 @@ class Advertiser(object):
         self._stop()
 
     def _stop(self):
-        if not self._is_advertising:
-            return
         self._is_advertising = False
         try:
             self.ble_device.ble_driver.ble_gap_adv_stop()
@@ -148,11 +149,11 @@ class Advertiser(object):
             self._is_advertising = False
             self._on_advertising_timeout.notify(self)
             if self._auto_restart:
-                self.start()
+                self._start()
 
     def _handle_connect(self, peer, event):
         self._is_advertising = False
 
     def _handle_disconnect(self, peer, event):
         if self._auto_restart:
-            self.start()
+            self._start()

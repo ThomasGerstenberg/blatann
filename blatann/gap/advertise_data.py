@@ -1,3 +1,4 @@
+import time
 from typing import Iterable, List
 import logging
 from blatann.nrf import nrf_types
@@ -192,6 +193,7 @@ class ScanReport(object):
         """
         :type adv_report: blatann.nrf.nrf_events.GapEvtAdvReport
         """
+        self.timestamp = time.time()
         self.peer_address = adv_report.peer_addr
         self._current_advertise_data = adv_report.adv_data.records.copy()
         self.advertise_data = AdvertisingData.from_ble_adv_records(self._current_advertise_data)
@@ -208,6 +210,7 @@ class ScanReport(object):
         """
         if adv_report.peer_addr != self.peer_address:
             raise exceptions.InvalidOperationException("Peer address doesn't match")
+
         self._current_advertise_data.update(adv_report.adv_data.records)
         self.advertise_data = AdvertisingData.from_ble_adv_records(self._current_advertise_data.copy())
         self.rssi = max(self.rssi, adv_report.rssi)
