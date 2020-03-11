@@ -646,7 +646,7 @@ class NrfDriver(object):
             # Get a copy of the observers and event observers in case its modified during this execution
             with self._event_observer_lock:
                 observers = self.observers[:]
-                event_handlers = self._event_observers.copy()
+                event_handlers = {e: h[:] for e, h in self._event_observers.items()}
 
             # Call all the observers
             for obs in observers:
