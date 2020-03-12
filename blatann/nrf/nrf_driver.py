@@ -599,8 +599,6 @@ class NrfDriver(object):
             except Queue.Empty:
                 continue
 
-            # logger.info('ble_event.header.evt_id %r', ble_event.header.evt_id)
-
             if len(self.observers) == 0:
                 continue
 
@@ -609,12 +607,10 @@ class NrfDriver(object):
                 logger.warn('unknown ble_event %r (discarded)', ble_event.header.evt_id)
                 continue
 
-            # logger.debug('ble_event.header.evt_id %r ----  %r', ble_event.header.evt_id, event)
-
             # Get a copy of the observers and event observers in case its modified during this execution
             with self._event_observer_lock:
                 observers = self.observers[:]
-                event_handlers = self._event_observers.copy()
+                event_handlers = {k: v[:] for k, v in self._event_observers.items()}
 
             # Call all the observers
             for obs in observers:
