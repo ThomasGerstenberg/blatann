@@ -1,40 +1,73 @@
 import os
 import logging
-from unittest import TestCase
+from typing import Optional
+from unittest import TestCase, SkipTest
+from functools import wraps
+
 from blatann import BleDevice
 from blatann.gap.default_bond_db import DefaultBondDatabaseLoader
+from blatann.nrf import nrf_events
 from blatann.utils import setup_logger
 
 HERE = os.path.dirname(__file__)
 
 BLATANN_QUICK_ENVKEY = "BLATANN_TEST_QUICK"
-BLATANN_DEV1_ENVKEY = "BLATANN_DEV_1"
-BLATANN_DEV2_ENVKEY = "BLATANN_DEV_2"
-BLATANN_DEV3_ENVKEY = "BLATANN_DEV_3"
+BLATANN_DEV_ENVKEY_FORMAT = "BLATANN_DEV_{}"
+BOND_DB_FILE_FMT = os.path.join(HERE, "bond_db{}.pkl")
+
+
+def _configure_device(dev_number, config, optional=False):
+    env_key = BLATANN_DEV_ENVKEY_FORMAT.format(dev_number)
+    comport = os.environ.get(env_key, None)
+    if not comport:
+        if optional:
+            return None
+        raise EnvironmentError(f"Environment variable {env_key} must be defined with the device's comport")
+    dev = BleDevice(comport)
+    dev.bond_db_loader = DefaultBondDatabaseLoader(BOND_DB_FILE_FMT.format(dev_number))
+    dev.configure(**config)
+    dev.event_logger.suppress(nrf_events.GapEvtAdvReport)
+    return dev
 
 
 class BlatannTestCase(TestCase):
     dev1: BleDevice
     dev2: BleDevice
+    dev3: Optional[BleDevice]
     logger: logging.Logger = None
-    bond_db_file = os.path.join(HERE, "bond_db.pkl")
+    bond_db_file_fmt = os.path.join(HERE, "bond_db{}.pkl")
+
+    requires_3_devices = False
+    dev1_config = {}
+    dev2_config = {}
+    dev3_config = {}
 
     @classmethod
     def setUpClass(cls) -> None:
         if BlatannTestCase.logger is None:
             BlatannTestCase.logger = setup_logger()
-        cls.dev1: BleDevice = BleDevice(os.environ[BLATANN_DEV1_ENVKEY])
-        cls.dev1.bond_db_loader = DefaultBondDatabaseLoader(cls.bond_db_file)
-        # cls.dev2: BleDevice = BleDevice(os.environ[BLATANN_DEV2_ENVKEY])
-        # cls.dev2.bond_db_loader = DefaultBondDatabaseLoader(cls.bond_db_file)
+
+        cls.dev1 = _configure_device(1, cls.dev1_config)
+        cls.dev2 = _configure_device(2, cls.dev2_config)
+
+        if cls.requires_3_devices:
+            cls.dev3 = _configure_device(3, cls.dev3_config)
+            if not cls.dev3:
+                raise SkipTest("Need third device for this TestCase")
+        else:
+            cls.dev3 = None
 
         cls.dev1.open(True)
-        # cls.dev2.open(True)
+        cls.dev2.open(True)
+        if cls.dev3:
+            cls.dev3.open(True)
 
     @classmethod
     def tearDownClass(cls) -> None:
         cls.dev1.close()
-        # cls.dev2.close()
+        cls.dev2.close()
+        if cls.dev3:
+            cls.dev3.close()
 
 
 class TestParams(object):
@@ -44,6 +77,7 @@ class TestParams(object):
         self._teardown = teardown
 
     def __call__(self, func):
+        @wraps(func)
         def subtest_runner(test_case: BlatannTestCase):
             try:
                 self.setup(test_case)
@@ -77,6 +111,7 @@ class TestParams(object):
 
 
 def long_running(func):
+    @wraps(func)
     def f(self: TestCase, *args, **kwargs):
         quick_tests = int(os.environ.get(BLATANN_QUICK_ENVKEY, 0))
         if quick_tests:

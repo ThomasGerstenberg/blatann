@@ -1,4 +1,5 @@
-from typing import Iterable, List
+import time
+from typing import Iterable, List, Dict, Union
 import logging
 from blatann.nrf import nrf_types
 from blatann import uuid, exceptions
@@ -15,6 +16,9 @@ class AdvertisingFlags(object):
     BR_EDR_HOST = 0x10
 
 
+AdvertisingPacketType = nrf_types.BLEGapAdvType
+
+
 class AdvertisingData(object):
     """
     Class which represents data that can be advertised
@@ -26,21 +30,71 @@ class AdvertisingData(object):
     def __init__(self, flags=None, local_name=None, local_name_complete=True,
                  service_uuid16s=None, service_uuid128s=None,
                  has_more_uuid16_services=False, has_more_uuid128_services=False,
-                 service_data=None, manufacturer_data=None, **other_flags):
-        self.flags = flags
+                 service_data=None, manufacturer_data=None, **other_entries):
+        self.entries = {self.Types[k]: v for k, v in other_entries.items()}
+        if flags is not None:
+            self.entries[self.Types.flags] = flags
+        if service_data:
+            self.entries[self.Types.service_data] = service_data
+        if manufacturer_data:
+            self.entries[self.Types.manufacturer_specific_data] = manufacturer_data
+
         self.local_name = local_name
         self.local_name_complete = local_name_complete
         self.service_uuid16s = service_uuid16s or []
         self.service_uuid128s = service_uuid128s or []
         self.has_more_uuid16_services = has_more_uuid16_services
         self.has_more_uuid128_services = has_more_uuid128_services
-        self.service_data = service_data
-        self.manufacturer_data = manufacturer_data
-        self.other_flags = {self.Types[k]: v for k, v in other_flags.items()}
         if not isinstance(self.service_uuid16s, (list, tuple)):
             self.service_uuid16s = [self.service_uuid16s]
         if not isinstance(self.service_uuid128s, (list, tuple)):
             self.service_uuid128s = [self.service_uuid128s]
+
+    def _get(self, t, default=None):
+        return self.entries.get(t, default)
+
+    def _set(self, t, value):
+        self.entries[t] = value
+
+    def _del(self, t):
+        if t in self.entries:
+            del self.entries[t]
+
+    @property
+    def flags(self) -> int:
+        return self._get(self.Types.flags)
+
+    @flags.setter
+    def flags(self, value: int):
+        self._set(self.Types.flags, value)
+
+    @flags.deleter
+    def flags(self):
+        self._del(self.Types.flags)
+
+    @property
+    def service_data(self) -> Union[bytes, List[int]]:
+        return self._get(self.Types.service_data, None)
+
+    @service_data.setter
+    def service_data(self, value: Union[bytes, List[int]]):
+        self._set(self.Types.service_data, value)
+
+    @service_data.deleter
+    def service_data(self):
+        self._del(self.Types.service_data)
+
+    @property
+    def manufacturer_data(self) -> Union[bytes, List[int]]:
+        return self._get(self.Types.manufacturer_specific_data, None)
+
+    @manufacturer_data.setter
+    def manufacturer_data(self, value: Union[bytes, List[int]]):
+        self._set(self.Types.manufacturer_specific_data, value)
+
+    @manufacturer_data.deleter
+    def manufacturer_data(self):
+        self._del(self.Types.manufacturer_specific_data)
 
     @property
     def service_uuids(self):
@@ -71,33 +125,31 @@ class AdvertisingData(object):
         :return: the BLEAdvData object which represents this advertising data
         :rtype: nrf_types.BLEAdvData
         """
-        records = self.other_flags.copy()
-        if self.flags:
-            records[self.Types.flags] = [int(self.flags)]
-        if self.local_name:
-            name_type = self.Types.complete_local_name if self.local_name_complete else self.Types.short_local_name
-            records[name_type] = self.local_name
+        records = self.entries.copy()
+
         if self.service_uuid128s:
-            uuid_type = self.Types.service_128bit_uuid_more_available if self.has_more_uuid128_services else self.Types.service_128bit_uuid_complete
-            # UUID data is little-endian, reverse the lists and concatenate
-            uuid_data = []
-            for u in self.service_uuid128s:
-                uuid_data.extend(u.uuid[::-1])
-            records[uuid_type] = uuid_data
+            t = self.Types.service_128bit_uuid_more_available if self.has_more_uuid128_services else self.Types.service_128bit_uuid_complete
+            data = [b for u in self.service_uuid128s for b in u.uuid[::-1]]
+            records[t] = data
         if self.service_uuid16s:
-            uuid_type = self.Types.service_16bit_uuid_more_available if self.has_more_uuid16_services else self.Types.service_16bit_uuid_complete
-            uuid_data = []
-            for u in self.service_uuid16s:
-                uuid_data.append(u.uuid & 0xFF)
-                uuid_data.append((u.uuid >> 8) & 0xFF)
-            records[uuid_type] = uuid_data
-        if self.service_data:
-            records[self.Types.service_data] = self.service_data
-        if self.manufacturer_data:
-            records[self.Types.manufacturer_specific_data] = self.manufacturer_data
+            t = self.Types.service_16bit_uuid_more_available if self.has_more_uuid16_services else self.Types.service_16bit_uuid_complete
+            data = [b for u in self.service_uuid16s for b in [u.uuid & 0xFF, u.uuid >> 8 & 0xFF]]
+            records[t] = data
+        if self.local_name:
+            t = self.Types.complete_local_name if self.local_name_complete else self.Types.short_local_name
+            records[t] = self.local_name
+
+        for k, v in records.items():
+            if isinstance(v, int):
+                records[k] = [v]
 
         record_string_keys = {k.name: v for k, v in records.items()}
         return nrf_types.BLEAdvData(**record_string_keys)
+
+    def to_bytes(self):
+        adv_data = self.to_ble_adv_data()
+        adv_data.to_list()
+        return adv_data.raw_bytes
 
     @classmethod
     def from_ble_adv_records(cls, advertise_records):
@@ -156,7 +208,7 @@ class AdvertisingData(object):
                 uuid128 = uuid128_data[i:i+16][::-1]
                 service_uuid128s.append(uuid.Uuid128(uuid128))
 
-        record_string_keys = {k.name: bytearray(v) for k, v in advertise_records.items()}
+        record_string_keys = {k.name: bytes(v) for k, v in advertise_records.items()}
         return AdvertisingData(flags=flags, local_name=local_name, local_name_complete=local_name_complete,
                                service_uuid16s=service_uuid16s, service_uuid128s=service_uuid128s,
                                has_more_uuid16_services=more_16bit_services, has_more_uuid128_services=more_128bit_services,
@@ -186,17 +238,28 @@ class AdvertisingData(object):
 
         return "{}({})".format(self.__class__.__name__, ", ".join(params))
 
+    def __eq__(self, other):
+        if not isinstance(other, AdvertisingData):
+            return False
+        return (self.entries == other.entries and
+                self.local_name == other.local_name and
+                self.service_uuid16s == other.service_uuid16s and
+                self.service_uuid128s == other.service_uuid128s)
+
 
 class ScanReport(object):
     def __init__(self, adv_report):
         """
         :type adv_report: blatann.nrf.nrf_events.GapEvtAdvReport
         """
+        self.timestamp = time.time()
         self.peer_address = adv_report.peer_addr
+        self.packet_type: AdvertisingPacketType = adv_report.adv_type
         self._current_advertise_data = adv_report.adv_data.records.copy()
         self.advertise_data = AdvertisingData.from_ble_adv_records(self._current_advertise_data)
         self.rssi = adv_report.rssi
         self.duplicate = False
+        self.raw_bytes = adv_report.adv_data.raw_bytes
 
     @property
     def device_name(self):
@@ -208,12 +271,16 @@ class ScanReport(object):
         """
         if adv_report.peer_addr != self.peer_address:
             raise exceptions.InvalidOperationException("Peer address doesn't match")
-        self._current_advertise_data.update(adv_report.adv_data.records)
+
+        self._current_advertise_data.update(adv_report.adv_data.records.copy())
         self.advertise_data = AdvertisingData.from_ble_adv_records(self._current_advertise_data.copy())
         self.rssi = max(self.rssi, adv_report.rssi)
+        self.raw_bytes = b""
 
     def __eq__(self, other):
-        return self.peer_address == other.peer_address and self._current_advertise_data == other._current_advertise_data
+        if not isinstance(other, ScanReport):
+            return False
+        return self.peer_address == other.peer_address and self.advertise_data == other.advertise_data
 
     def __repr__(self):
         return "{}: {}dBm - {}".format(self.device_name, self.rssi, self.advertise_data)
@@ -230,7 +297,10 @@ class ScanReportCollection(object):
     @property
     def advertising_peers_found(self) -> Iterable[ScanReport]:
         """
-        Gets the list of scans which have been combined and condensed into a list where each entry is a unique peer
+        Gets the list of scans which have been combined and condensed into a list where each entry is a unique peer.
+        The scan reports in this list represent aggregated data of each advertising packet received by the advertising
+        device, such that later advertising packets will update/overwrite packet attributes received
+        from earlier packets, if the data has been modified.
 
         :return: The list of scan reports, with each being a unique peer
         :rtype: list of ScanReport
@@ -245,7 +315,7 @@ class ScanReportCollection(object):
         :return: The list of all scan reports
         :rtype: list of ScanReport
         """
-        return self._all_scans
+        return self._all_scans[:]
 
     def clear(self):
         """
@@ -265,5 +335,5 @@ class ScanReportCollection(object):
         if adv_report.peer_addr in self._scans_by_peer_address.keys():
             self._scans_by_peer_address[adv_report.peer_addr].update(adv_report)
         else:
-            self._scans_by_peer_address[adv_report.peer_addr] = scan_entry
+            self._scans_by_peer_address[adv_report.peer_addr] = ScanReport(adv_report)
         return self._scans_by_peer_address[adv_report.peer_addr]

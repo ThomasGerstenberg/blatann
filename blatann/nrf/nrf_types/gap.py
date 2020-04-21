@@ -35,16 +35,16 @@ class BLEGapAdvParams(object):
 
 
 class BLEGapScanParams(object):
-    def __init__(self, interval_ms, window_ms, timeout_s):
+    def __init__(self, interval_ms, window_ms, timeout_s, active=True):
         self.interval_ms = interval_ms
         self.window_ms = window_ms
         self.timeout_s = timeout_s
+        self.active = active
 
     def to_c(self):
         scan_params = driver.ble_gap_scan_params_t()
-        scan_params.active = True
-        scan_params.selective = False
-        scan_params.p_whitelist = None
+        scan_params.active = self.active
+        scan_params.use_whitelist = False
         scan_params.interval = util.msec_to_units(self.interval_ms,
                                                   util.UNIT_0_625_MS)
         scan_params.window = util.msec_to_units(self.window_ms,
@@ -217,6 +217,7 @@ class BLEAdvData(object):
         self.records = dict()
         for k in kwargs:
             self.records[BLEAdvData.Types[k]] = kwargs[k]
+        self.raw_bytes = b""
 
     def to_list(self):
         data_list = []
@@ -231,6 +232,7 @@ class BLEAdvData(object):
 
             else:
                 raise NordicSemiException('Unsupported value type: 0x{:02X}'.format(type(self.records[k])))
+        self.raw_bytes = bytes(data_list)
         return data_list
 
     def to_c(self):
@@ -246,6 +248,7 @@ class BLEAdvData(object):
     def from_c(cls, adv_report_evt):
         ad_list = util.uint8_array_to_list(adv_report_evt.data, adv_report_evt.dlen)
         ble_adv_data = cls()
+        ble_adv_data.raw_bytes = bytes(ad_list)
         index = 0
         while index < len(ad_list):
             ad_len = ad_list[index]
