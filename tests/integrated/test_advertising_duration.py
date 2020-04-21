@@ -1,5 +1,4 @@
 import threading
-import time
 import unittest
 
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags
@@ -10,7 +9,7 @@ from blatann.utils import Stopwatch
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
 
 
-class TestAdvertising(BlatannTestCase):
+class TestAdvertisingDuration(BlatannTestCase):
     def setUp(self) -> None:
         self.adv_interval_ms = 50
         self.adv_duration = 5
