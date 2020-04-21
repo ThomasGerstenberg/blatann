@@ -2,6 +2,7 @@ import os
 import logging
 from typing import Optional
 from unittest import TestCase, SkipTest
+from functools import wraps
 
 from blatann import BleDevice
 from blatann.gap.default_bond_db import DefaultBondDatabaseLoader
@@ -76,6 +77,7 @@ class TestParams(object):
         self._teardown = teardown
 
     def __call__(self, func):
+        @wraps(func)
         def subtest_runner(test_case: BlatannTestCase):
             try:
                 self.setup(test_case)
@@ -109,6 +111,7 @@ class TestParams(object):
 
 
 def long_running(func):
+    @wraps(func)
     def f(self: TestCase, *args, **kwargs):
         quick_tests = int(os.environ.get(BLATANN_QUICK_ENVKEY, 0))
         if quick_tests:
