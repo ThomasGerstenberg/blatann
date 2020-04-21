@@ -1,7 +1,7 @@
-blatann.nrf.nrf\_events.generic\_events module
+blatann.services.nordic\_uart.constants module
 ==============================================
 
-.. automodule:: blatann.nrf.nrf_events.generic_events
+.. automodule:: blatann.services.nordic_uart.constants
    :members:
    :undoc-members:
    :show-inheritance:

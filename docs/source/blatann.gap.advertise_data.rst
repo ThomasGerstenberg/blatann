@@ -1,7 +1,7 @@
-blatann.examples.peripheral module
+blatann.gap.advertise\_data module
 ==================================
 
-.. automodule:: blatann.examples.peripheral
+.. automodule:: blatann.gap.advertise_data
    :members:
    :undoc-members:
    :show-inheritance:
