@@ -160,3 +160,7 @@ class TestAdvertisingData(BlatannTestCase):
             self.assertEqual(expected_service_data, packet.advertise_data.service_data)
 
     # TODO 04.20.20: Add more tests around data content (128-bit uuid, service data, mfg data, etc.)
+
+
+if __name__ == '__main__':
+    unittest.main()
