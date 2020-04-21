@@ -1,6 +1,6 @@
 from typing import TypeVar, Generic, Callable
 from threading import Lock
-import contextlib
+
 
 TSender = TypeVar("TSender")
 TEvent = TypeVar("TEvent")
@@ -25,11 +25,10 @@ class Event(Generic[TSender, TEvent]):
         This function can be used in a `with` context block which will automatically deregister the handler
         when the context is exited.
 
-        Example usage:
-        ```
-        with device.client.on_connected.register(my_connected_handler):
-            Do something
-        ```
+        :Example:
+
+        >>> with device.client.on_connected.register(my_connected_handler):
+        >>>    # Do something, my_connected_handler will be deregistered upon leaving this context
 
         :param handler: The handler to register
 

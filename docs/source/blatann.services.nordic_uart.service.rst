@@ -1,7 +1,7 @@
-blatann.services.device\_info.service module
+blatann.services.nordic\_uart.service module
 ============================================
 
-.. automodule:: blatann.services.device_info.service
+.. automodule:: blatann.services.nordic_uart.service
    :members:
    :undoc-members:
    :show-inheritance:

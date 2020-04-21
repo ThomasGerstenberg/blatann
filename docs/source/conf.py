@@ -24,9 +24,9 @@ copyright = u'2019, Thomas Gerstenberg'
 author = u'Thomas Gerstenberg'
 
 # The short X.Y version
-version = u'0.2.6'
+version = u'v0.3.0'
 # The full version, including alpha/beta/rc tags
-release = u'0.2.6'
+release = u'v0.3.0-rc.4'
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,6 +40,7 @@ release = u'0.2.6'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -2,6 +2,6 @@ blatann.gap.smp module
 ======================
 
 .. automodule:: blatann.gap.smp
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,7 +1,7 @@
-blatann.services.glucose.racp module
+blatann.nrf.nrf\_types.config module
 ====================================
 
-.. automodule:: blatann.services.glucose.racp
+.. automodule:: blatann.nrf.nrf_types.config
    :members:
    :undoc-members:
    :show-inheritance:
