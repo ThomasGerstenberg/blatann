@@ -355,7 +355,7 @@ class DatabaseDiscoverer(object):
     @property
     def on_discovery_complete(self):
         """
-        :rtype: Event
+        :rtype: Event[blatann.peer.Peripheral, DatabaseDiscoveryCompleteEventArgs]
         """
         return self._on_discovery_complete
 

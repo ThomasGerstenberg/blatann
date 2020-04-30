@@ -3,9 +3,12 @@ from blatann.exceptions import TimeoutError
 
 
 class Waitable(object):
-    def __init__(self):
+    def __init__(self, n_args=1):
         self._queue = queue.Queue()
         self._callback = None
+        self._n_args = n_args
+        if n_args < 1:
+            raise ValueError()
 
     def wait(self, timeout=None, exception_on_timeout=True):
         try:
@@ -18,9 +21,9 @@ class Waitable(object):
             if exception_on_timeout:
                 raise TimeoutError("Timed out waiting for event to occur. "
                                    "Waitable type: {}".format(self.__class__.__name__))
-        # TODO: This will fail if the waitable implementation normally returns more than one value and
-        #       the caller tries to unpack
-        return None
+        if self._n_args == 1:
+            return None
+        return [None] * self._n_args
 
     def then(self, func_to_execute):
         self._callback = func_to_execute
@@ -38,3 +41,20 @@ class Waitable(object):
 class GenericWaitable(Waitable):
     def notify(self, *results):
         self._notify(*results)
+
+
+class EmptyWaitable(Waitable):
+    """
+    Waitable class which will immediately return the args provided when waited on
+    or when a callback function is registered
+    """
+    def __init__(self, *args):
+        super(EmptyWaitable, self).__init__(len(args))
+        self._args = args
+
+    def wait(self, timeout=None, exception_on_timeout=True):
+        return self._args
+
+    def then(self, func_to_execute):
+        func_to_execute(*self._args)
+        return self

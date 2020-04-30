@@ -8,7 +8,10 @@ from blatann.gap import smp
 from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
-from blatann.waitables import connection_waitable, event_waitable
+from blatann.nrf.nrf_types import conn_interval_range, conn_timeout_range
+from blatann.waitables.waitable import EmptyWaitable
+from blatann.waitables.connection_waitable import DisconnectionWaitable
+from blatann.waitables.event_waitable import EventWaitable
 from blatann.event_args import *
 
 logger = logging.getLogger(__name__)
@@ -25,9 +28,62 @@ class PeerAddress(nrf_events.BLEGapAddr):
 
 
 class ConnectionParameters(nrf_events.BLEGapConnParams):
+    """
+    Represents the connection parameters that are sent during negotiation. This includes
+    the preferred min/max interval range, timeout, and slave latency
+    """
     def __init__(self, min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency=0):
         # TODO: Parameter validation
         super(ConnectionParameters, self).__init__(min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency)
+        self.validate()
+
+    def validate(self):
+        conn_interval_range.validate(self.min_conn_interval_ms)
+        conn_interval_range.validate(self.max_conn_interval_ms)
+        conn_timeout_range.validate(self.conn_sup_timeout_ms)
+        if self.min_conn_interval_ms > self.max_conn_interval_ms:
+            raise ValueError(f"Minimum connection interval must be <= max connection interval "
+                             f"(Min: {self.min_conn_interval_ms} Max: {self.max_conn_interval_ms}")
+
+
+class ActiveConnectionParameters(object):
+    """
+    Represents the connection parameters that are currently in use with a peer device.
+    This is similar to ConnectionParameters with the sole difference being
+    the connection interval is not a min/max range but a single number
+    """
+    def __init__(self, conn_params: ConnectionParameters):
+        self._interval_ms = conn_params.min_conn_interval_ms
+        self._timeout_ms = conn_params.conn_sup_timeout_ms
+        self._slave_latency = conn_params.slave_latency
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return f"ConnectionParams({self._interval_ms}ms/{self._slave_latency}/{self._timeout_ms}ms)"
+
+    @property
+    def interval_ms(self) -> float:
+        """
+        The connection interval, in milliseconds
+        """
+        return self._interval_ms
+
+    @property
+    def timeout_ms(self) -> float:
+        """
+        The connection timeout, in milliseconds
+        """
+        return self._timeout_ms
+
+    @property
+    def slave_latency(self) -> int:
+        """
+        The slave latency (the number of connection intervals the slave is allowed to skip before being
+        required to respond)
+        """
+        return self._slave_latency
 
 
 DEFAULT_CONNECTION_PARAMS = ConnectionParameters(15, 30, 4000, 0)
@@ -50,8 +106,8 @@ class Peer(object):
         """
         self._ble_device = ble_device
         self._role = role
-        self._ideal_connection_params = connection_params
-        self._current_connection_params = DEFAULT_CONNECTION_PARAMS
+        self._preferred_connection_params = connection_params
+        self._current_connection_params = ActiveConnectionParameters(connection_params)
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.peer_address = "",
         self.connection_state = PeerState.DISCONNECTED
@@ -62,6 +118,8 @@ class Peer(object):
         self._mtu_size = MTU_SIZE_DEFAULT
         self._preferred_mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
+        self._disconnection_reason = nrf_events.BLEHci.local_host_terminated_connection
+
 
         self._connection_based_driver_event_handlers = {}
         self._connection_handler_lock = threading.Lock()
@@ -109,6 +167,21 @@ class Peer(object):
         Gets if the peer this security manager is for was bonded in a previous connection
         """
         return self.security.is_previously_bonded
+
+    @property
+    def preferred_connection_params(self) -> ConnectionParameters:
+        """
+        Returns the connection parameters that were negotiated for this peer
+        """
+        return self._preferred_connection_params
+
+    @property
+    def active_connection_params(self) -> ActiveConnectionParameters:
+        """
+        Gets the active connection parameters in use with the peer.
+        If the peer is disconnected, this will return the connection parameters last used
+        """
+        return self._current_connection_params
 
     @property
     def mtu_size(self):
@@ -189,38 +262,42 @@ class Peer(object):
     Public Methods
     """
 
-    def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection):
+    def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection) -> DisconnectionWaitable:
         """
         Disconnects from the peer, giving the optional status code.
-        Returns a waitable that will fire when the disconnection is complete
+        Returns a waitable that will fire when the disconnection is complete.
+        If the peer is already disconnected, the waitable will fire immediately
 
         :param status_code: The HCI Status code to send back to the peer
         :return: A waitable that will fire when the peer is disconnected
-        :rtype: connection_waitable.DisconnectionWaitable
         """
         if self.connection_state != PeerState.CONNECTED:
-            return
+            return EmptyWaitable(self, self._disconnection_reason)
         self._ble_device.ble_driver.ble_gap_disconnect(self.conn_handle, status_code)
         return self._disconnect_waitable
 
     def set_connection_parameters(self, min_connection_interval_ms, max_connection_interval_ms, connection_timeout_ms,
                                   slave_latency=0):
         """
-        Sets the connection parameters for the peer and starts the connection parameter update process
+        Sets the connection parameters for the peer and starts the connection parameter update process (if connected)
 
         :param min_connection_interval_ms: The minimum acceptable connection interval, in milliseconds
         :param max_connection_interval_ms: The maximum acceptable connection interval, in milliseconds
         :param connection_timeout_ms: The connection timeout, in milliseconds
         :param slave_latency: The slave latency allowed
         """
-        self._ideal_connection_params = ConnectionParameters(min_connection_interval_ms, max_connection_interval_ms,
-                                                             connection_timeout_ms, slave_latency)
-        if not self.connected:
-            return
-        # Do stuff to set the connection parameters
-        self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._ideal_connection_params)
+        self._preferred_connection_params = ConnectionParameters(min_connection_interval_ms, max_connection_interval_ms,
+                                                                 connection_timeout_ms, slave_latency)
+        if self.connected:
+            self.update_connection_parameters()
 
-    def exchange_mtu(self, mtu_size=None):
+    def update_connection_parameters(self):
+        """
+        Starts the process to re-negotiate the connection parameters using the previously-set connection parameters
+        """
+        self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._preferred_connection_params)
+
+    def exchange_mtu(self, mtu_size=None) -> EventWaitable[Peer, MtuSizeUpdatedEventArgs]:
         """
         Initiates the MTU Exchange sequence with the peer device.
 
@@ -229,7 +306,6 @@ class Peer(object):
 
         :param mtu_size: Optional MTU size to use. If provided, it will also updated the preferred MTU size
         :return: A waitable that will fire when the MTU exchange completes
-        :rtype: event_waitable.EventWaitable
         """
         # If the MTU size has already been negotiated we need to use the same value
         # as the previous exchange (Vol 3, Part F 3.4.2.2)
@@ -241,7 +317,7 @@ class Peer(object):
                 self._negotiated_mtu_size = self.preferred_mtu_size
 
         self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._negotiated_mtu_size)
-        return event_waitable.EventWaitable(self._on_mtu_exchange_complete)
+        return EventWaitable(self._on_mtu_exchange_complete)
 
     """
     Internal Library Methods
@@ -255,9 +331,9 @@ class Peer(object):
         self.peer_address = peer_address
         self._mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
-        self._disconnect_waitable = connection_waitable.DisconnectionWaitable(self)
+        self._disconnect_waitable = DisconnectionWaitable(self)
         self.connection_state = PeerState.CONNECTED
-        self._current_connection_params = connection_params
+        self._current_connection_params = ActiveConnectionParameters(connection_params)
 
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
         self.driver_event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate, nrf_events.GapEvtConnParamUpdateRequest)
@@ -318,6 +394,7 @@ class Peer(object):
             return
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.connection_state = PeerState.DISCONNECTED
+        self._disconnection_reason = event.reason
         self._on_disconnect.notify(self, DisconnectionEventArgs(event.reason))
 
         with self._connection_handler_lock:
@@ -334,11 +411,11 @@ class Peer(object):
         if not self.connected or self.conn_handle != event.conn_handle:
             return
         if isinstance(event, nrf_events.GapEvtConnParamUpdateRequest):
-            logger.debug("[{}] Conn Params updating to {}".format(self.conn_handle, self._ideal_connection_params))
-            self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._ideal_connection_params)
+            logger.debug("[{}] Conn Params updating to {}".format(self.conn_handle, self._preferred_connection_params))
+            self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._preferred_connection_params)
         else:
             logger.debug("[{}] Updated to {}".format(self.conn_handle, event.conn_params))
-        self._current_connection_params = event.conn_params
+            self._current_connection_params = ActiveConnectionParameters(event.conn_params)
 
     def _validate_mtu_size(self, mtu_size):
         if mtu_size < MTU_SIZE_MINIMUM:
@@ -393,17 +470,23 @@ class Peripheral(Peer):
         self._discoverer = service_discovery.DatabaseDiscoverer(ble_device, self)
 
     @property
-    def database(self):
+    def database(self) -> gattc.GattcDatabase:
         """
         Gets the database on the peripheral.
         NOTE: This is not useful until services are discovered first
 
         :return: The database instance
-        :rtype: gattc.GattcDatabase
         """
         return self._db
 
-    def discover_services(self):
+    @property
+    def on_database_discovery_complete(self) -> Event[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
+        """
+        Event that is triggered when database discovery has completed
+        """
+        return self._discoverer.on_discovery_complete
+
+    def discover_services(self) -> EventWaitable[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
         """
         Starts the database discovery process of the peripheral. This will discover all services, characteristics, and
         descriptors on the remote database.
@@ -411,10 +494,9 @@ class Peripheral(Peer):
         Waitable returns 2  parameters: (Peripheral this, DatabaseDiscoveryCompleteEventArgs event args)
 
         :return: a Waitable that will fire when service discovery is complete
-        :rtype: event_waitable.EventWaitable
         """
         self._discoverer.start()
-        return event_waitable.EventWaitable(self._discoverer.on_discovery_complete)
+        return EventWaitable(self._discoverer.on_discovery_complete)
 
 
 class Client(Peer):

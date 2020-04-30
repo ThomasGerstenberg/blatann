@@ -25,7 +25,7 @@ def on_connect(peer, event_args):
     :param event_args: None
     """
     if peer:
-        logger.info("Connected to peer")
+        logger.info("Connected to peer, initiating MTU exchange")
         peer.exchange_mtu()
     else:
         logger.warning("Connection timed out")
@@ -52,6 +52,8 @@ def on_mtu_size_update(peer, event_args):
     :type event_args: blatann.event_args.MtuSizeUpdatedEventArgs
     """
     logger.info("MTU size updated from {} to {}".format(event_args.previous_mtu_size, event_args.current_mtu_size))
+    # Request that the connection parameters be re-negotiated using our preferred parameters
+    peer.update_connection_parameters()
 
 
 def on_data_rx(service, data):
@@ -92,7 +94,7 @@ def main(serial_port):
 
     # Configure the client to prefer the max MTU size
     ble_device.client.preferred_mtu_size = ble_device.max_mtu_size
-    ble_device.client.set_connection_parameters(10, 30, 4000)
+    ble_device.client.set_connection_parameters(7.5, 15, 4000)
 
     # Advertise the service UUID
     adv_data = advertising.AdvertisingData(flags=0x06, local_name="Nordic UART Server")
@@ -115,4 +117,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM8")
+    main("COM7")

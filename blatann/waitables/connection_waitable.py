@@ -79,7 +79,7 @@ class DisconnectionWaitable(Waitable):
         :type ble_device: blatann.device.BleDevice
         :type connected_peer: blatann.peer.Peer
         """
-        super(DisconnectionWaitable, self).__init__()
+        super(DisconnectionWaitable, self).__init__(n_args=2)
         if not connected_peer:
             raise InvalidStateException("Peer already disconnected")
         connected_peer.on_disconnect.register(self._on_disconnect)
