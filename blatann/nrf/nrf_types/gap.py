@@ -9,6 +9,54 @@ from blatann.nrf.nrf_types.enums import *
 logger = logging.getLogger(__name__)
 
 
+class TimeRange(object):
+
+    def __init__(self, name, val_min, val_max, unit_ms_conversion, divisor=1.0, units="ms"):
+        self._name = name
+        self._units = units
+        self._min = util.units_to_msec(val_min, unit_ms_conversion) / divisor
+        self._max = util.units_to_msec(val_max, unit_ms_conversion) / divisor
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def min(self) -> float:
+        return self._min
+
+    @property
+    def max(self) -> float:
+        return self._max
+
+    @property
+    def units(self) -> str:
+        return self._units
+
+    def is_in_range(self, value):
+        return self._min <= value <= self._max
+
+    def validate(self, value):
+        if value < self._min:
+            raise ValueError(f"Minimum {self.name} is {self._min}{self.units} (Got {value})")
+        if value > self._max:
+            raise ValueError(f"Maximum {self.name} is {self._max}{self.units} (Got {value})")
+
+
+adv_interval_range = TimeRange("Advertising Interval",
+                               driver.BLE_GAP_ADV_INTERVAL_MIN, driver.BLE_GAP_ADV_INTERVAL_MAX, util.UNIT_0_625_MS)
+scan_window_range = TimeRange("Scan Window",
+                              driver.BLE_GAP_SCAN_WINDOW_MIN, driver.BLE_GAP_SCAN_WINDOW_MAX, util.UNIT_0_625_MS)
+scan_interval_range = TimeRange("Scan Interval",
+                                driver.BLE_GAP_SCAN_INTERVAL_MIN, driver.BLE_GAP_SCAN_INTERVAL_MAX, util.UNIT_0_625_MS)
+scan_timeout_range = TimeRange("Scan Timeout",
+                               driver.BLE_GAP_SCAN_TIMEOUT_MIN, driver.BLE_GAP_SCAN_TIMEOUT_MAX, util.UNIT_10_MS, 1000.0, "s")
+conn_interval_range = TimeRange("Connection Interval",
+                                driver.BLE_GAP_CP_MIN_CONN_INTVL_MIN, driver.BLE_GAP_CP_MAX_CONN_INTVL_MAX, util.UNIT_1_25_MS)
+conn_timeout_range = TimeRange("Connection Timeout",
+                               driver.BLE_GAP_CP_CONN_SUP_TIMEOUT_MIN, driver.BLE_GAP_CP_CONN_SUP_TIMEOUT_MAX, util.UNIT_10_MS)
+
+
 class BLEGapAdvParams(object):
     def __init__(self, interval_ms, timeout_s, advertising_type=BLEGapAdvType.connectable_undirected):
         self.interval_ms = interval_ms

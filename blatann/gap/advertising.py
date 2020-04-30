@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 AdvertisingMode = nrf_types.BLEGapAdvType
 
+MIN_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.min
+MAX_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.max
+
 
 class Advertiser(object):
     # Constant used to indicate that the BLE device should advertise indefinitely, until
@@ -48,7 +51,27 @@ class Advertiser(object):
 
     @property
     def is_advertising(self):
+        """
+        Current state of advertising
+        :return:
+        """
         return self._is_advertising
+
+    @property
+    def min_interval_ms(self) -> float:
+        """
+        The minimum allowed advertising interval, in millseconds.
+        This is defined by the Bluetooth specification.
+        """
+        return MIN_ADVERTISING_INTERVAL_MS
+
+    @property
+    def max_interval_ms(self) -> float:
+        """
+        The maximum allowed advertising interval, in milliseconds.
+        This is defined by the Bluetooth specification.
+        """
+        return MAX_ADVERTISING_INTERVAL_MS
 
     def set_advertise_data(self, advertise_data=AdvertisingData(), scan_response=AdvertisingData()):
         """
@@ -79,11 +102,13 @@ class Advertiser(object):
         """
         Sets the default advertising parameters so they do not need to be specified on each start
 
-        :param advertise_interval_ms: The advertising interval, in milliseconds
-        :param timeout_seconds: How long to advertise for before timing out, in seconds
+        :param advertise_interval_ms: The advertising interval, in milliseconds.
+                                      Should be a multiple of 0.625ms, otherwise it'll be rounded down to the nearest 0.625ms
+        :param timeout_seconds: How long to advertise for before timing out, in seconds. For no timeout, use ADVERTISE_FOREVER (0)
         :param advertise_mode: The mode the advertiser should use
         :type advertise_mode: AdvertisingMode
         """
+        nrf_types.adv_interval_range.validate(advertise_interval_ms)
         self._advertise_interval = advertise_interval_ms
         self._timeout = timeout_seconds
         self._advertise_mode = advertise_mode
@@ -92,8 +117,9 @@ class Advertiser(object):
         """
         Starts advertising with the given parameters. If none given, will use the default
 
-        :param adv_interval_ms: The interval at which to send out advertise packets, in milliseconds
-        :param timeout_sec: The duration which to advertise for
+        :param adv_interval_ms: The interval at which to send out advertise packets, in milliseconds.
+                                Should be a multiple of 0.625ms, otherwise it'll be rounde down to the nearest 0.625ms
+        :param timeout_sec: The duration which to advertise for. For no timeout, use ADVERTISE_FOREVER (0)
         :param auto_restart: Flag indicating that advertising should restart automatically when the timeout expires, or
                              when the client disconnects
         :param advertise_mode: The mode the advertiser should use
@@ -105,6 +131,8 @@ class Advertiser(object):
             self._stop()
         if adv_interval_ms is None:
             adv_interval_ms = self._advertise_interval
+        else:
+            nrf_types.adv_interval_range.validate(adv_interval_ms)
         if timeout_sec is None:
             timeout_sec = self._timeout
         if advertise_mode is None:

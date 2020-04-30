@@ -11,7 +11,7 @@ class EventWaitable(Waitable, Generic[TSender, TEvent]):
         """
         :type event: blatann.event_type.Event
         """
-        super(EventWaitable, self).__init__()
+        super(EventWaitable, self).__init__(n_args=2)
         self._event = event
         self._event.register(self._on_event)
 
