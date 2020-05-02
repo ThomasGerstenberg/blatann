@@ -92,6 +92,7 @@ with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-dri
 - [X] License
 - [ ] Unit Tests
 - [ ] Integration Tests
+    - In progress. Advertising and Scanning mostly done
 
 
 The library aims to support both event-driven and procedural program styles. It takes similar paradigms from C#/.NET's event function signatures,
