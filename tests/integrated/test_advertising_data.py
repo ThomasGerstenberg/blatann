@@ -94,28 +94,12 @@ class TestAdvertisingData(BlatannTestCase):
         self.assertEqual(self.default_adv_data.local_name, adv_data.local_name)
         self.assertEqual(self.default_scan_data.service_uuid16s, adv_data.service_uuid16s)
 
-    def test_non_active_scanning_no_scan_response_packets_received(self):
-        self.dev1.advertiser.set_advertise_data(self.default_adv_data, self.default_scan_data)
-        self.dev1.advertiser.start()
-        self._configure_scan(active_scan=False)
-        self.dev2.scanner.set_default_scan_params(100, 100, 5, active_scanning=False)
-        results = self.dev2.scanner.start_scan(clear_scan_reports=True).wait(10)
-
-        # Get the list of all advertising packets from the advertiser
-        all_packets, adv_packets, scan_response_packets = self._get_packets_for_adv(results)
-        self.assertGreater(len(all_packets), 0)
-        self.assertEqual(len(all_packets), len(adv_packets))
-        self.assertEqual(0, len(scan_response_packets))
-
-        for p in adv_packets:
-            self.assertEqual(self.default_adv_data_bytes, p.raw_bytes)
-
     def test_non_connectable_undirected_no_scan_response_packets_received(self):
         self._configure_adv(adv_mode=AdvertisingMode.non_connectable_undirected)
         self.dev1.advertiser.set_advertise_data(self.default_adv_data, self.default_scan_data)
         self.dev1.advertiser.start()
-        self.dev2.scanner.set_default_scan_params(100, 100, 5, active_scanning=False)
-        results = self.dev2.scanner.start_scan(clear_scan_reports=True).wait(10)
+        self.dev2.scanner.set_default_scan_params(100, 100, 5, active_scanning=True)
+        results = self.dev2.scanner.start_scan().wait(10)
 
         # Get the list of all advertising packets from the advertiser
         all_packets, adv_packets, scan_response_packets = self._get_packets_for_adv(results)

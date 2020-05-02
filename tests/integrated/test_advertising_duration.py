@@ -9,6 +9,10 @@ from blatann.utils import Stopwatch
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
 
 
+# TODO: The acceptable duration deltas are generous because the nRF52 dev kits (being UART) are slower
+#       than the nRF52840 dongles by roughly an order of magnitude (1M baud UART vs. USB-CDC)
+
+
 class TestAdvertisingDuration(BlatannTestCase):
     def setUp(self) -> None:
         self.adv_interval_ms = 50
@@ -23,8 +27,8 @@ class TestAdvertisingDuration(BlatannTestCase):
         self.dev1.advertiser.stop()
         self.dev2.scanner.stop()
 
-    @long_running
-    @TestParams([dict(duration=x) for x in [1, 4, 8, 10]])
+    @TestParams([dict(duration=x) for x in [1, 4, 10]], long_running_params=
+                [dict(duration=x) for x in [120, 180]])
     def test_advertise_duration(self, duration):
         acceptable_delta = 0.100
         acceptable_delta_scan = 1.000
@@ -49,15 +53,11 @@ class TestAdvertisingDuration(BlatannTestCase):
         self.assertFalse(wait_stopwatch.is_running)
         self.assertFalse(self.dev1.advertiser.is_advertising)
 
-        wait_delta = abs(duration - wait_stopwatch.elapsed)
-        self.assertLessEqual(wait_delta, acceptable_delta)
+        self.assertDeltaWithin(duration, wait_stopwatch.elapsed, acceptable_delta)
+        self.assertDeltaWithin(duration, scan_stopwatch.elapsed, acceptable_delta_scan)
 
-        scan_delta = abs(duration - scan_stopwatch.elapsed)
-        self.assertLessEqual(scan_delta, acceptable_delta_scan)
-
-        self.logger.info("Wait Delta: {:.3f}, Scan Delta: {:.3f}".format(wait_delta, scan_delta))
-
-    @TestParams([dict(duration=x) for x in [1, 2, 4]])
+    @TestParams([dict(duration=x) for x in [1, 2, 4, 10]], long_running_params=
+                [dict(duration=x) for x in [30, 60]])
     def test_advertise_duration_timeout_event(self, duration):
         acceptable_delta = 0.100
         on_timeout_event = threading.Event()
@@ -73,9 +73,7 @@ class TestAdvertisingDuration(BlatannTestCase):
         self.assertTrue(on_timeout_event.is_set())
         self.assertFalse(self.dev1.advertiser.is_advertising)
 
-        actual_delta = abs(duration - stopwatch.elapsed)
-        self.assertLessEqual(actual_delta, acceptable_delta)
-        self.logger.info("Delta: {:.3f}".format(actual_delta))
+        self.assertDeltaWithin(duration, stopwatch.elapsed, acceptable_delta)
 
     def test_advertise_auto_restart(self):
         # Scan for longer than the advertising duration,
@@ -100,9 +98,7 @@ class TestAdvertisingDuration(BlatannTestCase):
 
         report_seen_duration = report_timestamps[-1] - report_timestamps[0]
 
-        delta = abs(report_seen_duration - scan_duration)
-        self.assertLessEqual(delta, acceptable_delta)
-        self.logger.info("Delta: {:.3f}".format(delta))
+        self.assertDeltaWithin(scan_duration, report_seen_duration, acceptable_delta)
 
 
 if __name__ == '__main__':

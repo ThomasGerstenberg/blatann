@@ -1,7 +1,9 @@
 import os
 import logging
+import time
 from typing import Optional
 from unittest import TestCase, SkipTest
+from unittest.util import safe_repr
 from functools import wraps
 
 from blatann import BleDevice
@@ -46,6 +48,7 @@ class BlatannTestCase(TestCase):
     def setUpClass(cls) -> None:
         if BlatannTestCase.logger is None:
             BlatannTestCase.logger = setup_logger()
+        cls.logger = logging.getLogger(cls.__module__)
 
         cls.dev1 = _configure_device(1, cls.dev1_config)
         cls.dev2 = _configure_device(2, cls.dev2_config)
@@ -68,26 +71,50 @@ class BlatannTestCase(TestCase):
         cls.dev2.close()
         if cls.dev3:
             cls.dev3.close()
+        # Wait some time for the devices to close and the device to reset
+        # The nRF52 dev kits don't need this, but the nrf52840 USB dongles seem to need a 2s delay.
+        # Guessing this is due to the Comport being USB-CDC and during the reset the USB device is not enumerated
+        # versus the dev kits where the port persists across MCU reboots since it is routed through the on-board J-Link
+        time.sleep(2)
+
+    def assertDeltaWithin(self, expected_value, actual_value, acceptable_delta, message=""):
+        actual_delta = abs(expected_value - actual_value)
+        self.logger.debug(f"Delta: {actual_delta:.3f}, Acceptable: {acceptable_delta:.3f}")
+        if not actual_delta <= acceptable_delta:
+            standard_msg = "%s is not within %s +- %s" % (safe_repr(actual_value), safe_repr(expected_value),
+                                                          safe_repr(acceptable_delta))
+            self.fail(self._formatMessage(message, standard_msg))
 
 
 class TestParams(object):
-    def __init__(self, test_params, setup=None, teardown=None):
+    def __init__(self, test_params, setup=None, teardown=None, long_running_params=None):
         self.test_params = test_params
+        self.long_running_params = long_running_params or []
         self._setup = setup
         self._teardown = teardown
 
     def __call__(self, func):
         @wraps(func)
         def subtest_runner(test_case: BlatannTestCase):
+            tc_name = f"{test_case.__class__.__name__}.{func.__name__}"
+
+            quick_tests = int(os.environ.get(BLATANN_QUICK_ENVKEY, 0))
+            test_params = self.test_params + self.long_running_params
+            n_tests_to_run = len(self.test_params) if quick_tests else len(test_params)
+
             try:
                 self.setup(test_case)
 
-                for tc in self.test_params:
-                    with test_case.subTest(**tc):
-                        param_s = ", ".join("{}={!r}".format(k, v) for k, v in tc.items())
-                        test_case.logger.info(
-                            "Running {}.{}({})".format(self.__class__.__name__, func.__name__, param_s))
-                        func(test_case, **tc)
+                for i, params in enumerate(test_params):
+                    param_str = ", ".join("{}={!r}".format(k, v) for k, v in params.items())
+                    subtest_str = f"{tc_name}({param_str})"
+
+                    with test_case.subTest(**params):
+                        if i < n_tests_to_run:
+                            test_case.logger.info(f"Running {subtest_str}")
+                            func(test_case, **params)
+                        else:
+                            test_case.skipTest(f"Skipping {subtest_str} because it's a long-running test")
             finally:
                 self.teardown(test_case)
 
@@ -112,7 +139,7 @@ class TestParams(object):
 
 def long_running(func):
     @wraps(func)
-    def f(self: TestCase, *args, **kwargs):
+    def f(self: BlatannTestCase, *args, **kwargs):
         quick_tests = int(os.environ.get(BLATANN_QUICK_ENVKEY, 0))
         if quick_tests:
             name = "{}.{}".format(self.__class__.__name__, func.__name__)
