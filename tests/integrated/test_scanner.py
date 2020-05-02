@@ -3,7 +3,7 @@ import unittest
 
 from blatann.gap.advertising import AdvertisingMode
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags, AdvertisingPacketType
-from blatann.gap.scanning import ScanReport, Scanner, MIN_SCAN_WINDOW_MS, MIN_SCAN_INTERVAL_MS, ScanParameters
+from blatann.gap.scanning import MIN_SCAN_WINDOW_MS, MIN_SCAN_INTERVAL_MS, ScanParameters
 from blatann.uuid import Uuid16
 from blatann.utils import Stopwatch
 
@@ -33,7 +33,8 @@ class TestScanner(BlatannTestCase):
         scan_response_packets = [p for p in all_packets if p.packet_type == AdvertisingPacketType.scan_response]
         return all_packets, adv_packets, scan_response_packets
 
-    @TestParams([dict(duration=x) for x in [1, 2, 4, 10]])
+    @TestParams([dict(duration=x) for x in [1, 2, 4, 10]], long_running_params=
+                [dict(duration=x) for x in [60, 120]])
     def test_scan_duration(self, duration):
         acceptable_delta = 0.100
         on_timeout_event = threading.Event()

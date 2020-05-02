@@ -106,7 +106,7 @@ class TestParams(object):
                 self.setup(test_case)
 
                 for i, params in enumerate(test_params):
-                    param_str = ", ".join("{}={!r}".format(k, v) for k, v in params.items())
+                    param_str = ", ".join(f"{k}={repr(v)}" for k, v in params.items())
                     subtest_str = f"{tc_name}({param_str})"
 
                     with test_case.subTest(**params):
