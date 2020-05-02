@@ -24,7 +24,7 @@ class ScanParameters(nrf_types.BLEGapScanParams):
         self._validate(window_ms, interval_ms, timeout_s)
         self.window_ms = window_ms
         self.interval_ms = interval_ms
-        self.timeout_s = timeout_s,
+        self.timeout_s = timeout_s
         self.active = active
 
     def _validate(self, window_ms, interval_ms, timeout_s):
