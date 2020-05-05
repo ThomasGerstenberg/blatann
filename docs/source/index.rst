@@ -1,17 +1,23 @@
-.. Blatann documentation master file, created by
-   sphinx-quickstart on Wed Jun  5 21:14:59 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Blatann
+=======
 
-Welcome to Blatann's documentation!
-===================================
+blåtann: Norwegian word for "blue tooth"
+
+Blatann aims to provide a high-level, object-oriented interface for interacting
+with bluetooth devices through python. It operates using a Nordic nRF52 through Nordic's ``pc-ble-driver-py``
+library and the associated Connectivity firmware for the device.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-.. toctree::
-    modules
+   getting_started
+   examples
+   compatibility_matrix
+   troubleshooting
+   architecture
+   api_reference
+
 
 Indices and tables
 ==================
