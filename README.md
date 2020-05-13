@@ -6,6 +6,8 @@ The goal of this library is to provide a high-level, object-oriented interface
 for performing bluetooth operations using the Nordic nRF52 through Nordic's `pc-ble-driver-py` library
 and the associated Connectivity firmware.
 
+Documentation is available on [ReadTheDocs](blatann.readthedocs.io)
+
 ### Install
 
 `pip install blatann`
@@ -24,19 +26,20 @@ This library has been tested using both the nRF52 Dev Kits, the nRF52840 USB Don
 \* I have not personally tested the nRF52840 compatibility for v0.2.x, only heard second-hand accounts of it working. v0.3+ has been tested with the nRF52840 USB Dongle
 
 When using the nRF52840, it should be flashed using the S132/SoftDevice v5 connectivity images. Both hex files and DFU packages are distributed by default
-with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.1) and is also bundled with `pc-ble-driver-py` install, allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop)
+with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.1) and is also bundled with `pc-ble-driver-py` install,
+allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop)
 
 ### Roadmap
 
 - [ ] Documentation
-    - [ ] ReadTheDocs integration (started, needs refinement)
+    - [ ] ReadTheDocs integration (in progress)
     - [ ] Better type hinting
 - [ ] GAP
     - [X] BLE Enable parameters
     - [X] BLE Connection parameters (functional, needs some work)
     - [X] Advertising
     - [X] Data Length Extensions
-    - [ ] Scanning (functional, needs some refactoring)
+    - [X] Scanning
     - [ ] Documentation
 - [ ] SMP
     - [X] Encryption/Authentication process
@@ -45,11 +48,13 @@ with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-dri
       - Currently uses pickle which is not secure
     - [X] Identity resolve
     - [X] Bonding as Peripheral
-    - [ ] Bonding as Central (implemented, not tested)
+    - [X] Bonding as Central
     - [X] LESC pairing
     - [ ] Documentation
 - [ ] GATT
     - [X] Configurable MTU
+    - [ ] Generic Access service configuration
+    - [ ] Service Changed characteristic
 - [ ] GATT Server
     - [x] Characteristic Reads
     - [x] Characteristic Writes
@@ -102,7 +107,7 @@ until the event associated with the function call returns.
 
 **NOTE**
 
-This library is very much a work in progress. Interfaces, objects, method names **will** change.
+As of v0.3.0, the public-facing API is stable. There is not likely to be any major changes in method/property naming or functionality
 
 
 ### Examples

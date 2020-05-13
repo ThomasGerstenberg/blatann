@@ -82,6 +82,10 @@ class _UuidManager(object):
 
 
 class BleDevice(NrfDriverObserver):
+    """
+    Represents the Bluetooth device itself. Provides the high-level bluetooth APIs (Advertising, Scanning, Connections),
+    configuration, and bond database
+    """
     def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False):
         self.ble_driver = NrfDriver(comport, baud, log_driver_comms)
         self.event_logger = _EventLogger(self.ble_driver)
@@ -108,6 +112,24 @@ class BleDevice(NrfDriverObserver):
                   max_connected_clients=1, max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
                   att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE, device_name=""):
+        """
+        Configures the BLE Device with the given settings.
+
+        .. note:: Configuration must be set before opening the device
+
+        :param vendor_specific_uuid_count: The Nordic hardware limits number of 128-bit Base UUIDs
+                                           that the device can know about. This normally equals the number of custom services
+                                           that are to be supported, since characteristic UUIDs are usually derived from the service base UUID.
+        :param service_changed: Whether or not the Service Changed characteristic is exposed in the GAP service
+        :param max_connected_peripherals: The maximum number of concurrent connections with peripheral devices
+        :param max_connected_clients: The maximum number of concurrent connections with client devices (NOTE: blatann currently only supports 1)
+        :param max_secured_peripherals: The maximum number of concurrent peripheral connections that will need security (bonding/pairing) enabled
+        :param attribute_table_size: The maximum size of the attribute table.
+                                     Increase this number if there's a lot of services/characteristics in your GATT database.
+        :param att_mtu_max_size: The maximum ATT MTU size supported. The default supports an MTU which will fit into
+                                 a single transmission if Data Length Extensions is set to its max (251)
+        :param device_name: The name of the device reported in the Generic Access service
+        """
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
         if device_name and isinstance(device_name, str):
@@ -119,6 +141,11 @@ class BleDevice(NrfDriverObserver):
         self._default_conn_config.max_att_mtu = att_mtu_max_size
 
     def open(self, clear_bonding_data=False):
+        """
+        Opens the connection to the BLE device. Must be called prior to performing any BLE operations
+
+        :param clear_bonding_data: Flag that the bonding data should be cleared prior to opening the device.
+        """
         if clear_bonding_data:
             self.clear_bonding_data()
         else:
@@ -129,6 +156,9 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.ble_enable(self._ble_configuration)
 
     def close(self):
+        """
+        Closes the connection to the BLE device
+        """
         if self.ble_driver.is_open:
             self.ble_driver.close()
             self.bond_db_loader.save(self.bond_db)
@@ -137,6 +167,10 @@ class BleDevice(NrfDriverObserver):
         self.close()
 
     def clear_bonding_data(self):
+        """
+        Clears out all bonding data from the bond database. Any subsequent connections
+        will require re-pairing.
+        """
         logger.info("Clearing out all bonding information")
         self.bond_db.delete_all()
         self.bond_db_loader.save(self.bond_db)
@@ -163,25 +197,22 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.ble_gap_addr_set(address)
 
     @property
-    def database(self):
+    def database(self) -> gatts.GattsDatabase:
         """
         Gets the local database instance that is accessed by connected clients
 
         :return: The local database
-        :rtype: gatts.GattsDatabase
         """
         return self._db
 
     @property
-    def max_mtu_size(self):
+    def max_mtu_size(self) -> int:
         """
         The maximum allowed ATT MTU size that was configured for the device
-
-        :rtype: int
         """
         return self._default_conn_config.max_att_mtu
 
-    def connect(self, peer_address, connection_params=None):
+    def connect(self, peer_address, connection_params=None) -> PeripheralConnectionWaitable:
         """
         Initiates a connection to a peripheral peer with the specified connection parameters, or uses the default
         connection parameters if not specified. The connection will not be complete until the returned waitable
@@ -193,7 +224,6 @@ class BleDevice(NrfDriverObserver):
         :type connection_params: peer.ConnectionParameters
         :return: A Waitable which can be used to wait until the connection is successful or times out. Waitable returns
                  a peer.Peripheral object
-        :rtype: PeripheralConnectionWaitable
         """
         if peer_address in self.connected_peripherals.keys():
             raise exceptions.InvalidStateException("Already connected to {}".format(peer_address))
@@ -209,7 +239,8 @@ class BleDevice(NrfDriverObserver):
                                         conn_cfg_tag=self._default_conn_config.conn_tag)
         return periph_connection_waitable
 
-    def set_default_peripheral_connection_params(self, min_interval_ms, max_interval_ms, timeout_ms, slave_latency=0):
+    def set_default_peripheral_connection_params(self, min_interval_ms: float, max_interval_ms: float,
+                                                 timeout_ms: int, slave_latency: int = 0):
         """
         Sets the default connection parameters for all subsequent connection attempts to peripherals.
         Refer to the Bluetooth specifications for the valid ranges
@@ -227,6 +258,9 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.ble_user_mem_reply(event.conn_handle)
 
     def on_driver_event(self, nrf_driver, event):
+        """
+        For internal use only
+        """
         if isinstance(event, nrf_events.GapEvtConnected):
             conn_params = peer.ConnectionParameters(event.conn_params.min_conn_interval_ms,
                                                     event.conn_params.max_conn_interval_ms,
