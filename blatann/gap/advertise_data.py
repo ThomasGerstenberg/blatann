@@ -336,4 +336,4 @@ class ScanReportCollection(object):
             self._scans_by_peer_address[adv_report.peer_addr].update(adv_report)
         else:
             self._scans_by_peer_address[adv_report.peer_addr] = ScanReport(adv_report)
-        return self._scans_by_peer_address[adv_report.peer_addr]
+        return scan_entry

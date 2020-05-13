@@ -1,13 +1,19 @@
 Getting Started
 ===============
 
+As of v0.3.0, blatann will only support Python 3.7+.
+v0.2.x will be partially maintained for Python 2.7 by backporting issues/bugs found in 0.3.x.
+
 Introduction
 ^^^^^^^^^^^^
 
 This library relies on a Nordic nRF52 connected via USB to the PC and flashed with the
 Nordic Connectivity firmware in order to operate.
 
-.. note:: This is not meant to work with any generic Bluetooth HCI USB device nor built-in Bluetooth radios.
+.. note::
+   This library is not meant to work with any generic Bluetooth HCI USB device nor built-in Bluetooth radios.
+   The implementation is very specific to Nordic and their provided connectivity firmware,
+   thus other Bluetooth vendors will not work.
 
 Below are the known supported devices:
 
@@ -45,8 +51,9 @@ Blatann's examples can be executed from the command line using
 For the smoke test, use the ``scanner`` example which will stream any advertising packets found for about 4 seconds:
 ``python -m blatann.examples scanner <comport>``
 
-If everything goes well, head on over to :doc:`./examples` to look at the library in action.
-If this does not seem to be working, check out the :doc:`./troubleshooting` page.
+If everything goes well, head on over to :doc:`./examples` to look at the library in action or
+visit :doc:`./architecture` to get an overview of the library.
+If things do not seem to be working, check out the :doc:`./troubleshooting` page.
 
 
 .. _nRF Connect: https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Connect-for-desktop

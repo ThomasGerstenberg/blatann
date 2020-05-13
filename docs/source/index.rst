@@ -16,6 +16,7 @@ library and the associated Connectivity firmware for the device.
    compatibility_matrix
    troubleshooting
    architecture
+   changelog
    api_reference
 
 

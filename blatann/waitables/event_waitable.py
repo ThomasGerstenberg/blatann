@@ -1,16 +1,13 @@
-from typing import TypeVar, Generic, Tuple
+from typing import Generic, Tuple, Callable
 from blatann.waitables.waitable import Waitable
-
-
-TSender = TypeVar("TSender")
-TEvent = TypeVar("TEvent")
+from blatann.event_type import Event, TSender, TEvent
 
 
 class EventWaitable(Waitable, Generic[TSender, TEvent]):
-    def __init__(self, event):
-        """
-        :type event: blatann.event_type.Event
-        """
+    """
+    Waitable implementation which waits on an :class:`~blatann.event_type.Event`.
+    """
+    def __init__(self, event: Event[TSender, TEvent]):
         super(EventWaitable, self).__init__(n_args=2)
         self._event = event
         self._event.register(self._on_event)
@@ -28,8 +25,15 @@ class EventWaitable(Waitable, Generic[TSender, TEvent]):
             return None, None
         return res
 
+    def then(self, callback: Callable[[TSender, TEvent], None]):
+        super(EventWaitable, self).then(callback)
+
 
 class IdBasedEventWaitable(EventWaitable):
+    """
+    Extension of :class:`EventWaitable` for high-churn events which require IDs,
+    such as characteristic read, write and notify operations
+    """
     def __init__(self, event, event_id):
         super(IdBasedEventWaitable, self).__init__(event)
         self.id = event_id
