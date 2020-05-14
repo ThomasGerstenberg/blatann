@@ -11,9 +11,9 @@ This library relies on a Nordic nRF52 connected via USB to the PC and flashed wi
 Nordic Connectivity firmware in order to operate.
 
 .. note::
-   This library is not meant to work with any generic Bluetooth HCI USB device nor built-in Bluetooth radios.
-   The implementation is very specific to Nordic and their provided connectivity firmware,
-   thus other Bluetooth vendors will not work.
+   This library will not work as a driver for any generic Bluetooth HCI USB device nor built-in Bluetooth radios.
+   The driver is very specific to Nordic and their provided connectivity firmware,
+   thus other Bluetooth vendors will not work. (BLE communications with non-Nordic devices is not affected.)
 
 Below are the known supported devices:
 
