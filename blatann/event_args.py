@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Callable, Union
 from enum import Enum
 from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
 
@@ -77,7 +77,7 @@ class PasskeyEntryEventArgs(EventArgs):
     """
     Event arguments when a passkey needs to be entered by the user
     """
-    def __init__(self, key_type, resolve):
+    def __init__(self, key_type, resolve: Callable[[Union[str, int]], None]):
         """
         :param key_type: The type of key to be entered (passcode, or out-of-band)
         :type key_type: blatann.gap.AuthenticationKeyType
@@ -86,7 +86,17 @@ class PasskeyEntryEventArgs(EventArgs):
         :type resolve: function
         """
         self.key_type = key_type
-        self.resolve = resolve
+        self._resolver = resolve
+
+    def resolve(self, passkey: Union[str, int] = None):
+        """
+        Submits the passkey entered by the user to the peer
+
+        :param passkey: The passkey entered by the user.
+                        If the key type is passcode, should be a 6-digit string or integer.
+                        Use ``None`` or an empty string to cancel.
+        """
+        self._resolver(passkey)
 
 
 class PasskeyDisplayEventArgs(EventArgs):
@@ -95,7 +105,7 @@ class PasskeyDisplayEventArgs(EventArgs):
     If match_request is set, the user must confirm that the passkeys match on both devices then send back the confirmation
 
     """
-    def __init__(self, passkey, match_request, match_confirm_callback):
+    def __init__(self, passkey: str, match_request: bool, match_confirm_callback: Callable[[bool], None]):
         """
         :param passkey: The passkey to display to the user
         :type passkey: str
@@ -120,7 +130,7 @@ class WriteEventArgs(EventArgs):
     """
     Event arguments for when a client has written to a characteristic on the local database
     """
-    def __init__(self, value):
+    def __init__(self, value: bytes):
         """
         :param value: The bytes written to the characteristic
         """
@@ -159,12 +169,11 @@ class NotificationCompleteEventArgs(EventArgs):
     """
     Reason = GattOperationCompleteReason
 
-    def __init__(self, notification_id, data, reason):
+    def __init__(self, notification_id: int, data: bytes, reason: GattOperationCompleteReason):
         """
         :param notification_id: The ID of the notification that completed. This will match an ID of a sent notification
         :param data: The data that was sent (or not sent, if failed) to the client
         :param reason: The reason the notification completed
-        :type reason: GattOperationCompleteReason
         """
         self.id = notification_id
         self.data = data
@@ -177,14 +186,12 @@ class ReadCompleteEventArgs(EventArgs):
     """
     Event arguments for when a read has completed of a peripheral's characteristic
     """
-    def __init__(self, read_id, value, status, reason):
+    def __init__(self, read_id: int, value: bytes, status: GattStatusCode, reason: GattOperationCompleteReason):
         """
         :param read_id: The ID of the read that completed. This will match an id of an initiated read
         :param value: The value read by the characteristic (bytes)
         :param status: The read status
-        :type status: blatann.gatt.GattStatusCode
         :param reason: The reason the read completed
-        :type reason: GattOperationCompleteReason
         """
         self.id = read_id
         self.value = value
@@ -196,14 +203,12 @@ class WriteCompleteEventArgs(EventArgs):
     """
     Event arguments for when a write has completed on a peripheral's characteristic
     """
-    def __init__(self, write_id, value, status, reason):
+    def __init__(self, write_id: int, value: bytes, status: GattStatusCode, reason: GattOperationCompleteReason):
         """
         :param write_id: the ID of the write that completed. This will match an id of an initiated write
         :param value: The value that was written to the characteristic (bytes)
         :param status: The write status
-        :type status: blatann.gatt.GattStatusCode
         :param reason: The reason the write completed
-        :type reason: GattOperationCompleteReason
         """
         self.id = write_id
         self.value = value
@@ -215,14 +220,12 @@ class SubscriptionWriteCompleteEventArgs(EventArgs):
     """
     Event arguments for when changing the subscription state of a characteristic completes
     """
-    def __init__(self, write_id, value, status, reason):
+    def __init__(self, write_id: int, value: bytes, status: GattStatusCode, reason: GattOperationCompleteReason):
         """
         :param write_id: the ID of the write that completed. This will match an id of an initiated write
         :param value: The value that was written to the characteristic (bytes)
         :param status: The write status
-        :type status: blatann.gatt.GattStatusCode
         :param reason: The reason the write completed
-        :type reason: GattOperationCompleteReason
         """
         self.id = write_id
         self.value = value
@@ -234,7 +237,7 @@ class NotificationReceivedEventArgs(EventArgs):
     """
     Event Arguments for when a notification or indication is received from the peripheral
     """
-    def __init__(self, value, is_indication):
+    def __init__(self, value: bytes, is_indication: bool):
         """
         :param value: The data sent in the notification.
                       NOTE: This may not contain the whole characteristic data if more than 1 MTU is required.
@@ -249,10 +252,9 @@ class DatabaseDiscoveryCompleteEventArgs(EventArgs):
     """
     Event Arguments for when database discovery completes
     """
-    def __init__(self, status):
+    def __init__(self, status: GattStatusCode):
         """
         :param status: The discovery status
-        :type status: blatann.gatt.GattStatusCode
         """
         self.status = status
 
@@ -262,15 +264,15 @@ class DecodedReadCompleteEventArgs(ReadCompleteEventArgs, Generic[TDecodedValue]
     Event Arguments for when a read on a peripheral's characteristic completes and the data stream returned
     is decoded. If unable to decode the value, the bytes read are still returned
     """
-    def __init__(self, read_id, value, status, reason, decoded_stream: TDecodedValue = None):
+    def __init__(self, read_id: int, value: bytes, status: GattStatusCode, reason: GattOperationCompleteReason,
+                 decoded_stream: TDecodedValue = None):
         """
-        :param read_complete_event_args: The read complete event args that this wraps
-        :type read_complete_event_args: ReadCompleteEventArgs
         :param decoded_stream: The stream which is decoded into an object. This will vary depending on the decoder
         """
         super(DecodedReadCompleteEventArgs, self).__init__(read_id, value, status, reason)
         self.raw_value = value
-        if decoded_stream:
+        self.decode_successful = decoded_stream is not None
+        if self.decode_successful:
             self.value = decoded_stream
 
     @staticmethod
@@ -289,6 +291,6 @@ class MtuSizeUpdatedEventArgs(EventArgs):
     """
     Event arguments for when the effective MTU size on a connection is updated
     """
-    def __init__(self, previous_mtu_size, current_mtu_size):
+    def __init__(self, previous_mtu_size: int, current_mtu_size: int):
         self.previous_mtu_size = previous_mtu_size
         self.current_mtu_size = current_mtu_size

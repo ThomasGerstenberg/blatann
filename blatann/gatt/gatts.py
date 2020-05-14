@@ -241,7 +241,7 @@ class GattsCharacteristic(gatt.Characteristic):
             logger.debug("New value: 0x{}".format(binascii.hexlify(new_value)))
             self.ble_device.ble_driver.ble_gatts_value_set(self.peer.conn_handle, self.value_handle,
                                                            nrf_types.BLEGattsValue(new_value))
-            self._value = new_value
+            self._value = bytes(new_value)
             self._on_write.notify(self, WriteEventArgs(self.value))
         self._queued_write_chunks = []
 
@@ -261,8 +261,8 @@ class GattsCharacteristic(gatt.Characteristic):
             return
         elif event.attribute_handle != self.value_handle:
             return
-        self._value = bytearray(event.data)
-        self._on_write.notify(self, WriteEventArgs(bytes(self.value)))
+        self._value = bytes(bytearray(event.data))
+        self._on_write.notify(self, WriteEventArgs(self.value))
 
     def _on_write_auth_request(self, write_event):
         """
@@ -363,7 +363,7 @@ class GattsService(gatt.Service):
         """
         Adds a new characteristic to the service
 
-        :param: The UUID of the characteristic to add
+        :param uuid: The UUID of the characteristic to add
         :param properties: The characteristic's properties
         :param initial_value: The initial value of the characteristic. May be a string, bytearray, or list of ints
         :type initial_value: str or list or bytearray

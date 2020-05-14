@@ -12,9 +12,11 @@ import threading
 import time
 
 from blatann import BleDevice
+from blatann.uuid import Uuid16
 from blatann.examples import example_utils, constants
 from blatann.gap import advertising, smp, IoCapabilities
 from blatann.waitables import GenericWaitable
+
 
 logger = example_utils.setup_logger(level="DEBUG")
 
@@ -87,6 +89,44 @@ def on_time_char_read(characteristic, event_args):
     ms = int((t * 1000) % 1000)
     msg = "Time: {}.{:03}".format(time.strftime("%H:%M:%S", time.localtime(t)), ms)
     characteristic.set_value(msg)
+
+
+def on_discovery_complete(peer, event_args):
+    """
+    Callback for when the service discovery completes on the client. This will look for the client's Device name
+    characteristic (part of the Generic Access Service) and read the value
+
+    :param peer: The peer the discovery completed on
+    :type peer: blatann.peer.Client
+    :param event_args: The event arguments (unused)
+    :type event_args: blatann.event_args.DatabaseDiscoveryCompleteEventArgs
+    """
+    device_name_char = peer.database.find_characteristic(Uuid16(0x2A00))
+    if device_name_char:
+        device_name_char.read().then(lambda c, e: logger.info("Client's device name: {}".format(e.value.decode("utf-8"))))
+    else:
+        logger.info("Peer does not have a device name characteristic")
+
+
+def on_security_level_changed(peer, event_args):
+    """
+    Called when the security level changes, i.e. a bonded device connects and enables encryption or pairing has finished.
+    If security has been enabled (i.e. bonded) and the peer's services have yet to be discovered, discover now.
+
+    This code demonstrates that even in a peripheral connection role, the peripheral can still discover the database
+    on the client, if the client has a database.
+
+    :param peer: The peer that security was changed to
+    :type peer: blatann.peer.Client
+    :param event_args: the event arguments
+    :type event_args: blatann.event_args.SecurityLevelChangedEventArgs
+    """
+    if event_args.security_level in [smp.SecurityLevel.MITM, smp.SecurityLevel.LESC_MITM, smp.SecurityLevel.JUST_WORKS]:
+        logger.info("Secure connections established, discovering database on the client")
+        if not peer.database.services:
+            peer.discover_services().then(on_discovery_complete)
+        else:
+            on_discovery_complete(peer, None)
 
 
 def on_client_pairing_complete(peer, event_args):
@@ -205,6 +245,7 @@ def main(serial_port):
     ble_device.client.security.on_pairing_complete.register(on_client_pairing_complete)
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
     ble_device.client.security.on_passkey_required.register(on_passkey_entry)
+    ble_device.client.security.on_security_level_changed.register(on_security_level_changed)
 
     # Create and add the math service
     service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
@@ -252,4 +293,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM8")
+    main("COM13")

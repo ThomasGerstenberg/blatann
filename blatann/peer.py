@@ -120,10 +120,12 @@ class Peer(object):
         self._negotiated_mtu_size = None
         self._disconnection_reason = nrf_events.BLEHci.local_host_terminated_connection
 
-
         self._connection_based_driver_event_handlers = {}
         self._connection_handler_lock = threading.Lock()
+
         self.security = smp.SecurityManager(self._ble_device, self, security_params)
+        self._db = gattc.GattcDatabase(ble_device, self)
+        self._discoverer = service_discovery.DatabaseDiscoverer(ble_device, self)
 
     """
     Properties
@@ -214,6 +216,18 @@ class Peer(object):
         self._validate_mtu_size(mtu_size)
         self._preferred_mtu_size = mtu_size
 
+    @property
+    def database(self) -> gattc.GattcDatabase:
+        """
+        Gets the database on the peer.
+
+        .. note:: This is not useful until services are discovered first
+
+        :return: The database instance
+        """
+        return self._db
+
+
     """
     Events
     """
@@ -222,10 +236,6 @@ class Peer(object):
     def on_connect(self) -> Event[Peer, None]:
         """
         Event generated when the peer connects to the local device
-
-        Event Args: None
-
-        :return: an Event which can have handlers registered to and deregistered from
         """
         return self._on_connect
 
@@ -233,8 +243,6 @@ class Peer(object):
     def on_disconnect(self) -> Event[Peer, DisconnectionEventArgs]:
         """
         Event generated when the peer disconnects from the local device
-
-        :return: an Event which can have handlers registered to and deregistered from
         """
         return self._on_disconnect
 
@@ -242,9 +250,6 @@ class Peer(object):
     def on_mtu_exchange_complete(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
         Event generated when an MTU exchange completes with the peer
-
-        :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_mtu_exchange_complete
 
@@ -252,11 +257,15 @@ class Peer(object):
     def on_mtu_size_updated(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
         Event generated when the effective MTU size has been updated on the connection.
-
-        :return: an Event which can have handlers registered to and deregistered from
-        :rtype: blatann.event_type.Event
         """
         return self._on_mtu_size_updated
+
+    @property
+    def on_database_discovery_complete(self) -> Event[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
+        """
+        Event that is triggered when database discovery has completed
+        """
+        return self._discoverer.on_discovery_complete
 
     """
     Public Methods
@@ -318,6 +327,17 @@ class Peer(object):
 
         self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._negotiated_mtu_size)
         return EventWaitable(self._on_mtu_exchange_complete)
+
+    def discover_services(self) -> EventWaitable[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
+        """
+        Starts the database discovery process of the peer. This will discover all services, characteristics, and
+        descriptors on the peer's database.
+        Returns an EventWaitable that will fire when the service discovery completes.
+
+        :return: a Waitable that will fire when service discovery is complete
+        """
+        self._discoverer.start()
+        return EventWaitable(self._discoverer.on_discovery_complete)
 
     """
     Internal Library Methods
@@ -466,37 +486,6 @@ class Peripheral(Peer):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
-        self._db = gattc.GattcDatabase(ble_device, self)
-        self._discoverer = service_discovery.DatabaseDiscoverer(ble_device, self)
-
-    @property
-    def database(self) -> gattc.GattcDatabase:
-        """
-        Gets the database on the peripheral.
-        NOTE: This is not useful until services are discovered first
-
-        :return: The database instance
-        """
-        return self._db
-
-    @property
-    def on_database_discovery_complete(self) -> Event[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
-        """
-        Event that is triggered when database discovery has completed
-        """
-        return self._discoverer.on_discovery_complete
-
-    def discover_services(self) -> EventWaitable[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
-        """
-        Starts the database discovery process of the peripheral. This will discover all services, characteristics, and
-        descriptors on the remote database.
-        Returns an EventWaitable that will fire when the service discovery completes.
-        Waitable returns 2  parameters: (Peripheral this, DatabaseDiscoveryCompleteEventArgs event args)
-
-        :return: a Waitable that will fire when service discovery is complete
-        """
-        self._discoverer.start()
-        return EventWaitable(self._discoverer.on_discovery_complete)
 
 
 class Client(Peer):
@@ -505,3 +494,12 @@ class Client(Peer):
     """
     def __init__(self, ble_device, connection_params=DEFAULT_CONNECTION_PARAMS):
         super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params)
+        self._first_connection = True
+
+    def peer_connected(self, conn_handle, peer_address, connection_params):
+        # Recreate the DB and discovery class since the client object persists across disconnects
+        if not self._first_connection:
+            self._db = gattc.GattcDatabase(self._ble_device, self)
+            self._discoverer = service_discovery.DatabaseDiscoverer(self._ble_device, self)
+        self._first_connection = False
+        super(Client, self).peer_connected(conn_handle, peer_address, connection_params)

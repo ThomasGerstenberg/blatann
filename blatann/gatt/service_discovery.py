@@ -67,7 +67,7 @@ class _Discoverer(object):
     def __init__(self, name, ble_device, peer):
         """
         :type ble_device: blatann.BleDevice
-        :type peer: blatann.peer.Peripheral
+        :type peer: blatann.peer.Peer
         """
         self.ble_device = ble_device
         self.peer = peer
@@ -167,7 +167,7 @@ class _CharacteristicDiscoverer(_Discoverer):
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Peripheral
+        :type peer: blatann.peer.Peer
         """
         super(_CharacteristicDiscoverer, self).__init__("Characteristic Discovery", ble_device, peer)
 
@@ -277,7 +277,7 @@ class _DescriptorDiscoverer(_Discoverer):
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Peripheral
+        :type peer: blatann.peer.Peer
         """
         super(_DescriptorDiscoverer, self).__init__("Descriptor Discovery", ble_device, peer)
         self._state.iterate_by_chars = True
@@ -341,7 +341,7 @@ class DatabaseDiscoverer(object):
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Peripheral
+        :type peer: blatann.peer.Peer
         """
         self.ble_device = ble_device
         self.peer = peer
