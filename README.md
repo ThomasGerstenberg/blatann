@@ -6,7 +6,7 @@ The goal of this library is to provide a high-level, object-oriented interface
 for performing bluetooth operations using the Nordic nRF52 through Nordic's `pc-ble-driver-py` library
 and the associated Connectivity firmware.
 
-Documentation is available on [ReadTheDocs](blatann.readthedocs.io)
+Documentation is available on [ReadTheDocs](https://blatann.readthedocs.io)
 
 ### Install
 

@@ -31,7 +31,7 @@ It is accessed via BleDevice.:attr:`!blatann.device.BleDevice.scanner` attribute
 
 The :class:`~blatann.peer.Peer` class represents a connection with another device over Bluetooth. The BLE Device
 contains a single :class:`~blatann.peer.Client` object, which is the connection with a Client/Central device.
-When connecting to Server/Peripheral devices as a Client/Central via :class:`BleDevice.connect() <blatann.device>BleDevice>`,
+When connecting to Server/Peripheral devices as a Client/Central via :meth:`BleDevice.connect() <blatann.device.BleDevice.connect>`,
 a :class:`~blatann.peer.Peripheral` object is created and returned as a result of the ``connect()`` call.
 
 The Peer object provides everything necessary for communications with the device, including security,
