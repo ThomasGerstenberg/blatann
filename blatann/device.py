@@ -92,7 +92,7 @@ class BleDevice(NrfDriverObserver):
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
         self._ble_configuration = self.ble_driver.ble_enable_params_setup()
-        self._default_conn_config = nrf_types.BleConnConfig(event_length=6)
+        self._default_conn_config = nrf_types.BleConnConfig(event_length=6)  # The minimum event length which supports max DLE
 
         self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader()
         self.bond_db = default_bond_db.DefaultBondDatabase()
