@@ -1,4 +1,5 @@
 import time
+import threading
 import logging
 import sys
 from blatann.utils import _threading
@@ -69,3 +70,24 @@ class Stopwatch(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
         return self
+
+
+class SynchronousMonotonicCounter(object):
+    """
+    Utility class which implements a thread-safe monotonic counter
+    """
+    def __init__(self, start_value=0):
+        self._lock = threading.Lock()
+        self._counter = start_value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        with self._lock:
+            value = self._counter
+            self._counter += 1
+        return value

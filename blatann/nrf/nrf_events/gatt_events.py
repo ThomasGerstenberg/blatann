@@ -1,5 +1,3 @@
-from enum import IntEnum
-
 from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
@@ -58,9 +56,8 @@ class GattcEvtReadResponse(GattcEvt):
         data = None
         if self.data is not None:
             data = ''.join(map(chr, self.data))
-        return "{}(conn_handle={!r}, status={!r}, error_handle={!r}, attr_handle={!r}, offset={!r}, data={!r})".format(
-            self.__class__.__name__, self.conn_handle,
-            self.status, self.error_handle, self.attr_handle, self.offset, data)
+        return self._repr_format(status=self.status, error_handle=self.error_handle, attr_handle=self.attr_handle,
+                                 offset=self.offset, data=data)
 
 
 class GattcEvtHvx(GattcEvt):
@@ -89,9 +86,26 @@ class GattcEvtHvx(GattcEvt):
 
     def __repr__(self):
         data = ''.join(map(chr, self.data))
-        return "{}(conn_handle={!r}, status={!r}, error_handle={!r}, attr_handle={!r}, hvx_type={!r}, data={!r})".format(
-            self.__class__.__name__, self.conn_handle,
-            self.status, self.error_handle, self.attr_handle, self.hvx_type, data)
+        return self._repr_format(status=self.status, error_handle=self.error_handle,
+                                 attr_handle=self.attr_handle,
+                                 hvx_type=self.hvx_type, data=data)
+
+
+class GattcEvtWriteCmdTxComplete(GattcEvt):
+    evt_id = driver.BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE
+
+    def __init__(self, conn_handle, count):
+        super(GattcEvtWriteCmdTxComplete, self).__init__(conn_handle)
+        self.count = count
+
+    @classmethod
+    def from_c(cls, event):
+        tx_evt = event.evt.gattc_evt.params.write_cmd_tx_complete
+        return cls(conn_handle=event.evt.gattc_evt.conn_handle,
+                   count=tx_evt.count)
+
+    def __repr__(self):
+        return self._repr_format(count=self.count)
 
 
 class GattcEvtWriteResponse(GattcEvt):
@@ -122,9 +136,8 @@ class GattcEvtWriteResponse(GattcEvt):
 
     def __repr__(self):
         data = ''.join(map(chr, self.data))
-        return "{}(conn_handle={!r}, status={!r}, error_handle={!r}, attr_handle={!r}, write_op={!r}, offset={!r}, data={!r})".format(
-            self.__class__.__name__, self.conn_handle,
-            self.status, self.error_handle, self.attr_handle, self.write_op, self.offset, data)
+        return self._repr_format(status=self.status, error_handle=self.error_handle, attr_handle=self.attr_handle,
+                                 write_of=self.write_op, offset=self.offset, data=data)
 
 
 class GattcEvtPrimaryServiceDiscoveryResponse(GattcEvt):
@@ -148,8 +161,7 @@ class GattcEvtPrimaryServiceDiscoveryResponse(GattcEvt):
                    services=services)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, status={!r}, services={!r})".format(self.__class__.__name__, self.conn_handle,
-                                                                         self.status, self.services)
+        return self._repr_format(status=self.status, services=self.services)
 
 
 class GattcEvtCharacteristicDiscoveryResponse(GattcEvt):

@@ -47,6 +47,26 @@ class DisconnectionEventArgs(EventArgs):
         self.reason = reason
 
 
+class MtuSizeUpdatedEventArgs(EventArgs):
+    """
+    Event arguments for when the effective MTU size on a connection is updated
+    """
+    def __init__(self, previous_mtu_size: int, current_mtu_size: int):
+        self.previous_mtu_size = previous_mtu_size
+        self.current_mtu_size = current_mtu_size
+
+
+class DataLengthUpdatedEventArgs(EventArgs):
+    """
+    Event arguments for when the Data Length of the link layer has been changed
+    """
+    def __init__(self, tx_bytes: int, rx_bytes: int, tx_time_us: int, rx_time_us: int):
+        self.tx_bytes = tx_bytes
+        self.rx_bytes = rx_bytes
+        self.tx_time_us = tx_time_us
+        self.rx_time_us = rx_time_us
+
+
 # SMP Event Args
 
 class PairingCompleteEventArgs(EventArgs):
@@ -285,12 +305,3 @@ class DecodedReadCompleteEventArgs(ReadCompleteEventArgs, Generic[TDecodedValue]
         return DecodedReadCompleteEventArgs(read_complete_event_args.id, read_complete_event_args.value,
                                             read_complete_event_args.status, read_complete_event_args.reason,
                                             decoded_stream)
-
-
-class MtuSizeUpdatedEventArgs(EventArgs):
-    """
-    Event arguments for when the effective MTU size on a connection is updated
-    """
-    def __init__(self, previous_mtu_size: int, current_mtu_size: int):
-        self.previous_mtu_size = previous_mtu_size
-        self.current_mtu_size = current_mtu_size

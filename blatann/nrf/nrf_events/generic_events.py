@@ -14,9 +14,11 @@ class BLEEvent(object):
     def __str__(self):
         return self.__repr__()
 
-    def _repr_format(self, *args, **kwargs):
-        kwargs["conn_handle"] = self.conn_handle
-        items = list(args) + ["{}={}".format(k, v) for k, v in kwargs.items()]
+    def _repr_format(self, **kwargs):
+        """
+        Helper method to format __repr__ for BLE events
+        """
+        items = ["conn_handle={}".format(self.conn_handle)] + ["{}={}".format(k, v) for k, v in kwargs.items()]
         inner = ", ".join(items)
         return "{}({})".format(self.__class__.__name__, inner)
 
@@ -33,4 +35,4 @@ class EvtUserMemoryRequest(BLEEvent):
         return cls(event.evt.common_evt.conn_handle, event.evt.common_evt.params.user_mem_request.type)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, type={!r})".format(self.__class__.__name__, self.conn_handle, self.type)
+        return self._repr_format(type=self.type)
