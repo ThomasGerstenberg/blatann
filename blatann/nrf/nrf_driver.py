@@ -61,7 +61,7 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
 
     @wrapt.decorator
     def wrapper(wrapped, instance, args, kwargs):
-        logger.debug("[{}] {}{}".format(instance.serial_port, wrapped.__name__, args))
+        logger.debug("[%s] %s%s", instance.serial_port, wrapped.__name__, args)
         result = wrapped(*args, **kwargs)
         if isinstance(result, (list, tuple)):
             err_code = result[0]

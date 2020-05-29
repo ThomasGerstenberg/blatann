@@ -27,7 +27,7 @@ class _EventLogger(NrfDriverObserver):
     def on_driver_event(self, nrf_driver, event):
         with self._lock:
             if type(event) not in self._suppressed_events:
-                logger.debug("Got NRF Driver event: {}".format(event))
+                logger.debug("Got NRF Driver event: %s", event)
 
 
 class _UuidManager(object):

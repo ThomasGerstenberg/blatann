@@ -314,9 +314,8 @@ class GattsEvtWrite(GattsEvt):
         return cls(conn_handle, attr_handle, uuid, write_operand, auth_required, offset, data)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, attr_handle={!r}, uuid={!r}, write_op={!r}, auth_required={!r}, offset={!r}, " \
-               "data={!r})".format(self.__class__.__name__, self.conn_handle, self.attribute_handle, self.uuid,
-                                   self.write_op, self.auth_required, self.offset, self.data)
+        return self._repr_format(attr_handle=self.attribute_handle, uuid=self.uuid, write_op=self.write_op,
+                                 auth_required=self.auth_required, offset=self.offset, data=bytes(self.data))
 
 
 class GattsEvtRead(GattsEvt):  # Not a _true_ event, but is used for the Read/Write event class

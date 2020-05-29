@@ -2,7 +2,8 @@ from enum import IntEnum
 
 from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_dll_load import driver
-import blatann.nrf.nrf_driver_types as util
+import blatann.nrf.nrf_driver_types
+from blatann.utils import repr_format
 
 
 class BLEEvent(object):
@@ -18,9 +19,7 @@ class BLEEvent(object):
         """
         Helper method to format __repr__ for BLE events
         """
-        items = ["conn_handle={}".format(self.conn_handle)] + ["{}={}".format(k, v) for k, v in kwargs.items()]
-        inner = ", ".join(items)
-        return "{}({})".format(self.__class__.__name__, inner)
+        return repr_format(self, conn_handle=self.conn_handle, **kwargs)
 
 
 class EvtUserMemoryRequest(BLEEvent):

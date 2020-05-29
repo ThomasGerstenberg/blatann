@@ -18,6 +18,21 @@ def setup_logger(name=None, level="DEBUG"):
     return logger
 
 
+def repr_format(obj, *args, **kwargs):
+    """
+    Helper function to format objects into strings in the format of:
+    ClassName(param1=value1, param2=value2, ...)
+
+    :param obj: Object to get the class name from
+    :param args: Optional tuples of (param_name, value) which will ensure ordering during format
+    :param kwargs: Other keyword args to populate with
+    :return: String which represents the object
+    """
+    items = args + tuple(kwargs.items())
+    inner = ", ".join("{}={!r}".format(k, v) for k, v in items)
+    return "{}({})".format(obj.__class__.__name__, inner)
+
+
 class Stopwatch(object):
     def __init__(self):
         self._t_start = 0
