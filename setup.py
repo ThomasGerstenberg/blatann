@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 from os import path
 
 
-VERSION = "v0.3.0"
+VERSION = "v0.3.1"
 
 HERE = path.dirname(__file__)
 with open(path.join(HERE, "README.md"), "r", encoding="utf-8") as f:
@@ -20,7 +20,7 @@ setup(
     description="API for controlling nRF52 connectivity devices through pc-ble-driver-py",
     url="https://github.com/ThomasGerstenberg/blatann",
     author="Thomas Gerstenberg",
-    email="tgerst6@gmail.com",
+    author_email="tgerst6@gmail.com",
     keywords="ble bluetooth nrf52 nordic",
     packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=install_requires,
