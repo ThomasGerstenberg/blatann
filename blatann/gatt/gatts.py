@@ -6,6 +6,7 @@ import threading
 import binascii
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
+from blatann.utils import SynchronousMonotonicCounter
 from blatann.uuid import Uuid
 from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
@@ -488,13 +489,10 @@ class GattsDatabase(gatt.GattDatabase):
 
 
 class _Notification(object):
-    _id_counter = 0
-    _lock = threading.Lock()
+    _id_generator = SynchronousMonotonicCounter(1)
 
     def __init__(self, characteristic, handle, on_complete, data):
-        with _Notification._lock:
-            self.id = _Notification._id_counter
-            _Notification._id_counter += 1
+        self.id = _Notification._id_generator.next()
         self.char = characteristic
         self.handle = handle
         self.on_complete = on_complete

@@ -40,11 +40,11 @@ _event_classes = [
     GattcEvtAttrInfoDiscoveryResponse,
     GattcEvtMtuExchangeResponse,
     GattcEvtTimeout,
+    GattcEvtWriteCmdTxComplete,
     # TODO:
     # driver.BLE_GATTC_EVT_REL_DISC_RSP
     # driver.BLE_GATTC_EVT_CHAR_VAL_BY_UUID_READ_RSP
     # driver.BLE_GATTC_EVT_CHAR_VALS_READ_RSP
-    # driver.BLE_GATTC_EVT_WRITE_CMD_TX_COMPLETE
 
     # Gatts
     GattsEvtWrite,

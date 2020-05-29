@@ -5,6 +5,7 @@ import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
 from blatann.nrf.nrf_types.smp import *
 from blatann.nrf.nrf_types.enums import *
+from blatann.utils import repr_format
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,10 @@ class BLEGattcWriteParams(object):
         write_params.write_op = self.write_op.value
 
         return write_params
+
+    def __repr__(self):
+        return repr_format(self, handle=self.handle, write_op=self.write_op, offset=self.offset,
+                           flags=self.flags, data=self.data)
 
 
 class BLEGattcDescriptor(object):
@@ -343,6 +348,9 @@ class BLEGattsAuthorizeParams(object):
 
         return params
 
+    def __repr__(self):
+        return repr_format(self, gatt_status=self.gatt_status, update=self.update, offset=self.offset)
+
 
 class BLEGattsRwAuthorizeReplyParams(object):
     def __init__(self, read=None, write=None):
@@ -366,6 +374,12 @@ class BLEGattsRwAuthorizeReplyParams(object):
             params.type = driver.BLE_GATTS_AUTHORIZE_TYPE_WRITE
             params.params.write = self.write.to_c()
         return params
+
+    def __repr__(self):
+        if self.read:
+            return repr_format(self, read=self.read)
+        else:
+            return repr_format(self, write=self.write)
 
 
 class BLEGattsValue(object):
@@ -413,3 +427,6 @@ class BLEGattsHvx(object):
         params.offset = self.offset
         params.p_len = self._len_ptr  # TODO: Not sure if this works
         return params
+
+    def __repr__(self):
+        return repr_format(self, handle=self.handle, type=self.type, offset=self.offset, data=self.data)

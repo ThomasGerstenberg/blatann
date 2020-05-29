@@ -1,4 +1,5 @@
 import time
+import threading
 import logging
 import sys
 from blatann.utils import _threading
@@ -15,6 +16,21 @@ def setup_logger(name=None, level="DEBUG"):
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
     return logger
+
+
+def repr_format(obj, *args, **kwargs):
+    """
+    Helper function to format objects into strings in the format of:
+    ClassName(param1=value1, param2=value2, ...)
+
+    :param obj: Object to get the class name from
+    :param args: Optional tuples of (param_name, value) which will ensure ordering during format
+    :param kwargs: Other keyword args to populate with
+    :return: String which represents the object
+    """
+    items = args + tuple(kwargs.items())
+    inner = ", ".join("{}={!r}".format(k, v) for k, v in items)
+    return "{}({})".format(obj.__class__.__name__, inner)
 
 
 class Stopwatch(object):
@@ -69,3 +85,24 @@ class Stopwatch(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
         return self
+
+
+class SynchronousMonotonicCounter(object):
+    """
+    Utility class which implements a thread-safe monotonic counter
+    """
+    def __init__(self, start_value=0):
+        self._lock = threading.Lock()
+        self._counter = start_value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        with self._lock:
+            value = self._counter
+            self._counter += 1
+        return value

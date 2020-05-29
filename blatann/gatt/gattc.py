@@ -4,6 +4,7 @@ import threading
 from typing import Callable, List, Optional, Iterable
 
 from blatann import gatt
+from blatann.utils import SynchronousMonotonicCounter
 from blatann.uuid import Uuid
 from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
@@ -72,6 +73,13 @@ class GattcCharacteristic(gatt.Characteristic):
         Gets if the characteristic can be written to
         """
         return self._properties.write
+
+    @property
+    def writable_without_response(self) -> bool:
+        """
+        Gets if the characteristic accepts write commands that don't require a confirmation response
+        """
+        return self._properties.write_no_response
 
     @property
     def subscribable(self) -> bool:
@@ -166,7 +174,7 @@ class GattcCharacteristic(gatt.Characteristic):
     def write(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
         """
         Initiates a write of the data provided to the characteristic and returns a Waitable that executes
-        when the write completes.
+        when the write completes and the confirmation response is received from the other device.
 
         The Waitable returns two parameters: (GattcCharacteristic this, WriteCompleteEventArgs event args)
 
@@ -175,12 +183,31 @@ class GattcCharacteristic(gatt.Characteristic):
         :return: A waitable that returns when the write finishes
         :raises: InvalidOperationException if characteristic is not writable
         """
-        if isinstance(data, str):
-            data = data.encode(self.string_encoding)
-
         if not self.writable:
             raise InvalidOperationException("Characteristic {} is not writable".format(self.uuid))
-        write_id = self._manager.write(self.value_handle, bytes(data))
+        return self._write(data, with_response=True)
+
+    def write_without_response(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
+        """
+        Peforms a Write command, which does not require the peripheral to send a confirmation response packet.
+        This is a faster but lossy operation, in the case that the packet is dropped/never received by the other device.
+        This returns a waitable that executes when the write is transmitted to the peripheral device.
+
+        .. note:: Data sent without responses must fit within a single MTU minus 3 bytes for the operation overhead.
+
+        :param data: The data to write. Can be a string, bytes, or anything that can be converted to bytes
+        :type data: str or bytes or bytearray
+        :return: A waitable that returns when the write finishes
+        :raises: InvalidOperationException if characteristic is not writable without responses
+        """
+        if not self.writable_without_response:
+            raise InvalidOperationException("Characteristic {} does not accept writes without responses".format(self.uuid))
+        return self._write(data, with_response=False)
+
+    def _write(self, data, with_response=True) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
+        if isinstance(data, str):
+            data = data.encode(self.string_encoding)
+        write_id = self._manager.write(self.value_handle, bytes(data), with_response)
         return IdBasedEventWaitable(self._on_write_complete_event, write_id)
 
     """
@@ -290,7 +317,7 @@ class GattcService(gatt.Service):
         Also takes care of creating and adding all characteristics within the service
 
         :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Peripheral
+        :type peer: blatann.peer.Peer
         :type read_write_manager: _ReadWriteManager
         :type nrf_service: nrf_types.BLEGattService
         """
@@ -372,13 +399,10 @@ class GattcDatabase(gatt.GattDatabase):
 
 
 class _ReadTask(object):
-    _id_counter = 1
-    _lock = threading.Lock()
+    _id_generator = SynchronousMonotonicCounter(1)
 
     def __init__(self, handle):
-        with _ReadTask._lock:
-            self.id = _ReadTask._id_counter
-            _ReadTask._id_counter += 1
+        self.id = _ReadTask._id_generator.next()
         self.handle = handle
         self.data = ""
         self.status = gatt.GattStatusCode.unknown
@@ -386,15 +410,13 @@ class _ReadTask(object):
 
 
 class _WriteTask(object):
-    _id_counter = 1
-    _lock = threading.Lock()
+    _id_generator = SynchronousMonotonicCounter(1)
 
-    def __init__(self, handle, data):
-        with _WriteTask._lock:
-            self.id = _WriteTask._id_counter
-            _WriteTask._id_counter += 1
+    def __init__(self, handle, data, with_response=True):
+        self.id = _WriteTask._id_generator.next()
         self.handle = handle
         self.data = data
+        self.with_response = with_response
         self.status = gatt.GattStatusCode.unknown
         self.reason = GattOperationCompleteReason.FAILED
 
@@ -422,8 +444,8 @@ class _ReadWriteManager(QueuedTasksManagerBase):
         self._add_task(read_task)
         return read_task.id
 
-    def write(self, handle, value):
-        write_task = _WriteTask(handle, value)
+    def write(self, handle, value, with_response=True):
+        write_task = _WriteTask(handle, value, with_response)
         self._add_task(write_task)
         return write_task.id
 
@@ -435,7 +457,7 @@ class _ReadWriteManager(QueuedTasksManagerBase):
             self._reader.read(task.handle)
             self._cur_read_task = task
         elif isinstance(task, _WriteTask):
-            self._writer.write(task.handle, task.data)
+            self._writer.write(task.handle, task.data, task.with_response)
             self._cur_write_task = task
         else:
             return True

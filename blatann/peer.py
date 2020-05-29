@@ -8,7 +8,7 @@ from blatann.gap import smp
 from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
-from blatann.nrf.nrf_types import conn_interval_range, conn_timeout_range
+from blatann.nrf.nrf_types import conn_interval_range, conn_timeout_range, BLEGapDataLengthParams
 from blatann.waitables.waitable import EmptyWaitable
 from blatann.waitables.connection_waitable import DisconnectionWaitable
 from blatann.waitables.event_waitable import EventWaitable
@@ -115,6 +115,7 @@ class Peer(object):
         self._on_disconnect = EventSource("On Disconnect", logger)
         self._on_mtu_exchange_complete = EventSource("On MTU Exchange Complete", logger)
         self._on_mtu_size_updated = EventSource("On MTU Size Updated", logger)
+        self._on_data_length_updated = EventSource("On Data Length Updated", logger)
         self._mtu_size = MTU_SIZE_DEFAULT
         self._preferred_mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
@@ -261,6 +262,13 @@ class Peer(object):
         return self._on_mtu_size_updated
 
     @property
+    def on_data_length_updated(self) -> Event[Peer, DataLengthUpdatedEventArgs]:
+        """
+        Event generated when the link layer data length has been updated
+        """
+        return self._on_data_length_updated
+
+    @property
     def on_database_discovery_complete(self) -> Event[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
         """
         Event that is triggered when database discovery has completed
@@ -328,6 +336,16 @@ class Peer(object):
         self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._negotiated_mtu_size)
         return EventWaitable(self._on_mtu_exchange_complete)
 
+    def update_data_length(self) -> EventWaitable[Peripheral, DataLengthUpdatedEventArgs]:
+        """
+        Starts the process which updates the link layer data length to the optimal value given the MTU.
+        For best results call this method after the MTU is set to the desired size.
+
+        :return: A waitable that will fire when the process finishes
+        """
+        self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle)
+        return EventWaitable(self._on_data_length_updated)
+
     def discover_services(self) -> EventWaitable[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
         """
         Starts the database discovery process of the peer. This will discover all services, characteristics, and
@@ -360,6 +378,7 @@ class Peer(object):
         self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
         self.driver_event_subscribe(self._on_data_length_update_request, nrf_events.GapEvtDataLengthUpdateRequest)
+        self.driver_event_subscribe(self._on_data_length_update, nrf_events.GapEvtDataLengthUpdate)
         self.driver_event_subscribe(self._on_phy_update_request, nrf_events.GapEvtPhyUpdateRequest)
         self._on_connect.notify(self)
 
@@ -370,7 +389,6 @@ class Peer(object):
             :type event: blatann.nrf.nrf_events.BLEEvent
             """
             if self.connected and self.conn_handle == event.conn_handle:
-                logger.debug("Got event: {} for peer {}".format(event, self.conn_handle))
                 func(driver, event)
         return wrapper
 
@@ -467,6 +485,11 @@ class Peer(object):
 
     def _on_data_length_update_request(self, driver, event):
         self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle)
+
+    def _on_data_length_update(self, driver, event):
+        event_args = DataLengthUpdatedEventArgs(event.max_tx_octets, event.max_rx_octets,
+                                                event.max_tx_time_us, event.max_rx_time_us)
+        self._on_data_length_updated.notify(self, event_args)
 
     def _on_phy_update_request(self, driver, event):
         self._ble_device.ble_driver.ble_gap_phy_update(self.conn_handle)
