@@ -1,6 +1,46 @@
 Changelog
 =========
 
+v0.3.1
+------
+
+v0.3.1 provides a few enhancements and features from the previous release.
+
+**Highlights**
+
+- Adds the ability to discover, read, and write a connected central device's GATT database as a peripheral.
+
+  - Example usage has been added to the peripheral example where it will discover the connected device's database after pairing completes
+
+  - **NOTE:** The inverse of this should be considered experimental (i.e. acting as a central and having a peripheral read/write the local database).
+
+- Adds the ability to perform writes without responses, both as a client and as a peripheral
+
+  - New APIs have been added to the :class:`~blatann.gatt.gattc.GattcCharacteristic` class:
+    :meth:`~blatann.gatt.gattc.GattcCharacteristic.write_without_response` and
+    :attr:`~blatann.gatt.gattc.GattcCharacteristic.writable_without_response`
+
+- Adds API to trigger data length update procedures (with corresponding event) on
+  the :class:`~blatann.peer.Peer` class
+
+  - The API does not allow the user to select a data length to use,
+    i.e. the optimal data length is chosen by the SoftDevice firmware
+
+
+**Changes**
+
+- The connection event length has been updated to support the max-length DLE value (251bytes) at the shortest connection interval (7.5ms)
+
+- Updates to documentation and type hinting
+
+- Minor changes to logging, including removing spammy/duplicate logs when numerous characteristics exist in the GATT database
+
+**Fixes**
+
+- Fixes issue where iterating over the scan report in real-time was not returning the recently read packet
+  and instead was returning the combined packet for the device's address. This was causing duplicate packets to not be marked in the scanner example.
+
+
 v0.3.0
 ------
 
