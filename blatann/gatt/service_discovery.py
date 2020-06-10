@@ -113,20 +113,22 @@ class _ServiceDiscoverer(_Discoverer):
         if event.conn_handle != self.peer.conn_handle:
             return
 
-        if event.status != nrf_events.BLEGattStatusCode.success:
-            self._on_complete(event.status)  # Not found, done
-            return
-
-        self._state.services.extend(event.services)
-        end_handle = event.services[-1].end_handle
-        if end_handle != 0xFFFF:
-            # Continue service discovery
-            self.ble_device.ble_driver.ble_gattc_prim_srvc_disc(self.peer.conn_handle, None,
-                                                                end_handle+1)
-            return
-
-        # Done discovering services, now discover their attributes
-        self._discover_uuids()
+        if event.status == nrf_events.BLEGattStatusCode.success:
+            # Add the services discovered and check to see if there's more
+            self._state.services.extend(event.services)
+            end_handle = event.services[-1].end_handle
+            if end_handle != 0xFFFF:
+                # Continue service discovery
+                self.ble_device.ble_driver.ble_gattc_prim_srvc_disc(self.peer.conn_handle, None, end_handle+1)
+            else:
+                # Reached the end of the handle range, now discover their UUIDs
+                self._discover_uuids()
+        elif event.status == nrf_events.BLEGattStatusCode.attribute_not_found:
+            # No other attributes/services are found, continue on to discover UUIDs
+            self._discover_uuids()
+        else:
+            # Other non-successful error codes should terminate service discovery
+            self._on_complete(event.status)
 
     def _discover_uuids(self):
         while not self._state.end_of_services:
