@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from blatann.nrf import nrf_events, nrf_types
 from blatann import exceptions
@@ -39,13 +40,13 @@ class Advertiser(object):
         self._conn_tag = conn_tag
 
     @property
-    def on_advertising_timeout(self):
+    def on_advertising_timeout(self) -> Event[Advertiser, None]:
         """
         Event generated whenever advertising times out and finishes with no connections made
-        Event args: None
+
+        ..note:: If auto-restart advertising is enabled, this will trigger on each advertising timeout configured
 
         :return: an Event which can have handlers registered to and deregistered from
-        :rtype: Event
         """
         return self._on_advertising_timeout
 
@@ -72,6 +73,20 @@ class Advertiser(object):
         This is defined by the Bluetooth specification.
         """
         return MAX_ADVERTISING_INTERVAL_MS
+
+    @property
+    def auto_restart(self) -> bool:
+        """
+        Property which enables/disables whether or not the device should automatically restart
+        advertising when an advertising timeout occurs or the client is disconnected.
+
+        .. note:: Auto-restart is disabled automatically when stop() is called
+        """
+        return self._auto_restart
+
+    @auto_restart.setter
+    def auto_restart(self, value: bool):
+        self._auto_restart = bool(value)
 
     def set_advertise_data(self, advertise_data=AdvertisingData(), scan_response=AdvertisingData()):
         """
@@ -174,10 +189,12 @@ class Advertiser(object):
         :type event: nrf_events.GapEvtTimeout
         """
         if event.src == nrf_events.BLEGapTimeoutSrc.advertising:
-            self._is_advertising = False
+            # Notify that advertising timed out first which may call stop() to disable auto-restart
             self._on_advertising_timeout.notify(self)
             if self._auto_restart:
                 self._start()
+            else:
+                self._is_advertising = False
 
     def _handle_connect(self, peer, event):
         self._is_advertising = False
