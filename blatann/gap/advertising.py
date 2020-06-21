@@ -51,10 +51,9 @@ class Advertiser(object):
         return self._on_advertising_timeout
 
     @property
-    def is_advertising(self):
+    def is_advertising(self) -> bool:
         """
         Current state of advertising
-        :return:
         """
         return self._is_advertising
 
@@ -128,18 +127,18 @@ class Advertiser(object):
         self._timeout = timeout_seconds
         self._advertise_mode = advertise_mode
 
-    def start(self, adv_interval_ms=None, timeout_sec=None, auto_restart=None, advertise_mode=None):
+    def start(self, adv_interval_ms=None, timeout_sec=None, auto_restart=None, advertise_mode: AdvertisingMode = None):
         """
         Starts advertising with the given parameters. If none given, will use the default
 
         :param adv_interval_ms: The interval at which to send out advertise packets, in milliseconds.
-                                Should be a multiple of 0.625ms, otherwise it'll be rounde down to the nearest 0.625ms
+                                Should be a multiple of 0.625ms, otherwise it'll be round down to the nearest 0.625ms
         :param timeout_sec: The duration which to advertise for. For no timeout, use ADVERTISE_FOREVER (0)
         :param auto_restart: Flag indicating that advertising should restart automatically when the timeout expires, or
                              when the client disconnects
         :param advertise_mode: The mode the advertiser should use
-        :return: A waitable that will expire either when the timeout occurs, or a client connects.
-                 Waitable Returns a peer.Client() object
+        :return: A waitable that will expire either when the timeout occurs or a client connects.
+                 The waitable will return either ``None`` on timeout or :class:`~blatann.peer.Client` on successful connection
         :rtype: ClientConnectionWaitable
         """
         if self._is_advertising:

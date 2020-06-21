@@ -1,6 +1,23 @@
 Changelog
 =========
 
+v0.3.2
+------
+
+v0.3.2 is a bug fix release
+
+**Fixes**
+
+- `Issue 40`_ - Fixes issue where service discovery fails if the server returns ``attribute_not_found`` while discovering services
+
+- `Issue 42`_ - Fixes issue where :attr:`Advertiser.is_advertising <blatann.gap.advertising.Advertiser.is_advertising>` could
+  return false if ``auto_restart`` is enabled and advertising times out
+
+**Added Features**
+
+- Exposes a new :attr:`Advertiser.auto_restart <blatann.gap.advertising.Advertiser.auto_restart>`
+  property so it can be get/set outside of :meth:`Advertiser.start() <blatann.gap.advertising.Advertiser.start>`
+
 v0.3.1
 ------
 
@@ -100,3 +117,5 @@ public API should be mostly unchanged except for the noted changes below.
 
 .. _Event callback example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/tests/integrated/test_advertising_duration.py#L48
 .. _ScanFinishedWaitable example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/blatann/examples/scanner.py#L20
+.. _Issue 40: https://github.com/ThomasGerstenberg/blatann/issues/40
+.. _Issue 42: https://github.com/ThomasGerstenberg/blatann/issues/42
