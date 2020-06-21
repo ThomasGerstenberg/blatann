@@ -74,6 +74,20 @@ class Advertiser(object):
         """
         return MAX_ADVERTISING_INTERVAL_MS
 
+    @property
+    def auto_restart(self) -> bool:
+        """
+        Property which enables/disables whether or not the device should automatically restart
+        advertising when an advertising timeout occurs or the client is disconnected.
+
+        .. note:: Auto-restart is disabled automatically when stop() is called
+        """
+        return self._auto_restart
+
+    @auto_restart.setter
+    def auto_restart(self, value: bool):
+        self._auto_restart = bool(value)
+
     def set_advertise_data(self, advertise_data=AdvertisingData(), scan_response=AdvertisingData()):
         """
         Sets the advertising and scan response data which will be broadcasted to peers during advertising
