@@ -100,7 +100,7 @@ class Advertiser(object):
         :type scan_response: AdvertisingData
         """
         adv_len, adv_pass = advertise_data.check_encoded_length()
-        scan_len, scan_pass = advertise_data.check_encoded_length()
+        scan_len, scan_pass = scan_response.check_encoded_length()
 
         if not adv_pass:
             raise exceptions.InvalidOperationException("Encoded Advertising data length is too long ({} bytes). "
