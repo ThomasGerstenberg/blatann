@@ -30,6 +30,19 @@ def on_counting_char_notification(characteristic, event_args):
     logger.info("Counting char notification. Curent count: {}".format(current_count))
 
 
+def on_passkey_entry(peer, passkey_event_args):
+    """
+    Callback for when the user is requested to enter a passkey to resume the pairing process.
+    Requests the user to enter the passkey and resolves the event with the passkey entered
+
+    :param peer: the peer the passkey is for
+    :param passkey_event_args:
+    :type passkey_event_args: blatann.event_args.PasskeyEntryEventArgs
+    """
+    passkey = input("Enter peripheral passkey: ")
+    passkey_event_args.resolve(passkey)
+
+
 def main(serial_port):
     # Set the target to the peripheral's advertised name
     target_device_name = constants.PERIPHERAL_NAME
@@ -55,9 +68,16 @@ def main(serial_port):
     if not peer:
         logger.warning("Timed out connecting to device")
         return
+    logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
+
+    # Setup the security parameters and register a handler for when passkey entry is needed.
+    # Should be done right after connection in case the peripheral initiates a security request
+    peer.security.set_security_params(passcode_pairing=True, io_capabilities=smp.IoCapabilities.KEYBOARD_DISPLAY,
+                                      bond=False, out_of_band=False)
+    # Register the callback for when a passkey needs to be entered by the user
+    peer.security.on_passkey_required.register(on_passkey_entry)
 
     # Wait up to 10 seconds for service discovery to complete
-    logger.info("Connected, conn_handle: {}".format(peer.conn_handle))
     _, event_args = peer.discover_services().wait(10, exception_on_timeout=False)
     logger.info("Service discovery complete! status: {}".format(event_args.status))
 
@@ -67,24 +87,6 @@ def main(serial_port):
 
     peer.set_connection_parameters(100, 120, 6000)  # Discovery complete, go to a longer connection interval
 
-    # Pair with the peripheral
-    def on_passkey_entry(peer, passkey_event_args):
-        """
-        Callback for when the user is requested to enter a passkey to resume the pairing process.
-        Requests the user to enter the passkey and resolves the event with the passkey entered
-
-        :param peer: the peer the passkey is for
-        :param passkey_event_args:
-        :type passkey_event_args: blatann.event_args.PasskeyEntryEventArgs
-        """
-        passkey = input("Enter peripheral passkey: ")
-        passkey_event_args.resolve(passkey)
-
-    # Setup the security parameters
-    peer.security.set_security_params(passcode_pairing=True, io_capabilities=smp.IoCapabilities.KEYBOARD_DISPLAY,
-                                      bond=False, out_of_band=False)
-    # Register the callback for when a passkey needs to be entered by the user
-    peer.security.on_passkey_required.register(on_passkey_entry)
     # Wait up to 60 seconds for the pairing process
     peer.security.pair().wait(60)
 

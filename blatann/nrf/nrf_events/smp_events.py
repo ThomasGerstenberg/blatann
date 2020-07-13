@@ -1,5 +1,3 @@
-from enum import IntEnum
-
 from blatann.nrf.nrf_types import *
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
@@ -28,11 +26,7 @@ class GapEvtConnSecUpdate(GapEvtSec):
                    encr_key_size=conn_sec.encr_key_size)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, sec_mode={!r}, sec_level={!r}, encr_key_size={!r})".format(self.__class__.__name__,
-                                                                                                self.conn_handle,
-                                                                                                self.sec_mode,
-                                                                                                self.sec_level,
-                                                                                                self.encr_key_size)
+        return self._repr_format(sec_mode=self.sec_mode, sec_level=self.sec_level, encr_key_size=self.encr_key_size)
 
 
 class GapEvtSecInfoRequest(GapEvtSec):
@@ -56,9 +50,33 @@ class GapEvtSecInfoRequest(GapEvtSec):
         return cls(conn_handle, peer_addr, master_id, sec_info.enc_info, sec_info.id_info, sec_info.sign_info)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, peer_addr={!r}, master_id={!r}, enc: {!r}, id: {!r}, sign: {!r})".format(
-            self.__class__.__name__, self.conn_handle, self.peer_addr, self.master_id,
-            self.enc_info, self.id_info, self.sign_info)
+        return self._repr_format(peer_addr=self.peer_addr, master_id=self.master_id, enc=self.enc_info,
+                                 id=self.id_info, sign=self.sign_info)
+
+
+class GapEvtSecRequest(GapEvtSec):
+    evt_id = driver.BLE_GAP_EVT_SEC_REQUEST
+
+    def __init__(self, conn_handle, bond, mitm, lesc, keypress):
+        super(GapEvtSecRequest, self).__init__(conn_handle)
+        self.bond = bond
+        self.mitm = mitm
+        self.lesc = lesc
+        self.keypress = keypress
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gap_evt.conn_handle
+        sec_req = event.evt.gap_evt.params.sec_request
+        bond = bool(sec_req.bond)
+        mitm = bool(sec_req.mitm)
+        lesc = bool(sec_req.lesc)
+        keypress = bool(sec_req.keypress)
+
+        return cls(conn_handle, bond, mitm, lesc, keypress)
+
+    def __repr__(self):
+        return self._repr_format(bond=self.bond, mitm=self.mitm, lesc=self.lesc, keypress=self.keypress)
 
 
 class GapEvtSecParamsRequest(GapEvtSec):
@@ -75,8 +93,7 @@ class GapEvtSecParamsRequest(GapEvtSec):
                    sec_params=BLEGapSecParams.from_c(sec_params))
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, sec_params={!r})".format(self.__class__.__name__, self.conn_handle,
-                                                              self.sec_params)
+        return self._repr_format(sec_params=self.sec_params)
 
 
 class GapEvtAuthKeyRequest(GapEvtSec):
@@ -93,7 +110,7 @@ class GapEvtAuthKeyRequest(GapEvtSec):
                    key_type=BLEGapAuthKeyType(auth_key_request.key_type))
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, key_type={!r})".format(self.__class__.__name__, self.conn_handle, self.key_type)
+        return self._repr_format(key_type=self.key_type)
 
 
 class GapEvtAuthStatus(GapEvtSec):
@@ -122,12 +139,9 @@ class GapEvtAuthStatus(GapEvtSec):
                    kdist_peer=BLEGapSecKeyDist.from_c(auth_status.kdist_peer))
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, auth_status={!r}, error_src={!r}, " \
-               "bonded={!r}, sm1_levels={!r}, sm2_levels={!r}, " \
-               "kdist_own={!r}, kdist_peer={!r})".format(self.__class__.__name__, self.conn_handle, self.auth_status,
-                                                         self.error_src, self.bonded,
-                                                         self.sm1_levels, self.sm2_levels, self.kdist_own,
-                                                         self.kdist_peer)
+        return self._repr_format(auth_status=self.auth_status, error_src=self.error_src, bonded=self.bonded,
+                                 sm1_levels=self.sm1_levels, sm2_levels=self.sm2_levels,
+                                 kdist_own=self.kdist_own, kdist_peer=self.kdist_peer)
 
 
 class GapEvtPasskeyDisplay(GapEvtSec):
@@ -148,9 +162,7 @@ class GapEvtPasskeyDisplay(GapEvtSec):
                    match_request=match_request)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, passkey={!r}, match_request={!r})".format(self.__class__.__name__,
-                                                                               self.conn_handle, self.passkey,
-                                                                               self.match_request)
+        return self._repr_format(passkey=self.passkey, match_request=self.match_request)
 
 
 class GapEvtLescDhKeyRequest(GapEvtSec):
@@ -171,5 +183,4 @@ class GapEvtLescDhKeyRequest(GapEvtSec):
                    oob_required=oob_required)
 
     def __repr__(self):
-        return "{}(conn_handle={!r}, remote key: {!r}, oob? {}".format(self.__class__.__name__, self.conn_handle,
-                                                                       self.remote_public_key, self.oob_required)
+        return self._repr_format(remote_key=self.remote_public_key, oob=self.oob_required)

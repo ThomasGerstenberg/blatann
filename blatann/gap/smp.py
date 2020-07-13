@@ -180,10 +180,11 @@ class SecurityManager(object):
         :return: A waitiable that will fire when pairing is complete
         :rtype: blatann.waitables.EventWaitable
         """
-        if self._pairing_in_process or self._initiated_encryption:
-            raise InvalidStateException("Security manager busy")
         if self.security_params.reject_pairing_requests:
             raise InvalidOperationException("Cannot initiate pairing while rejecting pairing requests")
+        if self._pairing_in_process or self._initiated_encryption:
+            logger.warning("Attempted to pair while pairing/encryption already in progress. Returning waitable for when it finishes")
+            return EventWaitable(self.on_pairing_complete)
 
         # if in the client role and don't want to force a re-pair, check for bonding data first
         if self.peer.is_peripheral and not force_repairing:
@@ -194,6 +195,7 @@ class SecurityManager(object):
                                                            bond_entry.bonding_data.own_ltk.master_id,
                                                            bond_entry.bonding_data.own_ltk.enc_info)
                 self._initiated_encryption = True
+                return EventWaitable(self.on_pairing_complete)
 
         sec_params = self._get_security_params()
         self.ble_device.ble_driver.ble_gap_authenticate(self.peer.conn_handle, sec_params)
@@ -227,6 +229,7 @@ class SecurityManager(object):
         self.peer.driver_event_subscribe(self._on_passkey_display, nrf_events.GapEvtPasskeyDisplay)
         self.peer.driver_event_subscribe(self._on_security_info_request, nrf_events.GapEvtSecInfoRequest)
         self.peer.driver_event_subscribe(self._on_lesc_dhkey_request, nrf_events.GapEvtLescDhKeyRequest)
+        self.peer.driver_event_subscribe(self._on_security_request, nrf_events.GapEvtSecRequest)
         # Search the bonding DB for this peer's info
         self.bond_db_entry = self._find_db_entry(self.peer.peer_address)
         if self.bond_db_entry:
@@ -276,6 +279,15 @@ class SecurityManager(object):
 
         if not self.security_params.reject_pairing_requests:
             self._pairing_in_process = True
+
+    def _on_security_request(self, driver, event):
+        """
+        :type event: nrf_events.GapEvtSecRequest
+        """
+        if self.security_params.reject_pairing_requests:
+            self.ble_device.ble_driver.ble_gap_authenticate(event.conn_handle, None)
+        else:
+            self.pair()
 
     def _on_security_info_request(self, driver, event):
         """
