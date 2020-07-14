@@ -73,19 +73,26 @@ class NrfError(Enum):
     # soc_rand_not_enough_values = driver.NRF_ERROR_SOC_RAND_NOT_ENOUGH_VALUES
     # soc_ppi_invalid_channel = driver.NRF_ERROR_SOC_PPI_INVALID_CHANNEL
     # soc_ppi_invalid_group = driver.NRF_ERROR_SOC_PPI_INVALID_GROUP
-    # ble_not_enabled = driver.BLE_ERROR_NOT_ENABLED
-    # ble_invalid_conn_handle = driver.BLE_ERROR_INVALID_CONN_HANDLE
-    # ble_invalid_attr_handle = driver.BLE_ERROR_INVALID_ATTR_HANDLE
-    # ble_invalid_role = driver.BLE_ERROR_INVALID_ROLE
-    # ble_gap_uuid_list_mismatch = driver.BLE_ERROR_GAP_UUID_LIST_MISMATCH
-    # ble_gap_discoverable_with_whitelist = driver.BLE_ERROR_GAP_DISCOVERABLE_WITH_WHITELIST
-    # ble_gap_invalid_ble_addr = driver.BLE_ERROR_GAP_INVALID_BLE_ADDR
-    # ble_gap_whitelist_in_use = driver.BLE_ERROR_GAP_WHITELIST_IN_USE
-    # ble_gap_device_identities_in_use = driver.BLE_ERROR_GAP_DEVICE_IDENTITIES_IN_USE
-    # ble_gap_device_identities_duplicate = driver.BLE_ERROR_GAP_DEVICE_IDENTITIES_DUPLICATE
-    # ble_gatts_invalid_attr_type = driver.BLE_ERROR_GATTS_INVALID_ATTR_TYPE
-    # ble_gatts_sys_attr_missing = driver.BLE_ERROR_GATTS_SYS_ATTR_MISSING
-    # ble_gattc_proc_not_permitted = driver.BLE_ERROR_GATTC_PROC_NOT_PERMITTED
+
+    # Values copied from header files, should replace with driver values if ever exposed from there
+    ble_not_enabled = 0x3001
+    ble_invalid_conn_handle = 0x3002
+    ble_invalid_attr_handle = 0x3003
+    ble_invalid_adv_handle = 0x3004
+    ble_invalid_role = 0x3005
+    ble_blocked_by_other_links = 0x3006
+
+    ble_gap_uuid_list_mismatch = 0x3200
+    ble_gap_discoverable_with_whitelist = 0x3201
+    ble_gap_invalid_ble_addr = 0x3202
+    ble_gap_whitelist_in_use = 0x3203
+    ble_gap_device_identities_in_use = 0x3204
+    ble_gap_device_identities_duplicate = 0x3205
+
+    ble_gattc_proc_not_permitted = 0x3300
+
+    ble_gatts_invalid_attr_type = 0x3400
+    ble_gatts_sys_attr_missing = 0x3401
 
 
 """
