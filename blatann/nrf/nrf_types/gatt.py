@@ -71,6 +71,7 @@ class BLEGattService(object):
         self.start_handle = start_handle
         self.end_handle = end_handle
         self.chars = []
+        self.attrs = []
 
     @classmethod
     def from_c(cls, gattc_service):
@@ -172,6 +173,9 @@ class BLEGattcDescriptor(object):
         return cls(uuid=BLEUUID.from_c(gattc_desc.uuid),
                    handle=gattc_desc.handle)
 
+    def __repr__(self):
+        return repr_format(self, handle=self.handle, uuid=self.uuid)
+
 
 class BLEGattcAttrInfo16(object):
     def __init__(self, handle, uuid):
@@ -246,11 +250,12 @@ class BLEGattsCharHandles(object):
 
 
 class BLEGattsAttribute(object):
-    def __init__(self, uuid, attr_metadata, max_len, value=""):
+    def __init__(self, uuid, attr_metadata, max_len, value=b""):
         self.uuid = uuid
         self.attribute_metadata = attr_metadata
         self.max_len = max_len
         self.value = value
+        self.handle = BLE_GATT_HANDLE_INVALID
 
     def to_c(self):
         self.__data__array = util.list_to_uint8_array(self.value)

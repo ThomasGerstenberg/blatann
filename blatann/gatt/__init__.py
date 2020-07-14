@@ -1,6 +1,8 @@
 import enum
 import logging
 import struct
+
+from blatann.uuid import Uuid
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 from blatann.nrf import nrf_types
 from blatann.gap.smp import SecurityLevel
@@ -101,46 +103,81 @@ class CharacteristicProperties(object):
         return "CharProps({})".format(",".join(props))
 
 
-class Characteristic(object):
+class Attribute(object):
     """
-    Abstract class that represents a BLE characteristic (both remote and local)
+    Represents a single attribute which lives inside a Characteristic (both remote and local)
     """
-    def __init__(self, ble_device, peer, uuid, properties,
-                 default_string_encoding="utf8"):
-        """
-        :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Peer
-        :type uuid: blatann.uuid.Uuid
-        :type properties: CharacteristicProperties
-        """
-        self.ble_device = ble_device
-        self.peer = peer
-        self.uuid = uuid
-        self.declaration_handle = BLE_GATT_HANDLE_INVALID
-        self.value_handle = BLE_GATT_HANDLE_INVALID
-        self.cccd_handle = BLE_GATT_HANDLE_INVALID
-        self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
-        self._properties = properties
-        self._string_encoding = default_string_encoding
+    def __init__(self, uuid: Uuid, handle: int, value=b"", string_encoding="utf8"):
+        self._uuid = uuid
+        self._handle = handle
+        self._value = value or b""
+        self._string_encoding = string_encoding
 
     @property
-    def string_encoding(self):
+    def uuid(self) -> Uuid:
+        """
+        The attribute's UUID
+        """
+        return self._uuid
+
+    @property
+    def handle(self) -> int:
+        """
+        The attribute's handle
+        """
+        return self._handle
+
+    @property
+    def value(self) -> bytes:
+        """
+        Gets the current value of the attribute
+        """
+        return self._value
+
+    @property
+    def string_encoding(self) -> str:
         """
         The default method for encoding strings into bytes when a string is provided as a value
         """
         return self._string_encoding
 
     @string_encoding.setter
-    def string_encoding(self, encoding):
+    def string_encoding(self, value: str):
         """
-        Sets how the characteristic value is encoded when provided a string
-
-        :param encoding: the encoding to use (utf8, ascii, etc.)
+        The default method for encoding strings into bytes when a string is provided as a value
         """
-        self._string_encoding = encoding
+        self._string_encoding = value
 
     def __repr__(self):
-        return "Characteristic({}, {}".format(self.uuid, self._properties)
+        return f"{self.__class__.__name__}({self._uuid}, {self._handle})"
+
+
+class Characteristic(object):
+    """
+    Abstract class that represents a BLE characteristic (both remote and local).
+    """
+    def __init__(self, ble_device, peer, uuid, properties,
+                 attributes=None,
+                 default_string_encoding="utf8"):
+        """
+        :type ble_device: blatann.device.BleDevice
+        :type peer: blatann.peer.Peer
+        :type uuid: blatann.uuid.Uuid
+        """
+        self.ble_device = ble_device
+        self.peer = peer
+        self.uuid = uuid
+        self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
+        self._properties = properties
+        self._string_encoding = default_string_encoding
+        self._attributes = attributes or []
+
+    def __repr__(self):
+        newline = "\n" + " " * 8
+        attr_str = newline.join(str(d) for d in self._attributes)
+        if attr_str:
+            attr_str = newline + attr_str + "\n    "
+        return f"Characteristic({self.uuid}, {self._properties}, attributes: [{attr_str}])"
 
 
 class Service(object):
@@ -158,6 +195,7 @@ class Service(object):
         self.uuid = uuid
         self.service_type = service_type
         self._characteristics = []
+        self._attributes = []
         self.start_handle = start_handle
         # If a valid starting handle is given and not a valid ending handle, then the ending handle
         # is the starting handle
@@ -166,8 +204,12 @@ class Service(object):
         self.end_handle = end_handle
 
     def __repr__(self):
-        return "Service({}, characteristics: [{}])".format(self.uuid,
-                                                           "\n    ".join(str(c) for c in self._characteristics))
+        newline = "\n" + " " * 4
+        char_str = newline.join(str(c) for c in self._characteristics)
+        if char_str:
+            char_str = newline + char_str + "\n"
+
+        return f"Service({self.uuid} [{self.start_handle}-{self.end_handle}], characteristics: [{char_str}])"
 
 
 class GattDatabase(object):

@@ -282,7 +282,6 @@ class _DescriptorDiscoverer(_Discoverer):
         :type peer: blatann.peer.Peer
         """
         super(_DescriptorDiscoverer, self).__init__("Descriptor Discovery", ble_device, peer)
-        self._state.iterate_by_chars = True
 
     def start(self, services):
         self._state.reset()
@@ -292,7 +291,7 @@ class _DescriptorDiscoverer(_Discoverer):
             self._state.characteristics.extend(s.chars)
         self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
         on_complete_waitable = EventWaitable(self.on_complete)
-        if not self._state.characteristics:
+        if not self._state.services:
             self._on_complete()
         else:
             self._discover_descriptors()
@@ -302,12 +301,32 @@ class _DescriptorDiscoverer(_Discoverer):
         self.peer.driver_event_unsubscribe(self._on_descriptor_discovery)
         self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
 
-    def _discover_descriptors(self, starting_handle=None):
-        char = self._state.current_characteristic
-        if starting_handle is None:
-            starting_handle = char.handle_value
+    def _discover_descriptors(self):
+        starting_handle = self._state.current_handle
+        ending_handle = self._state.services[-1].end_handle
         self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
-        self.ble_device.ble_driver.ble_gattc_desc_disc(self.peer.conn_handle, starting_handle, char.end_handle)
+        self.ble_device.ble_driver.ble_gattc_desc_disc(self.peer.conn_handle, starting_handle, ending_handle)
+
+    def _find_descriptor_owner(self, desc):
+        if self._state.end_of_services:
+            return
+
+        service = self._state.current_service
+        if desc.handle < service.start_handle:
+            logger.error(f"Got attribute handle {desc.handle} which is before service handle {service.start_handle}")
+            return
+        if desc.handle > service.end_handle:
+            self._state.service_index += 1
+            self._state.char_index = 0
+            return self._find_descriptor_owner(desc)
+        if desc.handle == service.start_handle:
+            service.attrs.append(desc)
+            return
+        for char in service.chars:
+            if char.handle_decl <= desc.handle <= char.end_handle:
+                char.descs.append(desc)
+                return
+        logger.error(f"Unable to find characteristic for attr handle {desc.handle}")
 
     def _on_descriptor_discovery(self, driver, event):
         """
@@ -319,24 +338,27 @@ class _DescriptorDiscoverer(_Discoverer):
             return
 
         if event.status == nrf_events.BLEGattStatusCode.attribute_not_found:
-            self._state.char_index += 1
-            if self._state.end_of_characteristics:
-                self._on_complete()
-                return
+            self._on_complete()
+            return
         elif event.status != nrf_events.BLEGattStatusCode.success:
             self._on_complete(event.status)
             return
 
-        char = self._state.current_characteristic
-        char.descs.extend(event.descriptions)
+        for desc in event.descriptions:
+            self._find_descriptor_owner(desc)
 
-        last_desc = event.descriptions[-1]
-        if last_desc.handle == char.end_handle:
-            self._state.char_index += 1
-            if self._state.end_of_characteristics:
-                self._on_complete()
-                return
-        self._discover_descriptors(last_desc.handle+1)
+        # Check if everything has been found
+        if self._state.end_of_services:
+            self._on_complete()
+            return
+
+        last_handle = event.descriptions[-1].handle
+        self._state.current_handle = last_handle + 1
+
+        if last_handle >= self._state.services[-1].end_handle:
+            self._on_complete()
+
+        self._discover_descriptors()
 
 
 class DatabaseDiscoverer(object):
