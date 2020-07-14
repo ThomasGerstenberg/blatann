@@ -326,14 +326,14 @@ class GattcCharacteristic(gatt.Characteristic):
             attributes.append(d_attr)
 
         if not decl_attr:
-            logger.warning(f"Failed to find declaration attribute within list "
-                           f"(char uuid: {char_uuid}), creating new...")
+            logger.debug(f"Failed to find declaration attribute within list "
+                         f"(char uuid: {char_uuid}), creating new...")
             decl_attr = GattcAttribute(char_decl_uuid, nrf_characteristic.handle_decl,
                                        read_write_manager, nrf_characteristic.data_decl)
             attributes.append(decl_attr)
         if not value_attr:
-            logger.warning(f"Failed to find value attribute within list "
-                           f"(char uuid: {char_uuid}), creating new...")
+            logger.debug(f"Failed to find value attribute within list "
+                         f"(char uuid: {char_uuid}), creating new...")
             value_attr = GattcAttribute(char_uuid, nrf_characteristic.handle_value,
                                         read_write_manager, nrf_characteristic.data_value)
             attributes.append(value_attr)
