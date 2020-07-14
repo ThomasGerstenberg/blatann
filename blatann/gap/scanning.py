@@ -37,6 +37,10 @@ class ScanParameters(nrf_types.BLEGapScanParams):
         if window_ms > interval_ms:
             raise ValueError(f"Window cannot be greater than the interval (window: {window_ms}, interval: {interval_ms}")
 
+    def __repr__(self):
+        return f"ScanParameters(window: {self.window_ms}ms, interval: {self.interval_ms}ms, " \
+               f"timeout: {self.timeout_s}s, active: {self.active})"
+
 
 class Scanner(object):
     def __init__(self, ble_device):
