@@ -1,5 +1,8 @@
 from typing import TypeVar, Generic, Callable, Union
-from enum import Enum
+from enum import Enum, auto
+
+from blatann.utils import repr_format
+
 from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
 
 
@@ -30,7 +33,10 @@ class EventArgs(object):
     """
     Base Event Arguments class
     """
-    pass
+    def __repr__(self):
+        # Get all public attributes
+        attrs = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        return repr_format(self, **attrs)
 
 # Gap Event Args
 
@@ -142,6 +148,60 @@ class PasskeyDisplayEventArgs(EventArgs):
         """
         if self.match_request:
             self._match_confirm_callback(keys_match)
+
+
+class PeripheralSecurityRequestEventArgs(EventArgs):
+    """
+    Event arguments for when a peripheral requests security to be enabled on the connection.
+    The application must choose how to handle the request: accept, reject,
+    or force re-pairing (if device is bonded).
+    """
+    class Response(Enum):
+        accept = 1
+        reject = 2
+        force_repair = 3
+
+    def __init__(self, bond, mitm, lesc, keypress, is_bonded_device, resolver: Callable[[Response], None]):
+        self.bond = bond
+        self.mitm = mitm
+        self.lesc = lesc
+        self.keypress = keypress
+        self.is_bonded_device = is_bonded_device
+        self._resolver = resolver
+
+    def accept(self):
+        """
+        Accepts the security request. If device is already bonded will initiate encryption, otherwise
+        will start the pairing process
+        """
+        self._resolver(self.Response.accept)
+
+    def reject(self):
+        """
+        Rejects the security request
+        """
+        self._resolver(self.Response.reject)
+
+    def force_repair(self):
+        """
+        Accepts the security request and initiates the pairing process, even if the device is already bonded
+        """
+        self._resolver(self.Response.force_repair)
+
+
+class PairingRejectedReason(Enum):
+    non_bonded_central_request = auto()
+    non_bonded_peripheral_request = auto()
+    bonded_peripheral_request = auto()
+    bonded_device_repairing = auto()
+    user_rejected = auto()
+
+
+
+
+class PairingRejectedEventArgs(EventArgs):
+    def __init__(self, reason: PairingRejectedReason):
+        self.reason = reason
 
 
 # Gatt Server Event Args

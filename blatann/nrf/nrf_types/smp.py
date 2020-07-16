@@ -248,7 +248,7 @@ class BLEGapIdKey(object):
     def __repr__(self):
         if not self.irk:
             return ""
-        return "irk: {}, peer: {}".format(binascii.hexlify(self.key).decode("ascii"), self.peer_addr)
+        return "irk: {}, peer: {}".format(binascii.hexlify(self.irk).decode("ascii"), self.peer_addr)
 
 
 class BLEGapPublicKey(object):

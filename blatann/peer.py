@@ -505,8 +505,11 @@ class Peripheral(Peer):
     """
     Object which represents a BLE-connected device that is acting as a peripheral/server (local device is client/central)
     """
-    def __init__(self, ble_device, peer_address, connection_params=DEFAULT_CONNECTION_PARAMS):
-        super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params)
+    def __init__(self, ble_device, peer_address,
+                 connection_params=DEFAULT_CONNECTION_PARAMS,
+                 security_params=DEFAULT_SECURITY_PARAMS):
+        super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params,
+                                         security_params)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
 
@@ -515,8 +518,11 @@ class Client(Peer):
     """
     Object which represents a BLE-connected device that is acting as a client/central (local device is peripheral/server)
     """
-    def __init__(self, ble_device, connection_params=DEFAULT_CONNECTION_PARAMS):
-        super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params)
+    def __init__(self, ble_device,
+                 connection_params=DEFAULT_CONNECTION_PARAMS,
+                 security_params=DEFAULT_SECURITY_PARAMS):
+        super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params,
+                                     security_params)
         self._first_connection = True
 
     def peer_connected(self, conn_handle, peer_address, connection_params):

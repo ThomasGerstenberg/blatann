@@ -1,8 +1,9 @@
 import logging
 from threading import Lock
+from typing import Union
 
 from blatann import peer, exceptions
-from blatann.gap import advertising, scanning, default_bond_db
+from blatann.gap import advertising, scanning, default_bond_db, IoCapabilities, SecurityParameters, PairingPolicy
 from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
@@ -106,6 +107,7 @@ class BleDevice(NrfDriverObserver):
         self.scanner = scanning.Scanner(self)
         self._db = gatts.GattsDatabase(self, self.client)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
+        self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
         self._att_mtu_max = MTU_SIZE_MINIMUM
 
     def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
@@ -252,6 +254,21 @@ class BleDevice(NrfDriverObserver):
         """
         self._default_conn_params = peer.ConnectionParameters(min_interval_ms, max_interval_ms,
                                                               timeout_ms, slave_latency)
+
+    def set_default_security_params(self, passcode_pairing: bool, io_capabilities: IoCapabilities, bond: bool, out_of_band: bool,
+                                    reject_pairing_requests: Union[bool, PairingPolicy] = False, lesc_pairing: bool = False):
+        """
+        Sets the default security parameters for all subsequent connections to peripherals.
+
+        :param passcode_pairing: Flag indicating that passcode pairing is required
+        :param io_capabilities: The input/output capabilities of this device
+        :param bond: Flag indicating that long-term bonding should be performed
+        :param out_of_band: Flag indicating if out-of-band pairing is supported
+        :param reject_pairing_requests: Flag indicating that all security requests by the peer should be rejected
+        :param lesc_pairing: Flag indicating that LE Secure Pairing methods are supported
+        """
+        self._default_security_params = SecurityParameters(passcode_pairing, io_capabilities, bond, out_of_band,
+                                                           reject_pairing_requests, lesc_pairing)
 
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
