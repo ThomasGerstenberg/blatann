@@ -33,8 +33,7 @@ class DecodedReadWriteEventDispatcher(object):
 
         elif isinstance(event_args, NotificationReceivedEventArgs):
             decoded_value = self.decode(event_args.value)
-            decoded_event_args = DecodedReadCompleteEventArgs.from_notification_complete_event_args(event_args,
-                                                                                                    decoded_value)
+            decoded_event_args = DecodedReadCompleteEventArgs.from_notification_complete_event_args(event_args, decoded_value)
         elif isinstance(event_args, WriteEventArgs):
             decoded_value = self.decode(event_args.value)
             decoded_event_args = DecodedWriteEventArgs(decoded_value, event_args.value)

@@ -273,8 +273,8 @@ class CurrentTimeClient(object):
         """
         Reads the time from the server
         """
-        event = self._current_time_char.read().then(self._current_time_dispatcher)
-        return IdBasedEventWaitable(self._on_current_time_updated_event, event.id)
+        self._current_time_char.read().then(self._current_time_dispatcher)
+        return EventWaitable(self._on_current_time_updated_event)
 
     def set_time(self, date, adjustment_reason=None):
         """
