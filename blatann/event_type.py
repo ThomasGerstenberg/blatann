@@ -60,6 +60,11 @@ class EventSource(Event):
         super(EventSource, self).__init__(name)
         self._logger = logger
 
+    @property
+    def has_handlers(self):
+        with self._handler_lock:
+            return bool(self._handlers)
+
     def clear_handlers(self):
         with self._handler_lock:
             self._handlers = []

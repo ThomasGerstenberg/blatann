@@ -1,6 +1,8 @@
 import os
 import logging
 import pickle
+from typing import List
+
 import blatann
 from blatann.gap.bond_db import BondDatabase, BondDbEntry, BondDatabaseLoader
 
@@ -38,7 +40,7 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
 
 class DefaultBondDatabase(BondDatabase):
     def __init__(self):
-        self._records = []  # type: list[BondDbEntry]
+        self._records: List[BondDbEntry] = []
         self.current_id = 0
 
     def __iter__(self):
