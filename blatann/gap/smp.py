@@ -4,8 +4,6 @@ import threading
 import enum
 import typing
 
-from blatann.utils import repr_format
-
 from blatann.gap import smp_crypto
 from blatann.gap.bond_db import BondingData
 from blatann.nrf import nrf_types, nrf_events
@@ -41,6 +39,7 @@ class SecurityLevel(enum.Enum):
     LESC_MITM = 4
 
 
+# TODO: Figure out the best way to document enum values
 class PairingPolicy(enum.IntFlag):
     allow_all = 0
     # allow_all.__doc__ = "Allows all pairing requests to be initiated"
@@ -122,7 +121,7 @@ class SecurityManager(object):
         self._on_passkey_entry_event = EventSource("On Passkey Entry", logger)
         self._on_security_level_changed_event = EventSource("Security Level Changed", logger)
         self._on_peripheral_security_request_event = EventSource("Peripheral Security Request", logger)
-        self._on_pairing_request_rejected_event = EventSource("Pairing Attempt Rejected")
+        self._on_pairing_request_rejected_event = EventSource("Pairing Attempt Rejected", logger)
         self.peer.on_connect.register(self._on_peer_connected)
         self._auth_key_resolve_thread = threading.Thread(daemon=True)
         self._peripheral_security_request_thread = threading.Thread(daemon=True)
@@ -199,12 +198,18 @@ class SecurityManager(object):
         .. note:: If multiple handlers are registered to this event, the first handler to respond is the response used.
            All other inputs will be ignored
 
-        :return:
+        :return: Event that is triggered when the peripheral requests a secure connection
         """
         return self._on_peripheral_security_request_event
 
     @property
     def on_pairing_request_rejected(self) -> Event[Peer, PairingRejectedEventArgs]:
+        """
+        Event that's emitted when a pairing request is rejected locally, either due to the user
+        event handler or due to the rejection policy set in the security parameters
+
+        :return: Event that is triggered when a pairing request is rejected
+        """
         return self._on_pairing_request_rejected_event
 
     """
@@ -247,10 +252,6 @@ class SecurityManager(object):
         Sets the security parameters
         """
         self._security_params = params
-
-    @property
-    def pairing_policy(self) -> PairingPolicy:
-        return self._security_params.reject_pairing_requests
 
     """
     Public Methods
@@ -538,6 +539,7 @@ class SecurityManager(object):
                 self.bond_db_entry.peer_is_client = self.peer.is_client
                 self.bond_db_entry.peer_addr = self.keyset.peer_keys.id_key.peer_addr
                 self.bond_db_entry.bonding_data = BondingData(self.keyset)
+                self.bond_db_entry.name = self.peer.name
                 self.ble_device.bond_db.add(self.bond_db_entry)
             else:  # update the bonding info
                 logger.info("Updating bond key for peer {}".format(self.keyset.peer_keys.id_key.peer_addr))

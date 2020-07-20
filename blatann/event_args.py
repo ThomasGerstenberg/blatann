@@ -190,6 +190,9 @@ class PeripheralSecurityRequestEventArgs(EventArgs):
 
 
 class PairingRejectedReason(Enum):
+    """
+    Reason why pairing was rejected
+    """
     non_bonded_central_request = auto()
     non_bonded_peripheral_request = auto()
     bonded_peripheral_request = auto()
@@ -197,9 +200,10 @@ class PairingRejectedReason(Enum):
     user_rejected = auto()
 
 
-
-
 class PairingRejectedEventArgs(EventArgs):
+    """
+    Event arguments for when a pairing request was rejected locally
+    """
     def __init__(self, reason: PairingRejectedReason):
         self.reason = reason
 

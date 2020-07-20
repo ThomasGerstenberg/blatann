@@ -52,9 +52,8 @@ def on_peripheral_security_request(peer, event_args):
     For example, to reject new pairing requests but allow already-bonded
     devices to enable encryption, one could use the event_args.is_bonded_device flag to accept or reject the request.
 
-    This handler is optional. If not provided the default action is to accept all security requests and
-    initiate pairing (or encryption if the peripheral is already bonded),
-    unless the reject_pairing_requests parameter is set.
+    This handler is optional. If not provided the SecurityParameters.reject_pairing_requests parameter will
+    determine the action to take.
 
     :param peer: The peer that requested security
     :type peer: blatann.peer.Peer
@@ -122,7 +121,7 @@ def main(serial_port):
 
     peer.set_connection_parameters(100, 120, 6000)  # Discovery complete, go to a longer connection interval
 
-    # Wait up to 60 seconds for the pairing process
+    # Wait up to 60 seconds for the pairing process, if the link is not secured yet
     if peer.security.security_level == smp.SecurityLevel.OPEN:
         peer.security.pair().wait(60)
 

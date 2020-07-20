@@ -100,12 +100,14 @@ class Peer(object):
     NOTIFICATION_INDICATION_OVERHEAD_BYTES = 3
 
     def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS,
-                 security_params=DEFAULT_SECURITY_PARAMS):
+                 security_params=DEFAULT_SECURITY_PARAMS,
+                 name=""):
         """
         :type ble_device: blatann.device.BleDevice
         """
         self._ble_device = ble_device
         self._role = role
+        self._name = name
         self._preferred_connection_params = connection_params
         self._current_connection_params = ActiveConnectionParameters(connection_params)
         self.conn_handle = BLE_CONN_HANDLE_INVALID
@@ -131,6 +133,23 @@ class Peer(object):
     """
     Properties
     """
+
+    @property
+    def name(self) -> str:
+        """
+        The name of the peer, if known
+
+        .. note:: For central peers this name is unknown unless set by the setter below.
+           For peripheral peers the name is defaulted to the one found in the advertising payload, if any.
+        """
+        return self._name
+
+    @name.setter
+    def name(self, name: str):
+        """
+        Sets the name of the peer. This is
+        """
+        self._name = name
 
     @property
     def connected(self):
@@ -227,7 +246,6 @@ class Peer(object):
         :return: The database instance
         """
         return self._db
-
 
     """
     Events
@@ -507,9 +525,10 @@ class Peripheral(Peer):
     """
     def __init__(self, ble_device, peer_address,
                  connection_params=DEFAULT_CONNECTION_PARAMS,
-                 security_params=DEFAULT_SECURITY_PARAMS):
+                 security_params=DEFAULT_SECURITY_PARAMS,
+                 name=""):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params,
-                                         security_params)
+                                         security_params, name)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
 
@@ -520,9 +539,10 @@ class Client(Peer):
     """
     def __init__(self, ble_device,
                  connection_params=DEFAULT_CONNECTION_PARAMS,
-                 security_params=DEFAULT_SECURITY_PARAMS):
+                 security_params=DEFAULT_SECURITY_PARAMS,
+                 name=""):
         super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params,
-                                     security_params)
+                                     security_params, name)
         self._first_connection = True
 
     def peer_connected(self, conn_handle, peer_address, connection_params):
@@ -531,4 +551,5 @@ class Client(Peer):
             self._db = gattc.GattcDatabase(self._ble_device, self)
             self._discoverer = service_discovery.DatabaseDiscoverer(self._ble_device, self)
         self._first_connection = False
+        self._name = ""
         super(Client, self).peer_connected(conn_handle, peer_address, connection_params)

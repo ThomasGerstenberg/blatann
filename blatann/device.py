@@ -232,10 +232,16 @@ class BleDevice(NrfDriverObserver):
         if self.connecting_peripheral is not None:
             raise exceptions.InvalidStateException("Cannot initiate a new connection while connecting to another")
 
+        # Try finding the peer's name in the scan report
+        name = ""
+        scan_report = self.scanner.scan_report.get_report_for_peer(peer_address)
+        if scan_report:
+            name = scan_report.advertise_data.local_name
+
         if not connection_params:
             connection_params = self._default_conn_params
 
-        self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params)
+        self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params, self._default_security_params, name)
         periph_connection_waitable = PeripheralConnectionWaitable(self, self.connecting_peripheral)
         self.ble_driver.ble_gap_connect(peer_address, conn_params=connection_params,
                                         conn_cfg_tag=self._default_conn_config.conn_tag)
