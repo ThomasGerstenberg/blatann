@@ -1,6 +1,39 @@
 Changelog
 =========
 
+v0.3.3
+------
+
+v0.3.3 fixes a couple issues and adds some enhancements to the security manager.
+
+**Highlights**
+
+- Adds handling for peripheral-initiated security/pairings
+
+- Adds finer control over accepting/rejecting pairing requests based on the peer's role, whether or not it's already bonded, etc.
+
+- Adds more events and properties to expose the connection's security state
+
+- Adds method to delete a connected peer's bonding data for future connections
+
+
+**Fixes**
+
+- Fixes issue where the length of the scan response payload was not correctly being checked against the maximum 31-byte length
+
+- Fixes issue that was not allowing central devices to initiate encryption to an already-bonded peripheral device
+
+- Fixes issue that wasn't allowing time to be read from the Current Time service as a client
+
+**Changes**
+
+- Advertising payloads received that are padded with 0's at the end are now ignored and do not produce spammy logs
+
+- Adds a device-level method to set the default security level to use for all subsequent connections to peripheral devices
+
+- Adds a ``name`` property to the ``Peer`` class. This is auto-populated from the scan report (if connecting to a peripheral)
+  and can be set manually if desired.
+
 v0.3.2
 ------
 
