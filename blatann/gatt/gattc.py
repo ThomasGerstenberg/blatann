@@ -5,7 +5,7 @@ from typing import List, Optional, Iterable, Tuple
 from blatann import gatt
 from blatann.gatt.gattc_attribute import GattcAttribute
 from blatann.gatt.managers import _ReadWriteManager
-from blatann.uuid import Uuid, Uuid16
+from blatann.uuids import Uuid, DeclarationUuid, DescriptorUuid
 from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter
@@ -243,6 +243,17 @@ class GattcCharacteristic(gatt.Characteristic):
         waitable = self._value_attr.write(bytes(data), False)
         return IdBasedEventWaitable(self._on_write_complete_event, waitable.id)
 
+    def find_descriptor(self, uuid: Uuid) -> Optional[GattcAttribute]:
+        """
+        Searches for the descriptor matching the UUID provided and returns the attribute. If not found, returns None
+
+        :param uuid: The UUID to search for
+        :return: THe descriptor attribute, if found
+        """
+        for attr in self._attributes:
+            if attr.uuid == uuid:
+                return attr
+
     """
     Event Handlers
     """
@@ -303,9 +314,9 @@ class GattcCharacteristic(gatt.Characteristic):
         :type read_write_manager: _ReadWriteManager
         :type nrf_characteristic: nrf_types.BLEGattCharacteristic
         """
-        char_decl_uuid = Uuid16(nrf_types.BLEUUID.Standard.characteristic)
+        char_decl_uuid = DeclarationUuid.characteristic
         char_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_characteristic.uuid)
-        cccd_uuid = Uuid16(nrf_types.BLEUUID.Standard.cccd)
+        cccd_uuid = DescriptorUuid.cccd
 
         properties = gatt.CharacteristicProperties.from_nrf_properties(nrf_characteristic.char_props)
 

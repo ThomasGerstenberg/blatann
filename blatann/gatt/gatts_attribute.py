@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing
 import binascii
 import logging
 from collections import namedtuple
@@ -12,6 +13,11 @@ from blatann.nrf import nrf_events, nrf_types
 from blatann.event_type import EventSource, Event
 from blatann import gatt
 from blatann.uuid import Uuid
+
+if typing.TYPE_CHECKING:
+    from blatann.peer import Peer
+    from blatann.device import BleDevice
+    from blatann.gatt.gatts import GattsCharacteristic
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +40,9 @@ class GattsAttribute(Attribute):
     """
     _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
-    def __init__(self, ble_device, peer, parent, uuid: Uuid, handle: int, properties: GattsAttributeProperties,
+    def __init__(self, ble_device: BleDevice, peer: Peer, parent: GattsCharacteristic,
+                 uuid: Uuid, handle: int, properties: GattsAttributeProperties,
                  initial_value=b"", string_encoding="utf8"):
-        """
-        :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Client
-        :type parent: blatann.gatt.gatts.GattsCharacteristic
-        """
         super(GattsAttribute, self).__init__(uuid, handle, initial_value, string_encoding)
         self._ble_device = ble_device
         self._peer = peer

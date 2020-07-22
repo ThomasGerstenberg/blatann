@@ -14,6 +14,9 @@ class Uuid(object):
     def __repr__(self):
         return str(self)
 
+    def __hash__(self):
+        raise NotImplementedError()
+
 
 class Uuid128(Uuid):
     def __init__(self, uuid):
@@ -73,6 +76,9 @@ class Uuid128(Uuid):
     def __str__(self):
         return self.uuid_str
 
+    def __hash__(self):
+        return int.from_bytes(self.uuid, byteorder="big", signed=False)
+
 
 class Uuid16(Uuid):
     def __init__(self, uuid):
@@ -87,6 +93,9 @@ class Uuid16(Uuid):
 
     def __str__(self):
         return "{:x}".format(self.uuid)
+
+    def __hash__(self):
+        return self.uuid
 
 
 def generate_random_uuid16() -> Uuid16:

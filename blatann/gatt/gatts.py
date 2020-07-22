@@ -1,18 +1,25 @@
 from __future__ import annotations
+import typing
 from typing import Optional, List, Iterable, Tuple
 from collections import namedtuple
 import logging
+
 
 from blatann.gatt.gatts_attribute import GattsAttribute, GattsAttributeProperties
 from blatann.gatt.managers import _NotificationManager
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
-from blatann.uuid import Uuid, Uuid16
+from blatann.uuids import DescriptorUuid
+from blatann.uuid import Uuid
 from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.event_type import EventSource, Event
 from blatann.event_args import *
-from blatann.services.ble_data_types import BleDataStream
+from blatann.services.ble_data_types import BleDataStream, CharacteristicPresentationFormat
+
+if typing.TYPE_CHECKING:
+    from blatann.device import BleDevice
+    from blatann.peer import Peer
 
 
 logger = logging.getLogger(__name__)
@@ -26,18 +33,34 @@ _security_mapping = {
 }
 
 
+class GattsUserDescriptionProperties(GattsAttributeProperties):
+    def __init__(self, value, write=False, security_level=gatt.SecurityLevel.OPEN,
+                 max_length=0, variable_length=False):
+        if isinstance(value, str):
+            value = value.encode("utf8")
+        max_length = max(max_length, len(value))
+        super(GattsUserDescriptionProperties, self).__init__(True, write, security_level, max_length or len(value),
+                                                             variable_length, False, False)
+        self.value = value
+
+
 class GattsCharacteristicProperties(gatt.CharacteristicProperties):
     """
     Properties for Gatt Server characeristics
     """
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
-                 write_no_response=False, signed_write=False,
-                 security_level=gatt.SecurityLevel.OPEN, max_length=20, variable_length=True):
+                 write_no_response=False, signed_write=False, security_level=gatt.SecurityLevel.OPEN,
+                 max_length=20, variable_length=True, sccd=False,
+                 user_description: GattsUserDescriptionProperties = None,
+                 presentation_format: CharacteristicPresentationFormat = None):
         super(GattsCharacteristicProperties, self).__init__(read, write, notify, indicate, broadcast,
                                                             write_no_response, signed_write)
         self.security_level = security_level
         self.max_len = max_length
         self.variable_length = variable_length
+        self.user_description = user_description
+        self.presentation = presentation_format
+        self.sccd = sccd
 
 
 class GattsCharacteristic(gatt.Characteristic):
@@ -47,7 +70,11 @@ class GattsCharacteristic(gatt.Characteristic):
     """
     _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
-    def __init__(self, ble_device, peer, uuid, properties, value_handle: int, cccd_handle: int, notification_manager, value=b"", prefer_indications=True,
+    def __init__(self, ble_device: BleDevice, peer: Peer, uuid: Uuid, properties: GattsCharacteristicProperties,
+                 value_handle: int, cccd_handle: int, sccd_handle: int, user_desc_handle: int,
+                 notification_manager: _NotificationManager,
+                 value=b"",
+                 prefer_indications=True,
                  string_encoding="utf8"):
         """
         :param ble_device:
@@ -68,14 +95,24 @@ class GattsCharacteristic(gatt.Characteristic):
                                                     True, True)
         self._value_attr = GattsAttribute(self.ble_device, self.peer, self, uuid,
                                           value_handle, value_attr_props, value, string_encoding)
-        self._attrs = [self._value_attr]
+        self._attrs: List[GattsAttribute] = [self._value_attr]
+
         if cccd_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
-            cccd_attr_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
-            self._cccd_attr = GattsAttribute(self.ble_device, self.peer, self, Uuid16(nrf_types.BLEUUID.Standard.cccd),
-                                             cccd_handle, cccd_attr_props, b"\x00\x00")
+            cccd_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
+            self._cccd_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.cccd,
+                                             cccd_handle, cccd_props, b"\x00\x00")
             self._attrs.append(self._cccd_attr)
         else:
             self._cccd_attr = None
+        if user_desc_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
+            user_desc_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.user_description, user_desc_handle,
+                                            properties.user_description, properties.user_description.value, string_encoding)
+            self._attrs.append(user_desc_attr)
+        if sccd_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
+            sccd_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
+            sccd_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.sccd,
+                                       sccd_handle, sccd_props, b"\x00\x00")
+            self._attrs.append(sccd_attr)
 
         # Events
         self._on_write = EventSource("Write Event", logger)
@@ -138,11 +175,21 @@ class GattsCharacteristic(gatt.Characteristic):
                                                             self._on_notify_complete, data)
         return IdBasedEventWaitable(self._on_notify_complete, notification_id)
 
-    # TODO: Need to figure out a good API since some descriptor UUIDs are
-    #  reserved by the stack and must be set during characteristic creation
-    """ 
     def add_descriptor(self, uuid: Uuid, properties: GattsAttributeProperties,
                        initial_value=b"", string_encoding="utf8") -> GattsAttribute:
+        """
+        Creates and adds a descriptor to the characteristic
+
+        .. note:: Due to limitations of the stack, the CCCD, SCCD, User Description, Extended Properties,
+           and Presentation Format descriptors cannot be added through this method. They must be added through the
+           GattsProperties fields when creating the characteristic.
+
+        :param uuid: The UUID of the descriptor to add, and cannot be the UUIDs of any of the reserved descriptor UUIDs in the note
+        :param properties: The properties of the descriptor
+        :param initial_value: The initial value to set the descriptor to
+        :param string_encoding: The string encoding to use, if a string is set
+        :return: the descriptor that was created and added to the characteristic
+        """
         if isinstance(initial_value, str):
             initial_value = initial_value.encode(string_encoding)
 
@@ -165,7 +212,6 @@ class GattsCharacteristic(gatt.Characteristic):
         props = GattsAttributeProperties(read=True, write=False, security_level=security_level,
                                          max_length=len(value), variable_length=False, write_auth=False, read_auth=False)
         return self.add_descriptor(uuid, props, value)
-    """
 
     """
     Properties
@@ -218,7 +264,7 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         Sets how the characteristic value is encoded when provided a string
 
-        :param encoding: the encoding to use (utf8, ascii, etc.)
+        :param value: the encoding to use (utf8, ascii, etc.)
         """
         self._value_attr.string_encoding = value
 
@@ -339,13 +385,32 @@ class GattsService(gatt.Service):
             indicate=properties.indicate,
             auth_signed_wr=False
         )
+
+        char_md = nrf_types.BLEGattsCharMetadata(props)
         # Create cccd metadata if notify/indicate enabled
         if properties.notify or properties.indicate:
-            cccd_metadata = nrf_types.BLEGattsAttrMetadata(read_auth=False, write_auth=False)
-        else:
-            cccd_metadata = None
+            char_md.cccd_metadata = nrf_types.BLEGattsAttrMetadata()
 
-        char_md = nrf_types.BLEGattsCharMetadata(props, cccd_metadata=cccd_metadata)
+        if properties.sccd:
+            char_md.sccd_metadata = nrf_types.BLEGattsAttrMetadata()
+
+        if properties.presentation:
+            pf = nrf_types.BLEGattsPresentationFormat(properties.presentation.format, properties.presentation.exponent,
+                                                      properties.presentation.unit, properties.presentation.namespace,
+                                                      properties.presentation.description)
+            char_md.presentation_format = pf
+
+        if properties.user_description:
+            user_desc = properties.user_description
+            user_desc_sec = _security_mapping[user_desc.security_level]
+            user_desc_sec_w = user_desc_sec if user_desc.write else nrf_types.BLEGapSecModeType.NO_ACCESS
+            char_md.user_desc_metadata = nrf_types.BLEGattsAttrMetadata(user_desc_sec, user_desc_sec_w,
+                                                                        user_desc.variable_length,
+                                                                        user_desc.read_auth, user_desc.write_auth)
+            char_md.user_description = user_desc.value
+            char_md.user_description_max_len = user_desc.max_len
+            char_md.extended_props.writable_aux = user_desc.write
+
         security = _security_mapping[properties.security_level]
         attr_metadata = nrf_types.BLEGattsAttrMetadata(security, security, properties.variable_length,
                                                        read_auth=True, write_auth=True)
@@ -354,7 +419,8 @@ class GattsService(gatt.Service):
         handles = nrf_types.BLEGattsCharHandles()  # Populated in call
         self.ble_device.ble_driver.ble_gatts_characteristic_add(self.start_handle, char_md, attribute, handles)
 
-        c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties, handles.value_handle, handles.cccd_handle,
+        c = GattsCharacteristic(self.ble_device, self.peer, uuid, properties,
+                                handles.value_handle, handles.cccd_handle, handles.sccd_handle, handles.user_desc_handle,
                                 self._notification_manager, initial_value, prefer_indications, string_encoding)
 
         self.characteristics.append(c)

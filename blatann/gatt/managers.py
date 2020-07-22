@@ -82,20 +82,20 @@ class _ReadWriteManager(QueuedTasksManagerBase):
             return True
 
     def _handle_task_failure(self, task, e):
-        reason = GattOperationCompleteReason.FAILED
-        ignore_stack_trace = False
+        failure = self.TaskFailure(GattOperationCompleteReason.FAILED)
         if isinstance(e, nrf_driver.NordicSemiException):
             if e.error_code == nrf_types.NrfError.ble_invalid_conn_handle.value:
-                reason = GattOperationCompleteReason.SERVER_DISCONNECTED
-                ignore_stack_trace = True
+                failure.reason = GattOperationCompleteReason.SERVER_DISCONNECTED
+                failure.ignore_stack_trace = True
+                failure.clear_all = True
 
         if isinstance(task, _ReadTask):
-            task.reason = reason
+            task.reason = failure.reason
             task.notify_complete(self)
         elif isinstance(task, _WriteTask):
-            task.reason = reason
+            task.reason = failure.reason
             task.notify_complete(self)
-        return ignore_stack_trace
+        return failure
 
     def _handle_task_cleared(self, task, reason):
         if isinstance(task, _ReadTask):
@@ -206,14 +206,19 @@ class _NotificationManager(QueuedTasksManagerBase):
         """
         :type notification: _Notification
         """
-        reason = NotificationCompleteEventArgs.Reason.FAILED
-        ignore_stack_trace = False
+        failure = self.TaskFailure(NotificationCompleteEventArgs.Reason.FAILED)
         if isinstance(e, nrf_driver.NordicSemiException):
             if e.error_code == nrf_types.NrfError.ble_invalid_conn_handle.value:
-                reason = NotificationCompleteEventArgs.Reason.CLIENT_DISCONNECTED
-                ignore_stack_trace = True
-        notification.notify_complete(reason)
-        return ignore_stack_trace
+                failure.reason = NotificationCompleteEventArgs.Reason.CLIENT_DISCONNECTED
+                failure.ignore_stack_trace = True
+                failure.clear_all = True
+            elif e.error_code == nrf_types.NrfError.invalid_state.value:
+                failure.reason = GattOperationCompleteReason.CLIENT_UNSUBSCRIBED
+                failure.ignore_stack_trace = True
+                failure.clear_all = True
+
+        notification.notify_complete(failure.reason)
+        return failure
 
     def _handle_task_cleared(self, notification, reason):
         """
