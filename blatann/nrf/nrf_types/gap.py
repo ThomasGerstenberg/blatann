@@ -300,6 +300,10 @@ class BLEAdvData(object):
         index = 0
         while index < len(ad_list):
             ad_len = ad_list[index]
+            # If the length field is zero, skip it (probably padded zeros at the end of the payload)
+            if ad_len == 0:
+                index += 1
+                continue
             try:
                 ad_type = ad_list[index + 1]
                 offset = index + 2

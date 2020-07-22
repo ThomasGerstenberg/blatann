@@ -43,6 +43,38 @@ def on_passkey_entry(peer, passkey_event_args):
     passkey_event_args.resolve(passkey)
 
 
+def on_peripheral_security_request(peer, event_args):
+    """
+    Handler for peripheral-initiated security requests. This is useful in the case that the
+    application wants to override the default response to peripheral-initiated security requests
+    based on parameters, the peer, etc.
+
+    For example, to reject new pairing requests but allow already-bonded
+    devices to enable encryption, one could use the event_args.is_bonded_device flag to accept or reject the request.
+
+    This handler is optional. If not provided the SecurityParameters.reject_pairing_requests parameter will
+    determine the action to take.
+
+    :param peer: The peer that requested security
+    :type peer: blatann.peer.Peer
+    :param event_args: The event arguments
+    :type event_args: blatann.event_args.PeripheralSecurityRequestEventArgs
+    """
+    logger.info("{} Peripheral requested security -- bond: {}, mitm: {}, lesc: {}, keypress: {}".format(
+        "Already-Bonded" if event_args.is_bonded_device else "Non-bonded",
+        event_args.bond, event_args.mitm, event_args.lesc, event_args.keypress
+    ))
+    # At this point check the security parameters and accept, reject, or force re-pair depending on your security needs
+    # For this demo, match the requested parameters (not required) and accept
+    peer.security.security_params.bond = event_args.bond
+    peer.security.security_params.passcode_pairing = event_args.mitm
+    peer.security.security_params.lesc_pairing = event_args.lesc
+    event_args.accept()
+    # Other options include
+    #   event_args.reject()
+    #   event_args.force_repair()
+
+
 def main(serial_port):
     # Set the target to the peripheral's advertised name
     target_device_name = constants.PERIPHERAL_NAME
@@ -76,6 +108,8 @@ def main(serial_port):
                                       bond=False, out_of_band=False)
     # Register the callback for when a passkey needs to be entered by the user
     peer.security.on_passkey_required.register(on_passkey_entry)
+    # Register the callback for if a peripheral requests security
+    peer.security.on_peripheral_security_request.register(on_peripheral_security_request)
 
     # Wait up to 10 seconds for service discovery to complete
     _, event_args = peer.discover_services().wait(10, exception_on_timeout=False)
@@ -87,8 +121,9 @@ def main(serial_port):
 
     peer.set_connection_parameters(100, 120, 6000)  # Discovery complete, go to a longer connection interval
 
-    # Wait up to 60 seconds for the pairing process
-    peer.security.pair().wait(60)
+    # Wait up to 60 seconds for the pairing process, if the link is not secured yet
+    if peer.security.security_level == smp.SecurityLevel.OPEN:
+        peer.security.pair().wait(60)
 
     # Find the counting characteristic
     counting_char = peer.database.find_characteristic(constants.COUNTING_CHAR_UUID)
@@ -128,4 +163,4 @@ def main(serial_port):
 
 
 if __name__ == '__main__':
-    main("COM9")
+    main("COM11")

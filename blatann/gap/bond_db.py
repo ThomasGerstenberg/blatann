@@ -1,3 +1,7 @@
+import typing
+
+if typing.TYPE_CHECKING:
+    from blatann.peer import PeerAddress
 
 
 class BondingData(object):
@@ -14,25 +18,23 @@ class BondingData(object):
 class BondDbEntry(object):
     def __init__(self, entry_id=0):
         self.id = entry_id
-        self.peer_addr = None
-        self.peer_is_client = None
-        self.bonding_data = None  # type: BondingData
+        self.peer_addr: PeerAddress = None
+        self.peer_is_client: bool = False
+        self.bonding_data: BondingData = None
+        self.name = ""
 
 
 class BondDatabase(object):
-    def create(self):
-        """
-        :rtype: BondDbEntry
-        """
+    def create(self) -> BondDbEntry:
         raise NotImplementedError()
 
-    def add(self, db_entry):
+    def add(self, db_entry: BondDbEntry):
         raise NotImplementedError()
 
-    def update(self, db_entry):
+    def update(self, db_entry: BondDbEntry):
         raise NotImplementedError()
 
-    def delete(self, db_entry):
+    def delete(self, db_entry: BondDbEntry):
         raise NotImplementedError()
 
     def delete_all(self):

@@ -1,5 +1,5 @@
 import time
-from typing import Iterable, List, Dict, Union
+from typing import Iterable, List, Dict, Union, Optional
 import logging
 from blatann.nrf import nrf_types
 from blatann import uuid, exceptions
@@ -316,6 +316,9 @@ class ScanReportCollection(object):
         :rtype: list of ScanReport
         """
         return self._all_scans[:]
+
+    def get_report_for_peer(self, peer_addr) -> Optional[ScanReport]:
+        return self._scans_by_peer_address.get(peer_addr)
 
     def clear(self):
         """

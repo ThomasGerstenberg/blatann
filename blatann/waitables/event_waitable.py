@@ -26,7 +26,7 @@ class EventWaitable(Waitable, Generic[TSender, TEvent]):
         return res
 
     def then(self, callback: Callable[[TSender, TEvent], None]):
-        super(EventWaitable, self).then(callback)
+        return super(EventWaitable, self).then(callback)
 
 
 class IdBasedEventWaitable(EventWaitable):

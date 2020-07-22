@@ -1,5 +1,6 @@
 import os
 import logging
+import queue
 import time
 from typing import Optional
 from unittest import TestCase, SkipTest
@@ -146,3 +147,20 @@ def long_running(func):
             self.skipTest("Skipping {} because it's a long-running test ({}={})".format(name, BLATANN_QUICK_ENVKEY, quick_tests))
         func(self, *args, **kwargs)
     return f
+
+
+class EventCollector(object):
+    def __init__(self):
+        self._q = queue.Queue()
+
+    def __call__(self, caller, event_args):
+        self._q.put((caller, event_args))
+
+    def collect(self, timeout=0):
+        events = []
+        while True:
+            try:
+                events.append(self._q.get(block=timeout != 0, timeout=timeout))
+            except queue.Empty:
+                break
+        return events
