@@ -1,6 +1,8 @@
 # Minimal makefile for Sphinx documentation
 #
 
+RM := rm
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
@@ -16,7 +18,10 @@ help:
 
 all: apidoc html
 
-apidoc:
+clean-apidoc:
+	@$(RM) -rf $(SOURCEDIR)/blatann.*.rst
+
+apidoc: clean-apidoc
 	@sphinx-apidoc -e -M -o $(SOURCEDIR) $(PYTHON_SOURCE)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
