@@ -79,13 +79,6 @@ class GattsAttribute(Attribute):
         return self._properties.max_len
 
     @property
-    def value(self) -> bytes:
-        """
-        Gets the current value of the attribute
-        """
-        return self._value
-
-    @property
     def read_in_process(self) -> bool:
         """
         Gets whether or not the client is in the process of  reading out this attribute
