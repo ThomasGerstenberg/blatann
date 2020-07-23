@@ -97,6 +97,7 @@ class GattsCharacteristic(gatt.Characteristic):
         self._value_attr = GattsAttribute(self.ble_device, self.peer, self, uuid,
                                           value_handle, value_attr_props, value, string_encoding)
         self._attrs: List[GattsAttribute] = [self._value_attr]
+        self._presentation_format = properties.presentation
 
         if cccd_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
             cccd_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
@@ -106,14 +107,16 @@ class GattsCharacteristic(gatt.Characteristic):
         else:
             self._cccd_attr = None
         if user_desc_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
-            user_desc_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.user_description, user_desc_handle,
-                                            properties.user_description, properties.user_description.value, string_encoding)
-            self._attrs.append(user_desc_attr)
+            self._user_desc_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.user_description, user_desc_handle,
+                                                  properties.user_description, properties.user_description.value, string_encoding)
+            self._attrs.append(self._user_desc_attr)
+        else:
+            self._user_desc_attr = None
         if sccd_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
             sccd_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
-            sccd_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.sccd,
-                                       sccd_handle, sccd_props, b"\x00\x00")
-            self._attrs.append(sccd_attr)
+            self._sccd_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.sccd,
+                                             sccd_handle, sccd_props, b"\x00\x00")
+            self._attrs.append(self._sccd_attr)
 
         # Events
         self._on_write = EventSource("Write Event", logger)
@@ -252,6 +255,33 @@ class GattsCharacteristic(gatt.Characteristic):
         Gets all of the attributes and descriptors associated with this characteristic
         """
         return tuple(self._attrs)
+
+    @property
+    def user_description(self) -> Optional[GattsAttribute]:
+        """
+        Gets the User Description attribute for the characteristic if set in the properties
+
+        :return: The User Description attribute or None if it was not specified when the characteristic was created
+        """
+        return self._user_desc_attr
+
+    @property
+    def sccd(self) -> Optional[GattsAttribute]:
+        """
+        Gets the Server Characteristic Configuration Descriptor attribute if set in the properties
+
+        :return: The SCCD attribute or None if it was not specified when the characteristic was created
+        """
+        return self._sccd_attr
+
+    @property
+    def presentation_format(self) -> Optional[PresentationFormat]:
+        """
+        Gets the presentation format that was set for the characteristic
+
+        :return: The characteristic's presentation format
+        """
+        return self._presentation_format
 
     @property
     def string_encoding(self) -> str:
