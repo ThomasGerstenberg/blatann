@@ -9,13 +9,14 @@ from blatann.gatt.gatts_attribute import GattsAttribute, GattsAttributePropertie
 from blatann.gatt.managers import _NotificationManager
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
-from blatann.uuids import DescriptorUuid
+from blatann.bt_sig.uuids import DescriptorUuid
 from blatann.uuid import Uuid
 from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.event_type import EventSource, Event
 from blatann.event_args import *
-from blatann.services.ble_data_types import BleDataStream, CharacteristicPresentationFormat
+from blatann.services.ble_data_types import BleDataStream
+from blatann.gatt import PresentationFormat
 
 if typing.TYPE_CHECKING:
     from blatann.device import BleDevice
@@ -52,7 +53,7 @@ class GattsCharacteristicProperties(gatt.CharacteristicProperties):
                  write_no_response=False, signed_write=False, security_level=gatt.SecurityLevel.OPEN,
                  max_length=20, variable_length=True, sccd=False,
                  user_description: GattsUserDescriptionProperties = None,
-                 presentation_format: CharacteristicPresentationFormat = None):
+                 presentation_format: PresentationFormat = None):
         super(GattsCharacteristicProperties, self).__init__(read, write, notify, indicate, broadcast,
                                                             write_no_response, signed_write)
         self.security_level = security_level

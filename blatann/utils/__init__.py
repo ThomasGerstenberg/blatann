@@ -2,6 +2,8 @@ import time
 import threading
 import logging
 import sys
+import enum
+
 from blatann.utils import _threading
 
 
@@ -106,3 +108,30 @@ class SynchronousMonotonicCounter(object):
             value = self._counter
             self._counter += 1
         return value
+
+
+def snake_case_to_capitalized_words(string: str):
+    parts = [p for p in string.split("_") if p]
+    words = []
+    for p in parts:
+        if len(p) == 1:
+            words.append(p.upper())
+        else:
+            words.append(p[0].upper() + p[1:])
+
+
+class IntEnumWithDescription(int, enum.Enum):
+    def __new__(cls, *args, **kwargs):
+        val = args[0]
+        obj = int.__new__(cls, val)
+        obj._value_ = val
+        return obj
+
+    def __init__(self, _, description: str = ""):
+        self._description_ = description
+        if not self._description_:
+            self._description_ = snake_case_to_capitalized_words(self.name)
+
+    @property
+    def description(self):
+        return self._description_

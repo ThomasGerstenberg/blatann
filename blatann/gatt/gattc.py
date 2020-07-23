@@ -5,7 +5,7 @@ from typing import List, Optional, Iterable, Tuple
 from blatann import gatt
 from blatann.gatt.gattc_attribute import GattcAttribute
 from blatann.gatt.managers import _ReadWriteManager
-from blatann.uuids import Uuid, DeclarationUuid, DescriptorUuid
+from blatann.bt_sig.uuids import Uuid, DeclarationUuid, DescriptorUuid
 from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter

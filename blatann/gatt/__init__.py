@@ -2,6 +2,7 @@ import enum
 import logging
 import struct
 
+from blatann.services.ble_data_types import BleCompoundDataType, Uint8, Int8, Uint16
 from blatann.uuid import Uuid
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 from blatann.nrf import nrf_types
@@ -229,3 +230,16 @@ class GattDatabase(object):
         return "Database(peer {}, services: [{}])".format(self.peer.conn_handle,
                                                           "\n  ".join(str(s) for s in self._services))
 
+
+class PresentationFormat(BleCompoundDataType):
+    data_stream_types = [Uint8, Int8, Uint16, Uint8, Uint16]
+
+    def __init__(self, fmt: int, exponent: int, unit: int, namespace: int, description: int):
+        self.format = fmt
+        self.exponent = exponent
+        self.unit = unit
+        self.namespace = namespace
+        self.description = description
+
+    def encode(self):
+        return self.encode_values(self.format, self.exponent, self.unit, self.namespace, self.description)
