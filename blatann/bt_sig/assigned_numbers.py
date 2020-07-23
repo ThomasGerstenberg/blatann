@@ -34,6 +34,11 @@ class Format(IntEnumWithDescription):
     struct = 0x1B, "Opaque structure"
 
 
+class Namespace(IntEnumWithDescription):
+    unknown = 0x0000
+    bt_sig = 0x0001
+
+
 class NamespaceDescriptor(IntEnumWithDescription):
     # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
     # Date: 2020/07/22

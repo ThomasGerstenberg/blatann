@@ -234,7 +234,7 @@ class GattDatabase(object):
 class PresentationFormat(BleCompoundDataType):
     data_stream_types = [Uint8, Int8, Uint16, Uint8, Uint16]
 
-    def __init__(self, fmt: int, exponent: int, unit: int, namespace: int, description: int):
+    def __init__(self, fmt: int, exponent: int, unit: int, namespace: int = 0, description: int = 0):
         self.format = fmt
         self.exponent = exponent
         self.unit = unit

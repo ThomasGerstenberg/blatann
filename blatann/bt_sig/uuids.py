@@ -19,21 +19,21 @@ class DescriptorUuid:
     UUIDs that are used for characteristic descriptors
     """
     # Source: https://www.bluetooth.com/specifications/gatt/descriptors/
-    characteristic_extended_properties  = Uuid16("2900")
-    characteristic_user_description     = Uuid16("2901")
-    client_characteristic_configuration = Uuid16("2902")
-    server_characteristic_configuration = Uuid16("2903")
-    characteristic_presentation_format  = Uuid16("2904")
-    characteristic_aggregate_format     = Uuid16("2905")
-    valid_range                         = Uuid16("2906")
-    external_report_reference           = Uuid16("2907")
-    report_reference                    = Uuid16("2908")
-    number_of_digitals                  = Uuid16("2909")
-    value_trigger_setting               = Uuid16("290a")
-    es_configuration                    = Uuid16("290b")
-    es_measurement                      = Uuid16("290c")
-    es_trigger_setting                  = Uuid16("290d")
-    time_trigger_setting                = Uuid16("290e")
+    extended_properties       = Uuid16("2900")
+    user_description          = Uuid16("2901")
+    cccd                      = Uuid16("2902")
+    sccd                      = Uuid16("2903")
+    presentation_format       = Uuid16("2904")
+    aggregate_format          = Uuid16("2905")
+    valid_range               = Uuid16("2906")
+    external_report_reference = Uuid16("2907")
+    report_reference          = Uuid16("2908")
+    number_of_digitals        = Uuid16("2909")
+    value_trigger_setting     = Uuid16("290a")
+    es_configuration          = Uuid16("290b")
+    es_measurement            = Uuid16("290c")
+    es_trigger_setting        = Uuid16("290d")
+    time_trigger_setting      = Uuid16("290e")
 
 
 class ServiceUuid:
@@ -331,10 +331,12 @@ class CharacteristicUuid:
 
 
 """Maps UUIDs in this file to a string description of the UUID"""
-UUID_DESCRIPTION_MAP: Dict[Uuid16, str] = {}
+UUID_DESCRIPTION_MAP: Dict[Uuid, str] = {}
 
-for cls in [DeclarationUuid, DescriptorUuid, ServiceUuid, CharacteristicUuid]:
-    for k, v in cls.__dict__.items():
+for t in [DeclarationUuid, DescriptorUuid, ServiceUuid, CharacteristicUuid]:
+    for k, v in t.__dict__.items():
+        if not isinstance(v, Uuid):
+             continue
         if not v.description:
             v.description = snake_case_to_capitalized_words(k)
         UUID_DESCRIPTION_MAP[v] = v.description

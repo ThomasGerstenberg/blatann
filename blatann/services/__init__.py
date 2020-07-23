@@ -1,5 +1,4 @@
 import binascii
-from blatann.gatt import GattStatusCode
 from blatann.services import ble_data_types
 from blatann.event_args import NotificationReceivedEventArgs, ReadCompleteEventArgs, DecodedReadCompleteEventArgs, \
     WriteEventArgs, DecodedWriteEventArgs
@@ -24,6 +23,9 @@ class DecodedReadWriteEventDispatcher(object):
         return None
 
     def __call__(self, characteristic, event_args):
+        # FIXME - Hacky workaround for circular import issue! This class should live elsewhere
+        from blatann.gatt import GattStatusCode
+
         if isinstance(event_args, ReadCompleteEventArgs):
             if event_args.status == GattStatusCode.success:
                 decoded_value = self.decode(event_args.value)
