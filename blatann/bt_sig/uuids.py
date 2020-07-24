@@ -21,8 +21,8 @@ class DescriptorUuid:
     # Source: https://www.bluetooth.com/specifications/gatt/descriptors/
     extended_properties       = Uuid16("2900")
     user_description          = Uuid16("2901")
-    cccd                      = Uuid16("2902")
-    sccd                      = Uuid16("2903")
+    cccd                      = Uuid16("2902", "Client Characteristic Configuration Descriptor")
+    sccd                      = Uuid16("2903", "Server Characteristic Configuration Descriptor")
     presentation_format       = Uuid16("2904")
     aggregate_format          = Uuid16("2905")
     valid_range               = Uuid16("2906")
@@ -336,7 +336,7 @@ UUID_DESCRIPTION_MAP: Dict[Uuid, str] = {}
 for t in [DeclarationUuid, DescriptorUuid, ServiceUuid, CharacteristicUuid]:
     for k, v in t.__dict__.items():
         if not isinstance(v, Uuid):
-             continue
+            continue
         if not v.description:
             v.description = snake_case_to_capitalized_words(k)
         UUID_DESCRIPTION_MAP[v] = v.description

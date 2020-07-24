@@ -118,6 +118,7 @@ def snake_case_to_capitalized_words(string: str):
             words.append(p.upper())
         else:
             words.append(p[0].upper() + p[1:])
+    return " ".join(words)
 
 
 class IntEnumWithDescription(int, enum.Enum):

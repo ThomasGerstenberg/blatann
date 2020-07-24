@@ -9,6 +9,8 @@ from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
 from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
+from blatann.bt_sig.uuids import UUID_DESCRIPTION_MAP
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +73,9 @@ class _UuidManager(object):
         if nrf_uuid.base.type == 0:
             raise ValueError("UUID Not registered: {}".format(nrf_uuid))
         if nrf_uuid.base.type == nrf_types.BLEUUIDBase.BLE_UUID_TYPE_BLE:
-            return Uuid16(nrf_uuid.get_value())
+            uuid = Uuid16(nrf_uuid.get_value())
+            uuid.description = UUID_DESCRIPTION_MAP.get(uuid, "")
+            return uuid
         base = None
         for uuid_base in self.registered_vs_uuids:
             if nrf_uuid.base.type == uuid_base.type:
