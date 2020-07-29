@@ -13,10 +13,6 @@ from blatann.bt_sig.uuids import DescriptorUuid
 logger = example_utils.setup_logger(level="INFO")
 
 
-def on_time_char_notification(char, event_args):
-    logger.info("Got time char notification")
-
-
 def main(serial_port):
     # Create and open the device
     ble_device = BleDevice(serial_port)
