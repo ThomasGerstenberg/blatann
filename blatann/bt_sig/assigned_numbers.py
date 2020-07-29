@@ -36,7 +36,7 @@ class Format(IntEnumWithDescription):
 
 class Namespace(IntEnumWithDescription):
     unknown = 0x0000
-    bt_sig = 0x0001
+    bt_sig = 0x0001, "Bluetooth SIG"
 
 
 class NamespaceDescriptor(IntEnumWithDescription):

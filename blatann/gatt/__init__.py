@@ -7,6 +7,7 @@ from blatann.uuid import Uuid
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 from blatann.nrf import nrf_types
 from blatann.gap.smp import SecurityLevel
+from blatann.bt_sig.assigned_numbers import Format, Units, Namespace, NamespaceDescriptor
 
 
 logger = logging.getLogger(__name__)
@@ -243,3 +244,20 @@ class PresentationFormat(BleCompoundDataType):
 
     def encode(self):
         return self.encode_values(self.format, self.exponent, self.unit, self.namespace, self.description)
+
+    @classmethod
+    def decode(cls, stream):
+        fmt, exponent, unit, namespace, description = super(PresentationFormat, cls).decode(stream)
+        fmt = cls.try_get_enum(fmt, Format)
+        unit = cls.try_get_enum(unit, Units)
+        namespace = cls.try_get_enum(namespace, Namespace)
+        description = cls.try_get_enum(description, NamespaceDescriptor)
+        return PresentationFormat(fmt, exponent, unit, namespace, description)
+
+    @staticmethod
+    def try_get_enum(value, enum_type):
+        try:
+            return enum_type(value)
+        except ValueError:
+            print("Failed")
+            return value

@@ -201,9 +201,10 @@ class GattsCharacteristic(gatt.Characteristic):
         security = _security_mapping[properties.security_level]
         read_perm = security if properties.read else nrf_types.BLEGapSecModeType.NO_ACCESS
         write_perm = security if properties.write else nrf_types.BLEGapSecModeType.NO_ACCESS
+        max_len = max(len(initial_value), properties.max_len)
         metadata = nrf_types.BLEGattsAttrMetadata(read_perm, write_perm, properties.variable_length,
                                                   read_auth=properties.read_auth, write_auth=properties.write_auth)
-        attr = nrf_types.BLEGattsAttribute(uuid.nrf_uuid, metadata, properties.max_len, initial_value)
+        attr = nrf_types.BLEGattsAttribute(uuid.nrf_uuid, metadata, max_len, initial_value)
         self.ble_device.ble_driver.ble_gatts_descriptor_add(self._value_attr.handle, attr)
 
         attr = GattsAttribute(self.ble_device, self.peer, self, uuid, attr.handle,

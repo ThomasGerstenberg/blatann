@@ -1,7 +1,7 @@
-from blatann.uuid import Uuid16
+from blatann.bt_sig.uuids import ServiceUuid, CharacteristicUuid
 
-CURRENT_TIME_SERVICE_UUID = Uuid16(0x1805)
+CURRENT_TIME_SERVICE_UUID = ServiceUuid.current_time
 
-CURRENT_TIME_CHARACTERISTIC_UUID = Uuid16(0x2A2B)
-LOCAL_TIME_INFO_CHARACTERISTIC_UUID = Uuid16(0x2A0F)
-REFERENCE_INFO_CHARACTERISTIC_UUID = Uuid16(0x2A14)
+CURRENT_TIME_CHARACTERISTIC_UUID = CharacteristicUuid.current_time
+LOCAL_TIME_INFO_CHARACTERISTIC_UUID = CharacteristicUuid.local_time_information
+REFERENCE_INFO_CHARACTERISTIC_UUID = CharacteristicUuid.reference_time_information

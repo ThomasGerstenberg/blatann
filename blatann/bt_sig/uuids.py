@@ -11,7 +11,7 @@ class DeclarationUuid:
     # Source: https://www.bluetooth.com/specifications/gatt/declarations/
     primary_service = Uuid16("2800")
     secondary_service = Uuid16("2801")
-    characteristic = Uuid16("2803")
+    characteristic = Uuid16("2803", "Characteristic Declaration")
 
 
 class DescriptorUuid:

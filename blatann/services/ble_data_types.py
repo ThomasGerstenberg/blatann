@@ -87,10 +87,12 @@ class BleCompoundDataType(object):
     @classmethod
     def decode(cls, stream):
         """
-        :type stream: BleDataStream
+        :type stream: BleDataStream or bytes
         :return: The values decoded from the stream
         :rtype: tuple
         """
+        if isinstance(stream, bytes):
+            stream = BleDataStream(stream)
         values = []
         for data_type in cls.data_stream_types:
             value = stream.decode(data_type)

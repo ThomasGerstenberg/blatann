@@ -15,7 +15,7 @@ class GattOperationCompleteReason(Enum):
     """
     # Operation successful
     SUCCESS = 0
-    # Queue of queued operations (notifications,reads, writes) was leared
+    # Queue of queued operations (notifications,reads, writes) was cleared
     QUEUE_CLEARED = 1
     # The client disconnected before the operation completed
     CLIENT_DISCONNECTED = 2

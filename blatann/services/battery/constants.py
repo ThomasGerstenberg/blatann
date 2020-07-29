@@ -1,5 +1,5 @@
-from blatann.uuid import Uuid16
+from blatann.bt_sig.uuids import ServiceUuid, CharacteristicUuid
 
-BATTERY_SERVICE_UUID = Uuid16(0x180F)
+BATTERY_SERVICE_UUID = ServiceUuid.battery_service
 
-BATTERY_LEVEL_CHARACTERISTIC_UUID = Uuid16(0x2A19)
+BATTERY_LEVEL_CHARACTERISTIC_UUID = CharacteristicUuid.battery_level

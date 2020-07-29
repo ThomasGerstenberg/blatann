@@ -35,3 +35,7 @@ TIME_CHAR_UUID = TIME_SERVICE_UUID.new_uuid_from_base("dddd")
 # Properties for the time characteristic
 _TIME_CHAR_USER_DESC = gatts.GattsUserDescriptionProperties("Current Time")
 TIME_CHAR_PROPERTIES = gatts.GattsCharacteristicProperties(read=True, max_length=30, variable_length=True, user_description=_TIME_CHAR_USER_DESC)
+
+
+DESC_EXAMPLE_SERVICE_UUID = Uuid128("12340000-5678-90ab-cdef-001122334455")
+DESC_EXAMPLE_CHAR_UUID = DESC_EXAMPLE_SERVICE_UUID.new_uuid_from_base("0001")

@@ -5,7 +5,8 @@ import pytz.reference
 
 from blatann.event_type import EventSource, Event
 from blatann.exceptions import InvalidOperationException
-from blatann.services import DecodedReadWriteEventDispatcher, DecodedReadCompleteEventArgs, DecodedWriteEventArgs
+from blatann.event_args import DecodedReadCompleteEventArgs, DecodedWriteEventArgs
+from blatann.services.decoded_event_dispatcher import DecodedReadWriteEventDispatcher
 from blatann.services.current_time.constants import *
 from blatann.services.current_time.data_types import *
 from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
