@@ -9,6 +9,8 @@ from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
 from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
+from blatann.bt_sig.uuids import UUID_DESCRIPTION_MAP
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +73,9 @@ class _UuidManager(object):
         if nrf_uuid.base.type == 0:
             raise ValueError("UUID Not registered: {}".format(nrf_uuid))
         if nrf_uuid.base.type == nrf_types.BLEUUIDBase.BLE_UUID_TYPE_BLE:
-            return Uuid16(nrf_uuid.get_value())
+            uuid = Uuid16(nrf_uuid.get_value())
+            uuid.description = UUID_DESCRIPTION_MAP.get(uuid, "")
+            return uuid
         base = None
         for uuid_base in self.registered_vs_uuids:
             if nrf_uuid.base.type == uuid_base.type:
@@ -92,6 +96,7 @@ class BleDevice(NrfDriverObserver):
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
+        self.ble_driver.event_subscribe(self._on_sys_attr_missing, nrf_events.GattsEvtSysAttrMissing)
         self._ble_configuration = self.ble_driver.ble_enable_params_setup()
         self._default_conn_config = nrf_types.BleConnConfig(event_length=6)  # The minimum event length which supports max DLE
 
@@ -279,6 +284,10 @@ class BleDevice(NrfDriverObserver):
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
         self.ble_driver.ble_user_mem_reply(event.conn_handle)
+
+    def _on_sys_attr_missing(self, nrf_driver, event):
+        # TODO: Save/load system attributes from a database
+        self.ble_driver.ble_gatts_sys_attr_set(event.conn_handle, None)
 
     def on_driver_event(self, nrf_driver, event):
         """

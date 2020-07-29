@@ -63,6 +63,22 @@ class BLEGattCharacteristicProperties(object):
         return params
 
 
+class BLEGattExtendedCharacteristicProperties(object):
+    def __init__(self, reliable_write=False, writable_aux=False):
+        self.reliable_write = reliable_write
+        self.writable_aux = writable_aux
+
+    def to_c(self):
+        params = driver.ble_gatt_char_ext_props_t()
+        params.reliable_wr = int(self.reliable_write)
+        params.wr_aux = int(self.writable_aux)
+        return params
+
+    @classmethod
+    def from_c(cls, params):
+        return cls(params.reliable_wr, params.wr_aux)
+
+
 class BLEGattService(object):
     srvc_uuid = BLEUUID(BLEUUID.Standard.service_primary)
 
@@ -71,6 +87,7 @@ class BLEGattService(object):
         self.start_handle = start_handle
         self.end_handle = end_handle
         self.chars = []
+        self.attrs = []
 
     @classmethod
     def from_c(cls, gattc_service):
@@ -172,6 +189,9 @@ class BLEGattcDescriptor(object):
         return cls(uuid=BLEUUID.from_c(gattc_desc.uuid),
                    handle=gattc_desc.handle)
 
+    def __repr__(self):
+        return repr_format(self, handle=self.handle, uuid=self.uuid)
+
 
 class BLEGattcAttrInfo16(object):
     def __init__(self, handle, uuid):
@@ -246,11 +266,12 @@ class BLEGattsCharHandles(object):
 
 
 class BLEGattsAttribute(object):
-    def __init__(self, uuid, attr_metadata, max_len, value=""):
+    def __init__(self, uuid, attr_metadata, max_len, value=b""):
         self.uuid = uuid
         self.attribute_metadata = attr_metadata
         self.max_len = max_len
         self.value = value
+        self.handle = BLE_GATT_HANDLE_INVALID
 
     def to_c(self):
         self.__data__array = util.list_to_uint8_array(self.value)
@@ -264,6 +285,28 @@ class BLEGattsAttribute(object):
             params.init_offs = 0
             params.p_value = self.__data__array.cast()
         return params
+
+
+class BLEGattsPresentationFormat(object):
+    def __init__(self, fmt, exponent, unit, namespace, description):
+        self.format = fmt
+        self.exponent = exponent
+        self.unit = unit
+        self.namespace = namespace
+        self.description = description
+
+    def to_c(self):
+        params = driver.ble_gatts_char_pf_t()
+        params.format = int(self.format)
+        params.exponent = int(self.exponent)
+        params.unit = int(self.unit)
+        params.name_space = int(self.namespace)
+        params.desc = int(self.description)
+        return params
+
+    @classmethod
+    def from_c(cls, params):
+        return cls(params.format, params.exponent, params.unit, params.name_space, params.desc)
 
 
 class BLEGattsAttrMetadata(object):
@@ -297,30 +340,33 @@ class BLEGattsAttrMetadata(object):
 
 class BLEGattsCharMetadata(object):
     def __init__(self, char_props, user_description="", user_description_max_size=0,
-                 user_desc_metadata=None, cccd_metadata=None, sccd_metadata=None):
+                 user_desc_metadata=None, cccd_metadata=None, sccd_metadata=None, presentation_format=None):
         self.char_props = char_props
         self.user_description = user_description
         self.user_description_max_len = user_description_max_size
         self.user_desc_metadata = user_desc_metadata
         self.cccd_metadata = cccd_metadata
         self.sccd_metadata = sccd_metadata
+        self.presentation_format = presentation_format
+        self.extended_props = BLEGattExtendedCharacteristicProperties()
 
     def to_c(self):
         params = driver.ble_gatts_char_md_t()
         params.char_props = self.char_props.to_c()
+        params.char_ext_props = self.extended_props.to_c()
         if self.cccd_metadata:
             params.p_cccd_md = self.cccd_metadata.to_c()
-        # if self.sccd_metadata:
-        # TODO:
-        # if self.user_description:
-        #     params.p_char_user_desc = util.list_to_char_array(self.user_description)
-        #     params.char_user_desc_size = len(self.user_description)
-        # else:
-        #     params.char_user_desc_size = 0
-        # params.char_user_desc_max_size = self.user_description_max_len
-        # if self.user_desc_metadata:
-        #     params.p_user_desc_md = self.user_desc_metadata.to_c()
-        #     params.p_sccd_md = self.sccd_metadata.to_c()
+        if self.sccd_metadata:
+            params.p_sccd_md = self.sccd_metadata.to_c()
+        if self.presentation_format:
+            params.p_char_pf = self.presentation_format.to_c()
+        if self.user_desc_metadata:
+            params.p_user_desc_md = self.user_desc_metadata.to_c()
+            self.__user_desc_array = util.list_to_uint8_array(self.user_description)
+            params.p_char_user_desc = self.__user_desc_array.cast()
+            params.char_user_desc_size = len(self.user_description)
+            params.char_user_desc_max_size = max(self.user_description_max_len, len(self.user_description))
+
         return params
 
     @classmethod

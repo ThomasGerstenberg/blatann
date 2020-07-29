@@ -29,7 +29,7 @@ class EventWaitable(Waitable, Generic[TSender, TEvent]):
         return super(EventWaitable, self).then(callback)
 
 
-class IdBasedEventWaitable(EventWaitable):
+class IdBasedEventWaitable(EventWaitable, Generic[TSender, TEvent]):
     """
     Extension of :class:`EventWaitable` for high-churn events which require IDs,
     such as characteristic read, write and notify operations

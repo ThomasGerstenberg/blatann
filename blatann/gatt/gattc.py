@@ -1,55 +1,60 @@
 from __future__ import annotations
 import logging
-import threading
-from typing import Callable, List, Optional, Iterable
+from typing import List, Optional, Iterable, Tuple
 
 from blatann import gatt
-from blatann.utils import SynchronousMonotonicCounter
-from blatann.uuid import Uuid
+from blatann.gatt.gattc_attribute import GattcAttribute
+from blatann.gatt.managers import _ReadWriteManager
+from blatann.bt_sig.uuids import Uuid, DeclarationUuid, DescriptorUuid
 from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter
 from blatann.nrf import nrf_types, nrf_events
 from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
-from blatann.exceptions import InvalidOperationException, InvalidStateException
+from blatann.exceptions import InvalidOperationException
 from blatann.event_args import *
-from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
+
 
 logger = logging.getLogger(__name__)
 
 
 class GattcCharacteristic(gatt.Characteristic):
-    def __init__(self, ble_device, peer, read_write_manager, uuid, properties,
-                 declaration_handle, value_handle, cccd_handle=None):
-        """
-        :type ble_device: blatann.BleDevice
-        :type peer: blatann.peer.Peripheral
-        :type read_write_manager: _ReadWriteManager
-        :type uuid: blatann.uuid.Uuid
-        :type properties: gatt.CharacteristicProperties
-        :param declaration_handle:
-        :param value_handle:
-        :param cccd_handle:
-        """
+    def __init__(self, ble_device, peer, uuid: Uuid,
+                 properties: gatt.CharacteristicProperties,
+                 decl_attr: GattcAttribute,
+                 value_attr: GattcAttribute,
+                 cccd_attr: GattcAttribute = None,
+                 attributes: List[GattcAttribute] = None):
         super(GattcCharacteristic, self).__init__(ble_device, peer, uuid, properties)
-        self.declaration_handle = declaration_handle
-        self.value_handle = value_handle
-        self.cccd_handle = cccd_handle
-        self._manager = read_write_manager
-        self._value = b""
-
+        self._decl_attr = decl_attr
+        self._value_attr = value_attr
+        self._cccd_attr = cccd_attr
         self._on_notification_event = EventSource("On Notification", logger)
+        self._attributes = tuple(sorted(attributes, key=lambda d: d.handle)) or ()
+        self.peer = peer
+
         self._on_read_complete_event = EventSource("On Read Complete", logger)
         self._on_write_complete_event = EventSource("Write Complete", logger)
         self._on_cccd_write_complete_event = EventSource("CCCD Write Complete", logger)
 
+        self._value_attr.on_read_complete.register(self._read_complete)
+        self._value_attr.on_write_complete.register(self._write_complete)
+        if self._cccd_attr:
+            self._cccd_attr.on_write_complete.register(self._cccd_write_complete)
+
         self.peer.driver_event_subscribe(self._on_indication_notification, nrf_events.GattcEvtHvx)
-        self._manager.on_write_complete.register(self._write_complete)
-        self._manager.on_read_complete.register(self._read_complete)
 
     """
     Properties
     """
+
+    @property
+    def declaration_attribute(self) -> GattcAttribute:
+        return self._decl_attr
+
+    @property
+    def value_attribute(self) -> GattcAttribute:
+        return self._value_attr
 
     @property
     def value(self) -> bytes:
@@ -58,7 +63,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
         :return: The last known value of the characteristic
         """
-        return self._value
+        return self._value_attr.value
 
     @property
     def readable(self) -> bool:
@@ -95,6 +100,30 @@ class GattcCharacteristic(gatt.Characteristic):
         """
         return self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED
 
+    @property
+    def attributes(self) -> Tuple[GattcAttribute]:
+        """
+        Returns the list of all attributes that reside in the characteristic.
+        This includes the declaration attribute, value attribute, and descriptors (CCCD, Name, etc.)
+        """
+        return self._attributes
+
+    @property
+    def string_encoding(self):
+        """
+        The default method for encoding strings into bytes when a string is provided as a value
+        """
+        return self._value_attr.string_encoding
+
+    @string_encoding.setter
+    def string_encoding(self, encoding):
+        """
+        Sets how the characteristic value is encoded when provided a string
+
+        :param encoding: the encoding to use (utf8, ascii, etc.)
+        """
+        self._value_attr.string_encoding = encoding
+
     """
     Events
     """
@@ -106,6 +135,10 @@ class GattcCharacteristic(gatt.Characteristic):
     @property
     def on_write_complete(self) -> Event[GattcCharacteristic, WriteCompleteEventArgs]:
         return self._on_write_complete_event
+
+    @property
+    def on_notification_received(self) -> Event[GattcCharacteristic, NotificationReceivedEventArgs]:
+        return self._on_notification_event
 
     """
     Public Methods
@@ -134,9 +167,8 @@ class GattcCharacteristic(gatt.Characteristic):
         else:
             value = gatt.SubscriptionState.NOTIFY
         self._on_notification_event.register(on_notification_handler)
-
-        write_id = self._manager.write(self.cccd_handle, gatt.SubscriptionState.to_buffer(value))
-        return IdBasedEventWaitable(self._on_cccd_write_complete_event, write_id)
+        waitable = self._cccd_attr.write(gatt.SubscriptionState.to_buffer(value))
+        return IdBasedEventWaitable(self._on_cccd_write_complete_event, waitable.id)
 
     def unsubscribe(self) -> EventWaitable[GattcCharacteristic, SubscriptionWriteCompleteEventArgs]:
         """
@@ -151,10 +183,10 @@ class GattcCharacteristic(gatt.Characteristic):
         if not self.subscribable:
             raise InvalidOperationException("Cannot subscribe to Characteristic {}".format(self.uuid))
         value = gatt.SubscriptionState.NOT_SUBSCRIBED
-        write_id = self._manager.write(self.cccd_handle, gatt.SubscriptionState.to_buffer(value))
+        waitable = self._cccd_attr.write(gatt.SubscriptionState.to_buffer(value))
         self._on_notification_event.clear_handlers()
 
-        return IdBasedEventWaitable(self._on_cccd_write_complete_event, write_id)
+        return IdBasedEventWaitable(self._on_cccd_write_complete_event, waitable.id)
 
     def read(self) -> EventWaitable[GattcCharacteristic, ReadCompleteEventArgs]:
         """
@@ -168,8 +200,8 @@ class GattcCharacteristic(gatt.Characteristic):
         """
         if not self.readable:
             raise InvalidOperationException("Characteristic {} is not readable".format(self.uuid))
-        read_id = self._manager.read(self.value_handle)
-        return IdBasedEventWaitable(self._on_read_complete_event, read_id)
+        waitable = self._value_attr.read()
+        return IdBasedEventWaitable(self._on_read_complete_event, waitable.id)
 
     def write(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
         """
@@ -185,7 +217,10 @@ class GattcCharacteristic(gatt.Characteristic):
         """
         if not self.writable:
             raise InvalidOperationException("Characteristic {} is not writable".format(self.uuid))
-        return self._write(data, with_response=True)
+        if isinstance(data, str):
+            data = data.encode(self.string_encoding)
+        waitable = self._value_attr.write(bytes(data), True)
+        return IdBasedEventWaitable(self._on_write_complete_event, waitable.id)
 
     def write_without_response(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
         """
@@ -201,57 +236,50 @@ class GattcCharacteristic(gatt.Characteristic):
         :raises: InvalidOperationException if characteristic is not writable without responses
         """
         if not self.writable_without_response:
-            raise InvalidOperationException("Characteristic {} does not accept writes without responses".format(self.uuid))
-        return self._write(data, with_response=False)
-
-    def _write(self, data, with_response=True) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
+            raise InvalidOperationException("Characteristic {} does not accept "
+                                            "writes without responses".format(self.uuid))
         if isinstance(data, str):
             data = data.encode(self.string_encoding)
-        write_id = self._manager.write(self.value_handle, bytes(data), with_response)
-        return IdBasedEventWaitable(self._on_write_complete_event, write_id)
+        waitable = self._value_attr.write(bytes(data), False)
+        return IdBasedEventWaitable(self._on_write_complete_event, waitable.id)
+
+    def find_descriptor(self, uuid: Uuid) -> Optional[GattcAttribute]:
+        """
+        Searches for the descriptor matching the UUID provided and returns the attribute. If not found, returns None
+
+        :param uuid: The UUID to search for
+        :return: THe descriptor attribute, if found
+        """
+        for attr in self._attributes:
+            if attr.uuid == uuid:
+                return attr
 
     """
     Event Handlers
     """
 
-    def _read_complete(self, sender, event_args):
+    def _read_complete(self, sender: GattcAttribute, event_args: ReadCompleteEventArgs):
         """
-        Handler for _ReadWriteManager.on_read_complete.
+        Handler for GattcAttribute.on_read_complete.
         Dispatches the on_read_complete event and updates the internal value if read was successful
-
-        :param sender: The reader that the read completed on
-        :type sender: _ReadWriteManager
-        :param event_args: The event arguments
-        :type event_args: _ReadTask
         """
-        if event_args.handle == self.value_handle:
-            if event_args.status == nrf_types.BLEGattStatusCode.success:
-                self._value = event_args.data
-            args = ReadCompleteEventArgs(event_args.id, self._value, event_args.status, event_args.reason)
-            self._on_read_complete_event.notify(self, args)
+        self._on_read_complete_event.notify(self, event_args)
 
-    def _write_complete(self, sender, event_args):
+    def _write_complete(self, sender: GattcAttribute, event_args: WriteCompleteEventArgs):
         """
-        Handler for _ReadWriteManager.on_write_complete. Dispatches on_write_complete or on_cccd_write_complete
-        depending on the handle the write finished on.
+        Handler for value_attribute.on_write_complete. Dispatches on_write_complete.
+        """
+        self._on_write_complete_event.notify(self, event_args)
 
-        :param sender: The writer that the write completed on
-        :type sender: _ReadWriteManager
-        :param event_args: The event arguments
-        :type event_args: _WriteTask
+    def _cccd_write_complete(self, sender: GattcAttribute, event_args: WriteCompleteEventArgs):
         """
-        # Success, update the local value
-        if event_args.handle == self.value_handle:
-            if event_args.status == nrf_types.BLEGattStatusCode.success:
-                self._value = event_args.data
-            args = WriteCompleteEventArgs(event_args.id, self._value, event_args.status, event_args.reason)
-            self._on_write_complete_event.notify(self, args)
-        elif event_args.handle == self.cccd_handle:
-            if event_args.status == nrf_types.BLEGattStatusCode.success:
-                self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(event_args.data))
-            args = SubscriptionWriteCompleteEventArgs(event_args.id, self.cccd_state,
-                                                      event_args.status, event_args.reason)
-            self._on_cccd_write_complete_event.notify(self, args)
+        Handler for cccd_attribute.on_write_complete. Dispatches on_cccd_write_complete.
+        """
+        if event_args.status == nrf_types.BLEGattStatusCode.success:
+            self.cccd_state = gatt.SubscriptionState.from_buffer(bytearray(event_args.value))
+        args = SubscriptionWriteCompleteEventArgs(event_args.id, self.cccd_state,
+                                                  event_args.status, event_args.reason)
+        self._on_cccd_write_complete_event.notify(self, args)
 
     def _on_indication_notification(self, driver, event):
         """
@@ -259,15 +287,18 @@ class GattcCharacteristic(gatt.Characteristic):
 
         :type event: nrf_events.GattcEvtHvx
         """
-        if event.conn_handle != self.peer.conn_handle or event.attr_handle != self.value_handle:
+        if (event.conn_handle != self.peer.conn_handle or
+                event.attr_handle != self._value_attr.handle):
             return
 
         is_indication = False
         if event.hvx_type == nrf_events.BLEGattHVXType.indication:
             is_indication = True
             self.ble_device.ble_driver.ble_gattc_hv_confirm(event.conn_handle, event.attr_handle)
-        self._value = bytearray(event.data)
-        self._on_notification_event.notify(self, NotificationReceivedEventArgs(self._value, is_indication))
+
+        # Update the value attribute with the data that was provided
+        self._value_attr.update(bytearray(event.data))
+        self._on_notification_event.notify(self, NotificationReceivedEventArgs(self.value, is_indication))
 
     """
     Factory methods
@@ -278,15 +309,48 @@ class GattcCharacteristic(gatt.Characteristic):
         """
         Internal factory method used to create a new characteristic from a discovered nRF Characteristic
 
+        :type ble_device: blatann.BleDevice
+        :type peer: blatann.peer.Peer
+        :type read_write_manager: _ReadWriteManager
         :type nrf_characteristic: nrf_types.BLEGattCharacteristic
         """
+        char_decl_uuid = DeclarationUuid.characteristic
         char_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_characteristic.uuid)
+        cccd_uuid = DescriptorUuid.cccd
+
         properties = gatt.CharacteristicProperties.from_nrf_properties(nrf_characteristic.char_props)
-        cccd_handle_list = [d.handle for d in nrf_characteristic.descs
-                            if d.uuid == nrf_types.BLEUUID.Standard.cccd]
-        cccd_handle = cccd_handle_list[0] if cccd_handle_list else None
-        return GattcCharacteristic(ble_device, peer, read_write_manager, char_uuid, properties,
-                                   nrf_characteristic.handle_decl, nrf_characteristic.handle_value, cccd_handle)
+
+        decl_attr = None
+        value_attr = None
+        cccd_attr = None
+        attributes = []
+        for nrf_desc in nrf_characteristic.descs:
+            d_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_desc.uuid)
+            d_attr = GattcAttribute(d_uuid, nrf_desc.handle, read_write_manager)
+
+            if d_uuid == char_decl_uuid:
+                decl_attr = d_attr
+            elif d_uuid == char_uuid:
+                value_attr = d_attr
+            elif d_uuid == cccd_uuid:
+                cccd_attr = d_attr
+            attributes.append(d_attr)
+
+        if not decl_attr:
+            logger.debug(f"Failed to find declaration attribute within list "
+                         f"(char uuid: {char_uuid}), creating new...")
+            decl_attr = GattcAttribute(char_decl_uuid, nrf_characteristic.handle_decl,
+                                       read_write_manager, nrf_characteristic.data_decl)
+            attributes.append(decl_attr)
+        if not value_attr:
+            logger.debug(f"Failed to find value attribute within list "
+                         f"(char uuid: {char_uuid}), creating new...")
+            value_attr = GattcAttribute(char_uuid, nrf_characteristic.handle_value,
+                                        read_write_manager, nrf_characteristic.data_value)
+            attributes.append(value_attr)
+
+        return GattcCharacteristic(ble_device, peer, char_uuid, properties,
+                                   decl_attr, value_attr, cccd_attr, attributes)
 
 
 class GattcService(gatt.Service):
@@ -396,121 +460,3 @@ class GattcDatabase(gatt.GattDatabase):
         for service in nrf_services:
             self.services.append(GattcService.from_discovered_service(self.ble_device, self.peer,
                                                                       self._read_write_manager, service))
-
-
-class _ReadTask(object):
-    _id_generator = SynchronousMonotonicCounter(1)
-
-    def __init__(self, handle):
-        self.id = _ReadTask._id_generator.next()
-        self.handle = handle
-        self.data = ""
-        self.status = gatt.GattStatusCode.unknown
-        self.reason = GattOperationCompleteReason.FAILED
-
-
-class _WriteTask(object):
-    _id_generator = SynchronousMonotonicCounter(1)
-
-    def __init__(self, handle, data, with_response=True):
-        self.id = _WriteTask._id_generator.next()
-        self.handle = handle
-        self.data = data
-        self.with_response = with_response
-        self.status = gatt.GattStatusCode.unknown
-        self.reason = GattOperationCompleteReason.FAILED
-
-
-class _ReadWriteManager(QueuedTasksManagerBase):
-    def __init__(self, reader, writer):
-        """
-        :type reader: GattcReader
-        :type writer: GattcWriter
-        """
-        super(_ReadWriteManager, self).__init__()
-        self._reader = reader
-        self._writer = writer
-        self._reader.peer.on_disconnect.register(self._on_disconnect)
-        self._cur_read_task = None
-        self._cur_write_task = None
-        self.on_read_complete = EventSource("Gattc Read Complete", logger)
-        self.on_write_complete = EventSource("Gattc Write Complete", logger)
-        self._reader.on_read_complete.register(self._read_complete)
-        self._writer.on_write_complete.register(self._write_complete)
-        self._reader.peer.driver_event_subscribe(self._on_timeout, nrf_events.GattcEvtTimeout)
-
-    def read(self, handle):
-        read_task = _ReadTask(handle)
-        self._add_task(read_task)
-        return read_task.id
-
-    def write(self, handle, value, with_response=True):
-        write_task = _WriteTask(handle, value, with_response)
-        self._add_task(write_task)
-        return write_task.id
-
-    def clear_all(self):
-        self._clear_all(GattOperationCompleteReason.QUEUE_CLEARED)
-
-    def _handle_task(self, task):
-        if isinstance(task, _ReadTask):
-            self._reader.read(task.handle)
-            self._cur_read_task = task
-        elif isinstance(task, _WriteTask):
-            self._writer.write(task.handle, task.data, task.with_response)
-            self._cur_write_task = task
-        else:
-            return True
-
-    def _handle_task_failure(self, task, e):
-        if isinstance(task, _ReadTask):
-            self.on_read_complete.notify(self, task)
-        elif isinstance(task, _WriteTask):
-            self.on_write_complete.notify(self, task)
-
-    def _handle_task_cleared(self, task, reason):
-        if isinstance(task, _ReadTask):
-            task.reason = reason
-            self.on_read_complete.notify(self, task)
-        elif isinstance(task, _WriteTask):
-            task.reason = reason
-            self.on_write_complete.notify(self, task)
-
-    def _on_disconnect(self, sender, event_args):
-        self._clear_all(GattOperationCompleteReason.SERVER_DISCONNECTED)
-
-    def _on_timeout(self, sender, event_args):
-        self._clear_all(GattOperationCompleteReason.TIMEOUT)
-
-    def _read_complete(self, sender, event_args):
-        """
-        Handler for GattcReader.on_read_complete.
-        Dispatches the on_read_complete event and updates the internal value if read was successful
-
-        :param sender: The reader that the read completed on
-        :type sender: blatann.gatt.reader.GattcReader
-        :param event_args: The event arguments
-        :type event_args: blatann.gatt.reader.GattcReadCompleteEventArgs
-        """
-        task = self._cur_read_task
-        self._task_completed(self._cur_read_task)
-
-        task.data = event_args.data
-        task.status = event_args.status
-        self.on_read_complete.notify(sender, task)
-
-    def _write_complete(self, sender, event_args):
-        """
-        Handler for GattcWriter.on_write_complete. Dispatches on_write_complete or on_cccd_write_complete
-        depending on the handle the write finished on.
-
-        :param sender: The writer that the write completed on
-        :type sender: blatann.gatt.writer.GattcWriter
-        :param event_args: The event arguments
-        :type event_args: blatann.gatt.writer.GattcWriteCompleteEventArgs
-        """
-        task = self._cur_write_task
-        self._task_completed(self._cur_write_task)
-
-        task.status = event_args.status
-        self.on_write_complete.notify(sender, task)

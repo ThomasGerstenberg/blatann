@@ -1,10 +1,9 @@
-from blatann.uuid import Uuid16
+from blatann.bt_sig.uuids import ServiceUuid, CharacteristicUuid
 
 
-GLUCOSE_SERVICE_UUID = Uuid16(0x1808)
+GLUCOSE_SERVICE_UUID = ServiceUuid.glucose
 
-MEASUREMENT_CHARACTERISTIC_UUID = Uuid16(0x2A18)
-MEASUREMENT_CONTEXT_CHARACTERISTIC_UUID = Uuid16(0x2A34)
-FEATURE_CHARACTERISTIC_UUID = Uuid16(0x2A51)
-RACP_CHARACTERISTIC_UUID = Uuid16(0x2A52)
-
+MEASUREMENT_CHARACTERISTIC_UUID = CharacteristicUuid.glucose_measurement
+MEASUREMENT_CONTEXT_CHARACTERISTIC_UUID = CharacteristicUuid.glucose_measurement_context
+FEATURE_CHARACTERISTIC_UUID = CharacteristicUuid.glucose_feature
+RACP_CHARACTERISTIC_UUID = CharacteristicUuid.record_access_control_point

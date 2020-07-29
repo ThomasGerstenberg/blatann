@@ -11,8 +11,9 @@ def find_target_device(ble_device, name):
     :param name: The device's local name that is advertised
     :return: The peer's address if found, or None if not found
     """
-    scan_report = ble_device.scanner.start_scan().wait()
-
-    for report in scan_report.advertising_peers_found:
+    # Start scanning for the peripheral.
+    # Using the `scan_reports` iterable on the waitable will return the scan reports as they're
+    # discovered in real-time instead of waiting for the full scan to complete
+    for report in ble_device.scanner.start_scan().scan_reports:
         if report.advertise_data.local_name == name:
             return report.peer_address

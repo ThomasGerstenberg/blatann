@@ -1,9 +1,13 @@
 import enum
 import logging
 import struct
+
+from blatann.services.ble_data_types import BleCompoundDataType, Uint8, Int8, Uint16
+from blatann.uuid import Uuid
 from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
 from blatann.nrf import nrf_types
 from blatann.gap.smp import SecurityLevel
+from blatann.bt_sig.assigned_numbers import Format, Units, Namespace, NamespaceDescriptor
 
 
 logger = logging.getLogger(__name__)
@@ -101,46 +105,81 @@ class CharacteristicProperties(object):
         return "CharProps({})".format(",".join(props))
 
 
-class Characteristic(object):
+class Attribute(object):
     """
-    Abstract class that represents a BLE characteristic (both remote and local)
+    Represents a single attribute which lives inside a Characteristic (both remote and local)
     """
-    def __init__(self, ble_device, peer, uuid, properties,
-                 default_string_encoding="utf8"):
-        """
-        :type ble_device: blatann.device.BleDevice
-        :type peer: blatann.peer.Peer
-        :type uuid: blatann.uuid.Uuid
-        :type properties: CharacteristicProperties
-        """
-        self.ble_device = ble_device
-        self.peer = peer
-        self.uuid = uuid
-        self.declaration_handle = BLE_GATT_HANDLE_INVALID
-        self.value_handle = BLE_GATT_HANDLE_INVALID
-        self.cccd_handle = BLE_GATT_HANDLE_INVALID
-        self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
-        self._properties = properties
-        self._string_encoding = default_string_encoding
+    def __init__(self, uuid: Uuid, handle: int, value=b"", string_encoding="utf8"):
+        self._uuid = uuid
+        self._handle = handle
+        self._value = value or b""
+        self._string_encoding = string_encoding
 
     @property
-    def string_encoding(self):
+    def uuid(self) -> Uuid:
+        """
+        The attribute's UUID
+        """
+        return self._uuid
+
+    @property
+    def handle(self) -> int:
+        """
+        The attribute's handle
+        """
+        return self._handle
+
+    @property
+    def value(self) -> bytes:
+        """
+        Gets the current value of the attribute
+        """
+        return self._value
+
+    @property
+    def string_encoding(self) -> str:
         """
         The default method for encoding strings into bytes when a string is provided as a value
         """
         return self._string_encoding
 
     @string_encoding.setter
-    def string_encoding(self, encoding):
+    def string_encoding(self, value: str):
         """
-        Sets how the characteristic value is encoded when provided a string
-
-        :param encoding: the encoding to use (utf8, ascii, etc.)
+        The default method for encoding strings into bytes when a string is provided as a value
         """
-        self._string_encoding = encoding
+        self._string_encoding = value
 
     def __repr__(self):
-        return "Characteristic({}, {}".format(self.uuid, self._properties)
+        return f"{self.__class__.__name__}({self._uuid}, {self._handle})"
+
+
+class Characteristic(object):
+    """
+    Abstract class that represents a BLE characteristic (both remote and local).
+    """
+    def __init__(self, ble_device, peer, uuid, properties,
+                 attributes=None,
+                 default_string_encoding="utf8"):
+        """
+        :type ble_device: blatann.device.BleDevice
+        :type peer: blatann.peer.Peer
+        :type uuid: blatann.uuid.Uuid
+        """
+        self.ble_device = ble_device
+        self.peer = peer
+        self.uuid = uuid
+        self.cccd_state = SubscriptionState.NOT_SUBSCRIBED
+        self._properties = properties
+        self._string_encoding = default_string_encoding
+        self._attributes = attributes or []
+
+    def __repr__(self):
+        newline = "\n" + " " * 8
+        attr_str = newline.join(str(d) for d in self._attributes)
+        if attr_str:
+            attr_str = newline + attr_str + "\n    "
+        return f"Characteristic({self.uuid}, {self._properties}, attributes: [{attr_str}])"
 
 
 class Service(object):
@@ -158,6 +197,7 @@ class Service(object):
         self.uuid = uuid
         self.service_type = service_type
         self._characteristics = []
+        self._attributes = []
         self.start_handle = start_handle
         # If a valid starting handle is given and not a valid ending handle, then the ending handle
         # is the starting handle
@@ -166,8 +206,12 @@ class Service(object):
         self.end_handle = end_handle
 
     def __repr__(self):
-        return "Service({}, characteristics: [{}])".format(self.uuid,
-                                                           "\n    ".join(str(c) for c in self._characteristics))
+        newline = "\n" + " " * 4
+        char_str = newline.join(str(c) for c in self._characteristics)
+        if char_str:
+            char_str = newline + char_str + "\n"
+
+        return f"Service({self.uuid} [{self.start_handle}-{self.end_handle}], characteristics: [{char_str}])"
 
 
 class GattDatabase(object):
@@ -187,3 +231,33 @@ class GattDatabase(object):
         return "Database(peer {}, services: [{}])".format(self.peer.conn_handle,
                                                           "\n  ".join(str(s) for s in self._services))
 
+
+class PresentationFormat(BleCompoundDataType):
+    data_stream_types = [Uint8, Int8, Uint16, Uint8, Uint16]
+
+    def __init__(self, fmt: int, exponent: int, unit: int, namespace: int = 0, description: int = 0):
+        self.format = fmt
+        self.exponent = exponent
+        self.unit = unit
+        self.namespace = namespace
+        self.description = description
+
+    def encode(self):
+        return self.encode_values(self.format, self.exponent, self.unit, self.namespace, self.description)
+
+    @classmethod
+    def decode(cls, stream):
+        fmt, exponent, unit, namespace, description = super(PresentationFormat, cls).decode(stream)
+        fmt = cls.try_get_enum(fmt, Format)
+        unit = cls.try_get_enum(unit, Units)
+        namespace = cls.try_get_enum(namespace, Namespace)
+        description = cls.try_get_enum(description, NamespaceDescriptor)
+        return PresentationFormat(fmt, exponent, unit, namespace, description)
+
+    @staticmethod
+    def try_get_enum(value, enum_type):
+        try:
+            return enum_type(value)
+        except ValueError:
+            print("Failed")
+            return value

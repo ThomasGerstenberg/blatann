@@ -5,8 +5,9 @@ from blatann.nrf.nrf_types import BLEUUID as _BLEUUID
 
 
 class Uuid(object):
-    def __init__(self, nrf_uuid=None):
+    def __init__(self, nrf_uuid=None, description=""):
         self.nrf_uuid = nrf_uuid
+        self.description = description
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -14,10 +15,13 @@ class Uuid(object):
     def __repr__(self):
         return str(self)
 
+    def __hash__(self):
+        raise NotImplementedError()
+
 
 class Uuid128(Uuid):
-    def __init__(self, uuid):
-        super(Uuid128, self).__init__()
+    def __init__(self, uuid, description=""):
+        super(Uuid128, self).__init__(description=description)
         if isinstance(uuid, str):
             self.uuid_str = uuid.lower()
             self.uuid = self._validate_uuid_str(uuid)
@@ -73,18 +77,26 @@ class Uuid128(Uuid):
     def __str__(self):
         return self.uuid_str
 
+    def __hash__(self):
+        return int.from_bytes(self.uuid, byteorder="big", signed=False)
+
 
 class Uuid16(Uuid):
-    def __init__(self, uuid):
+    def __init__(self, uuid, description=""):
         if isinstance(uuid, str):
             uuid = int(uuid, 16)
+        if isinstance(uuid, _BLEUUID.Standard):
+            uuid = uuid.value
         if not isinstance(uuid, int) or uuid > 0xFFFF:
             raise ValueError("UUID Must be a valid 16-bit integer")
-        super(Uuid16, self).__init__(_BLEUUID(uuid))
+        super(Uuid16, self).__init__(_BLEUUID(uuid), description)
         self.uuid = uuid
 
     def __str__(self):
         return "{:x}".format(self.uuid)
+
+    def __hash__(self):
+        return self.uuid
 
 
 def generate_random_uuid16() -> Uuid16:

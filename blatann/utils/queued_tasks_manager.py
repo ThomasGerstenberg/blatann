@@ -10,6 +10,12 @@ class QueuedTasksManagerBase(object):
     """
     Handles queuing of tasks that can only be done one at a time
     """
+    class TaskFailure:
+        def __init__(self, reason=None, ignore_stack_trace=False, clear_all=False):
+            self.ignore_stack_trace = ignore_stack_trace
+            self.clear_all = clear_all
+            self.reason = reason
+
     def __init__(self):
         self._queue = queue.Queue()
         self._in_process = threading.Event()
@@ -25,7 +31,7 @@ class QueuedTasksManagerBase(object):
                     if not task_complete:
                         self._in_process.set()
                 except Exception as e:
-                    self._handle_task_failure(task, e)
+                    self._process_exception(task, e)
 
     def _task_completed(self, task):
         with self._lock:
@@ -36,12 +42,18 @@ class QueuedTasksManagerBase(object):
                     if not task_complete:
                         break
                 except Exception as e:
-                    logger.exception(e)
-                    self._handle_task_failure(task, e)
+                    self._process_exception(task, e)
                 task = self._get_next()
 
             if not task:
                 self._in_process.clear()
+
+    def _process_exception(self, task, e):
+        action = self._handle_task_failure(task, e)
+        if not action.ignore_stack_trace:
+            logger.exception(e)
+        if action.clear_all:
+            self._clear_all(action.reason)
 
     def _get_next(self):
         try:
@@ -63,7 +75,7 @@ class QueuedTasksManagerBase(object):
     def _handle_task(self, task):
         raise NotImplementedError()
 
-    def _handle_task_failure(self, task, e):
+    def _handle_task_failure(self, task, e) -> TaskFailure:
         raise NotImplementedError()
 
     def _handle_task_cleared(self, task, reason):

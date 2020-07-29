@@ -276,12 +276,28 @@ class GattcEvtTimeout(GattcEvt):
     def __repr__(self):
         return self._repr_format(source=self.source)
 
+
 """
 GATTS Events
 """
 
+# TODO: SC_CONFIRM
 
-# TODO: SYS_ATTR_MISSING, SC_CONFIRM, TIMEOUT
+
+class GattsEvtSysAttrMissing(GattsEvt):
+    evt_id = driver.BLE_GATTS_EVT_SYS_ATTR_MISSING
+
+    def __init__(self, conn_handle, hint):
+        super(GattsEvtSysAttrMissing, self).__init__(conn_handle)
+
+    @classmethod
+    def from_c(cls, event):
+        conn_handle = event.evt.gatts_evt.conn_handle
+        sys_attr_event = event.evt.gatts_evt.params.sys_attr_missing
+        return cls(conn_handle, sys_attr_event.hint)
+
+    def __repr__(self):
+        return self._repr_format()
 
 
 class GattsEvtWrite(GattsEvt):

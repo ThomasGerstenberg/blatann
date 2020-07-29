@@ -1,17 +1,17 @@
-from blatann.uuid import Uuid16
+from blatann.bt_sig.uuids import ServiceUuid, CharacteristicUuid
 
 # Uuids
-DIS_SERVICE_UUID = Uuid16(0x180A)
+DIS_SERVICE_UUID = ServiceUuid.device_information
 
-SYSTEM_ID_UUID = Uuid16(0x2A23)
-MODEL_NUMBER_UUID = Uuid16(0x2A24)
-SERIAL_NUMBER_UUID = Uuid16(0x2A25)
-FIRMWARE_REV_UUID = Uuid16(0x2A26)
-HARDWARE_REV_UUID = Uuid16(0x2A27)
-SOFTWARE_REV_UUID = Uuid16(0x2A28)
-MANUFACTURER_NAME_UUID = Uuid16(0x2A29)
-REGULATORY_CERT_UUID = Uuid16(0x2A2A)
-PNP_ID_UUID = Uuid16(0x2A50)
+SYSTEM_ID_UUID = CharacteristicUuid.system_id
+MODEL_NUMBER_UUID = CharacteristicUuid.model_number_string
+SERIAL_NUMBER_UUID = CharacteristicUuid.serial_number_string
+FIRMWARE_REV_UUID = CharacteristicUuid.firmware_revision_string
+HARDWARE_REV_UUID = CharacteristicUuid.hardware_revision_string
+SOFTWARE_REV_UUID = CharacteristicUuid.software_revision_string
+MANUFACTURER_NAME_UUID = CharacteristicUuid.manufacturer_name_string
+REGULATORY_CERT_UUID = CharacteristicUuid.ieee11073_20601_regulatory_certification_data_list
+PNP_ID_UUID = CharacteristicUuid.pnp_id
 
 
 class _Characteristic(object):

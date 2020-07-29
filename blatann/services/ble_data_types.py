@@ -87,10 +87,12 @@ class BleCompoundDataType(object):
     @classmethod
     def decode(cls, stream):
         """
-        :type stream: BleDataStream
+        :type stream: BleDataStream or bytes
         :return: The values decoded from the stream
         :rtype: tuple
         """
+        if isinstance(stream, bytes):
+            stream = BleDataStream(stream)
         values = []
         for data_type in cls.data_stream_types:
             value = stream.decode(data_type)
@@ -234,7 +236,7 @@ class Int64(SignedIntegerBase):
 class String(BleDataType):
     @classmethod
     def encode(cls, value):
-        return unicode(value)
+        return value.encode("utf8")
 
     @classmethod
     def decode(cls, stream):
@@ -467,3 +469,5 @@ class Bitfield(BleCompoundDataType):
             if getattr(self, attr_name):
                 set_bit_strs.append("{}({})".format(attr_name, bit))
         return "{}({})".format(self.__class__.__name__, ", ".join(set_bit_strs))
+
+

@@ -483,16 +483,27 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
+    def ble_gatts_descriptor_add(self, char_handle, attr):
+        assert isinstance(attr, BLEGattsAttribute)
+        handle = driver.new_uint16()
+        err_code = driver.sd_ble_gatts_descriptor_add(self.rpc_adapter, char_handle, attr.to_c(), handle)
+        if err_code == driver.NRF_SUCCESS:
+            attr.handle = driver.uint16_value(handle)
+        return err_code
+
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
     def ble_gatts_rw_authorize_reply(self, conn_handle, authorize_reply_params):
         assert isinstance(authorize_reply_params, BLEGattsRwAuthorizeReplyParams)
         return driver.sd_ble_gatts_rw_authorize_reply(self.rpc_adapter, conn_handle, authorize_reply_params.to_c())
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
-    def ble_gatts_value_get(self, conn_handle, attribute_handle, gatts_value):
+    def ble_gatts_value_get(self, conn_handle, attribute_handle, gatts_value, max_bytes_read=512):
         assert isinstance(gatts_value, BLEGattsValue)
         value_params = gatts_value.to_c()
-        value_params.len = 512  # Allow up to 512 bytes to be read
+        value_params.len = max_bytes_read
         err_code = driver.sd_ble_gatts_value_get(self.rpc_adapter, conn_handle, attribute_handle, value_params)
 
         if err_code == driver.NRF_SUCCESS:
@@ -523,6 +534,17 @@ class NrfDriver(object):
     @wrapt.synchronized(api_lock)
     def ble_gatts_exchange_mtu_reply(self, conn_handle, server_mtu):
         return driver.sd_ble_gatts_exchange_mtu_reply(self.rpc_adapter, conn_handle, server_mtu)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_sys_attr_set(self, conn_handle, sys_attr_data, flags=0):
+        if sys_attr_data is not None:
+            data = util.list_to_uint8_array(sys_attr_data).cast()
+            length = len(sys_attr_data)
+        else:
+            data = None
+            length = 0
+        return driver.sd_ble_gatts_sys_attr_set(self.rpc_adapter, conn_handle, data, length, flags)
 
     """
     GATTC Methods

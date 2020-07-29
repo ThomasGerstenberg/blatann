@@ -25,3 +25,4 @@ Submodules
    :maxdepth: 4
 
    blatann.services.ble_data_types
+   blatann.services.decoded_event_dispatcher

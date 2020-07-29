@@ -52,8 +52,8 @@ _event_classes = [
     GattsEvtExchangeMtuRequest,
     GattsEvtNotificationTxComplete,
     GattsEvtTimeout,
+    GattsEvtSysAttrMissing
     # TODO:
-    # driver.BLE_GATTS_SYS_ATTR_MISSING
     # driver.BLE_GATTS_EVT_SC_CONFIRM
 ]
 
