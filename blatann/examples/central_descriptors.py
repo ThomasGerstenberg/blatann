@@ -52,9 +52,6 @@ def main(serial_port):
     if not time_char:
         logger.info("Did not find the time characteristic")
     else:
-        # Subscribe to the time characteristic's notifications
-        time_char.subscribe(on_time_char_notification).wait()
-
         logger.info("Reading all characteristic attributes")
         for attr in time_char.attributes:
             logger.info(f"Reading UUID {attr.uuid} - {attr.uuid.description or '[unknown]'}")

@@ -535,6 +535,17 @@ class NrfDriver(object):
     def ble_gatts_exchange_mtu_reply(self, conn_handle, server_mtu):
         return driver.sd_ble_gatts_exchange_mtu_reply(self.rpc_adapter, conn_handle, server_mtu)
 
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gatts_sys_attr_set(self, conn_handle, sys_attr_data, flags=0):
+        if sys_attr_data is not None:
+            data = util.list_to_uint8_array(sys_attr_data).cast()
+            length = len(sys_attr_data)
+        else:
+            data = None
+            length = 0
+        return driver.sd_ble_gatts_sys_attr_set(self.rpc_adapter, conn_handle, data, length, flags)
+
     """
     GATTC Methods
     """
