@@ -21,7 +21,6 @@ Submodules
    blatann.examples.central_event_driven
    blatann.examples.constants
    blatann.examples.example_utils
-   blatann.examples.multirole
    blatann.examples.peripheral
    blatann.examples.peripheral_battery_service
    blatann.examples.peripheral_current_time_service

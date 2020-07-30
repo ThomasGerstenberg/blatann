@@ -277,7 +277,8 @@ class BLEAdvData(object):
 
             elif isinstance(self.records[k], list):
                 data_list.extend(self.records[k])
-
+            elif isinstance(self.records[k], bytes):
+                data_list.extend(self.records[k])
             else:
                 raise NordicSemiException('Unsupported value type: 0x{:02X}'.format(type(self.records[k])))
         self.raw_bytes = bytes(data_list)

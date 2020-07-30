@@ -1,3 +1,4 @@
+import struct
 from blatann.utils import IntEnumWithDescription
 
 
@@ -202,3 +203,61 @@ class Units(IntEnumWithDescription):
     volume_flow_litre_per_second = 0x27c2, "volume flow (litre per second)"
     volume_litre = 0x2767, "volume (litre)"
     wavenumber_reciprocal_metre = 0x2714, "wavenumber (reciprocal metre)"
+
+
+class Appearance(IntEnumWithDescription):
+    """
+    Appearance enumeration for use with advertising data
+    """
+    unknown = 0, "Unknown"
+    phone = 64, "Phone"
+    computer = 128, "Computer"
+    watch = 192, "Watch"
+    sports_watch = 193, "Sports Watch"
+    clock = 256, "Clock"
+    display = 320, "Display"
+    remote_control = 384, "Remote Control"
+    eye_glasses = 448, "Eye-glasses"
+    tag = 512, "Tag"
+    keyring = 576, "Keyring"
+    media_player = 640, "Media Player"
+    barcode_scanner = 704, "Barcode Scanner"
+    thermometer = 768, "Thermometer"
+    thermometer_ear = 769, "Thermometer: Ear"
+    heart_rate_sensor = 832, "Heart rate Sensor"
+    heart_rate_sensor_heart_rate_belt = 833, "Heart Rate Sensor: Heart Rate Belt"
+    blood_pressure = 896, "Blood Pressure"
+    blood_pressure_arm = 897, "Blood Pressure: Arm"
+    blood_pressure_wrist = 898, "Blood Pressure: Wrist"
+    hid = 960, "Human Interface Device (HID)"
+    hid_keyboard = 961, "Keyboard"
+    hid_mouse = 962, "Mouse"
+    hid_joystick = 963, "Joystick"
+    hid_gamepad = 964, "Gamepadtype)"
+    hid_digitizer = 965, "Digitizer Tablet"
+    hid_card_reader = 966, "Card Reader"
+    hid_digital_pen = 967, "Digital Pen"
+    hid_barcode = 968, "Barcode Scanner"
+    glucose_meter = 1024, "Glucose Meter"
+    running_walking_sensor = 1088, "Running Walking Sensor"
+    running_walking_sensor_in_shoe = 1089, "Running Walking Sensor: In-Shoe"
+    running_walking_sensor_on_shoe = 1090, "Running Walking Sensor: On-Shoe"
+    running_walking_sensor_on_hip = 1091, "Running Walking Sensor: On-Hip"
+    cycling = 1152, "Cycling"
+    cycling_cycling_computer = 1153, "Cycling: Cycling Computer"
+    cycling_speed_sensor = 1154, "Cycling: Speed Sensor"
+    cycling_cadence_sensor = 1155, "Cycling: Cadence Sensor"
+    cycling_power_sensor = 1156, "Cycling: Power Sensor"
+    cycling_speed_cadence_sensor = 1157, "Cycling: Speed and Cadence Sensor"
+    pulse_oximeter = 3136, "Pulse Oximeter"
+    pulse_oximeter_fingertip = 3137, "Fingertip Pulse Oximeter"
+    pulse_oximeter_wrist_worn = 3138, "Wrist Pulse Oximeter"
+    weight_scale = 3200, "Weight Scale"
+    outdoor_sports_act = 5184, "Outdoor Sports Activity"
+    outdoor_sports_act_loc_disp = 5185, "Location Display Device"
+    outdoor_sports_act_loc_and_nav_disp = 5186, "Location and Navigation Display Device"
+    outdoor_sports_act_loc_pod = 5187, "Location Pod"
+    outdoor_sports_act_loc_and_nav_pod = 5188, "Location and Navigation Pod"
+
+    def as_bytes(self):
+        return struct.pack("<H", self)

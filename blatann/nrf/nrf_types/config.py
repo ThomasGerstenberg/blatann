@@ -205,15 +205,13 @@ class BleEnableConfig(object):
                  central_role_count=driver.BLE_GAP_ROLE_COUNT_CENTRAL_DEFAULT,
                  central_sec_count=driver.BLE_GAP_ROLE_COUNT_CENTRAL_DEFAULT,
                  service_changed_char=driver.BLE_GATTS_SERVICE_CHANGED_DEFAULT,
-                 attr_table_size=driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                 device_name=""):
+                 attr_table_size=driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT):
         self.vs_uuid_count = vs_uuid_count
         self.periph_role_count = periph_role_count
         self.central_role_count = central_role_count
         self.central_sec_count = central_sec_count
         self.service_changed_char = service_changed_char
         self.attr_table_size = attr_table_size
-        self.device_name = device_name
 
     def get_vs_uuid_cfg(self):
         config = driver.ble_cfg_t()
@@ -234,12 +232,11 @@ class BleEnableConfig(object):
     def get_device_name_cfg(self):
         config = driver.ble_cfg_t()
         cfg = config.gap_cfg.device_name_cfg
-        cfg.current_len = len(self.device_name)
-        cfg.max_len = cfg.current_len
-        cfg.p_value = util.list_to_uint8_array(self.device_name).cast()
+        cfg.current_len = 0
+        cfg.max_len = driver.BLE_GAP_DEVNAME_DEFAULT_LEN
         cfg.write_perm.sm = 0
         cfg.write_perm.lv = 0
-        cfg.vloc = driver.BLE_GATTS_VLOC_USER
+        cfg.vloc = driver.BLE_GATTS_VLOC_STACK
 
         return driver.BLE_GAP_CFG_DEVICE_NAME, config
 

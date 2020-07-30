@@ -4,6 +4,7 @@ from typing import Union
 
 from blatann import peer, exceptions
 from blatann.gap import advertising, scanning, default_bond_db, IoCapabilities, SecurityParameters, PairingPolicy
+from blatann.gap.generic_access_service import GenericAccessService
 from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
@@ -110,15 +111,19 @@ class BleDevice(NrfDriverObserver):
         self.uuid_manager = _UuidManager(self.ble_driver)
         self.advertiser = advertising.Advertiser(self, self.client, self._default_conn_config.conn_tag)
         self.scanner = scanning.Scanner(self)
+        self._generic_access_service = GenericAccessService(self.ble_driver)
         self._db = gatts.GattsDatabase(self, self.client)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
         self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
         self._att_mtu_max = MTU_SIZE_MINIMUM
 
-    def configure(self, vendor_specific_uuid_count=10, service_changed=False, max_connected_peripherals=1,
-                  max_connected_clients=1, max_secured_peripherals=1,
+    def configure(self, vendor_specific_uuid_count=10,
+                  service_changed=False,
+                  max_connected_peripherals=1,
+                  max_connected_clients=1,
+                  max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE, device_name=""):
+                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE):
         """
         Configures the BLE Device with the given settings.
 
@@ -135,16 +140,13 @@ class BleDevice(NrfDriverObserver):
                                      Increase this number if there's a lot of services/characteristics in your GATT database.
         :param att_mtu_max_size: The maximum ATT MTU size supported. The default supports an MTU which will fit into
                                  a single transmission if Data Length Extensions is set to its max (251)
-        :param device_name: The name of the device reported in the Generic Access service
         """
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
-        if device_name and isinstance(device_name, str):
-            device_name = device_name.encode("utf8")
 
         self._ble_configuration = nrf_types.BleEnableConfig(vendor_specific_uuid_count, max_connected_clients,
                                                             max_connected_peripherals, max_secured_peripherals,
-                                                            service_changed, attribute_table_size, device_name)
+                                                            service_changed, attribute_table_size)
         self._default_conn_config.max_att_mtu = att_mtu_max_size
 
     def open(self, clear_bonding_data=False):
@@ -161,6 +163,7 @@ class BleDevice(NrfDriverObserver):
         self._default_conn_config.conn_count = self._ble_configuration.central_role_count + self._ble_configuration.periph_role_count
         self.ble_driver.ble_conn_configure(self._default_conn_config)
         self.ble_driver.ble_enable(self._ble_configuration)
+        self._generic_access_service.update()
 
     def close(self):
         """
@@ -206,6 +209,15 @@ class BleDevice(NrfDriverObserver):
         The local database instance that is accessed by connected clients
         """
         return self._db
+
+    @property
+    def generic_access_service(self) -> GenericAccessService:
+        """
+        **Read Only
+
+        The Generic Access service in the local database
+        """
+        return self._generic_access_service
 
     @property
     def max_mtu_size(self) -> int:

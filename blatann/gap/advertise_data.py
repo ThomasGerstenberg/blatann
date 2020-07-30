@@ -157,9 +157,10 @@ class AdvertisingData(object):
             records[t] = self.local_name
 
         for k, v in records.items():
-            if isinstance(v, int):
+            if hasattr(v, "as_bytes"):
+                records[k] = v.as_bytes()
+            elif isinstance(v, int):
                 records[k] = [v]
-
         record_string_keys = {k.name: v for k, v in records.items()}
         return nrf_types.BLEAdvData(**record_string_keys)
 
