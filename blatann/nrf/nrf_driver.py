@@ -293,6 +293,28 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
+    def ble_gap_device_name_set(self, name):
+        if isinstance(name, str):
+            name = name.encode("utf8")
+        write_perm = BLEGapSecMode(0, 0).to_c()
+        length = len(name)
+        data = util.list_to_uint8_array(name).cast()
+        return driver.sd_ble_gap_device_name_set(self.rpc_adapter, write_perm, data, length)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_appearance_set(self, value):
+        return driver.sd_ble_gap_appearance_set(self.rpc_adapter, value)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
+    def ble_gap_ppcp_set(self, conn_params):
+        assert isinstance(conn_params, BLEGapConnParams), "Invalid argument type"
+        params = conn_params.to_c()
+        return driver.sd_ble_gap_ppcp_set(self.rpc_adapter, params)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
     def ble_gap_adv_start(self, adv_params=None, conn_cfg_tag=0):
         if not adv_params:
             adv_params = self.adv_params_setup()

@@ -11,7 +11,10 @@ import struct
 import threading
 import time
 
+from blatann.peer import ConnectionParameters
+
 from blatann import BleDevice
+from blatann.bt_sig.assigned_numbers import Appearance
 from blatann.uuid import Uuid16
 from blatann.examples import example_utils, constants
 from blatann.gap import advertising, smp, IoCapabilities
@@ -239,6 +242,10 @@ def main(serial_port):
     ble_device.configure()
     ble_device.open()
 
+    # Demo of setting parameters in the Generic Access service, not required tp set any parameters here
+    ble_device.generic_access_service.device_name = "Peripheral Example"
+    ble_device.generic_access_service.appearance = Appearance.computer
+
     # Set up desired security parameters
     ble_device.client.security.set_security_params(passcode_pairing=False, bond=False, lesc_pairing=False,
                                                    io_capabilities=IoCapabilities.DISPLAY_ONLY, out_of_band=False)
@@ -273,7 +280,8 @@ def main(serial_port):
 
     # Initialize the advertising and scan response data
     adv_data = advertising.AdvertisingData(local_name=constants.PERIPHERAL_NAME, flags=0x06)
-    scan_data = advertising.AdvertisingData(service_uuid128s=constants.TIME_SERVICE_UUID, has_more_uuid128_services=True)
+    scan_data = advertising.AdvertisingData(service_uuid128s=constants.TIME_SERVICE_UUID, has_more_uuid128_services=True,
+                                            appearance=ble_device.generic_access_service.appearance)
     ble_device.advertiser.set_advertise_data(adv_data, scan_data)
 
     # Start advertising
