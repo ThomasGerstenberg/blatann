@@ -2,6 +2,9 @@ from blatann.utils import IntEnumWithDescription
 
 
 class Format(IntEnumWithDescription):
+    """
+    Format enumeration for use with the :class:`blatann.gatt.PresentationFormat` class
+    """
     # Source: https://www.bluetooth.com/specifications/assigned-numbers/format-types/
     # Date: 2020/07/22
     rfu = 0x00, "Reserved for future use"
@@ -35,11 +38,17 @@ class Format(IntEnumWithDescription):
 
 
 class Namespace(IntEnumWithDescription):
+    """
+    Namespace enumeration for use with the :class:`blatann.gatt.PresentationFormat` class
+    """
     unknown = 0x0000
     bt_sig = 0x0001, "Bluetooth SIG"
 
 
 class NamespaceDescriptor(IntEnumWithDescription):
+    """
+    Namespace descriptor enumeration for use with the :class:`blatann.gatt.PresentationFormat` class
+    """
     # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
     # Date: 2020/07/22
     # Trimmed down to the named values (e.g. items like 'twentieth = 20' were stripped)
@@ -64,6 +73,9 @@ class NamespaceDescriptor(IntEnumWithDescription):
 
 
 class Units(IntEnumWithDescription):
+    """
+    Units enumeration for use with the :class:`blatann.gatt.PresentationFormat` class
+    """
     # Source: https://www.bluetooth.com/specifications/assigned-numbers/units/
     # Date: 2020/07/22
 

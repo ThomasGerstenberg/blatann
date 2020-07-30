@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import List, Optional, Iterable, Tuple
+from typing import List, Optional, Iterable
 
 from blatann import gatt
 from blatann.gatt.gattc_attribute import GattcAttribute
@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class GattcCharacteristic(gatt.Characteristic):
+    """
+    Represents a characteristic that lives within a service in the server's GATT database.
+
+    This class is normally not instantiated directly and instead created when the database is discovered
+    via :meth:`Peer.discover_services() <blatann.peer.Peer.discover_services>`
+    """
     def __init__(self, ble_device, peer, uuid: Uuid,
                  properties: gatt.CharacteristicProperties,
                  decl_attr: GattcAttribute,
@@ -50,24 +56,36 @@ class GattcCharacteristic(gatt.Characteristic):
 
     @property
     def declaration_attribute(self) -> GattcAttribute:
+        """
+        **Read Only**
+
+        Gets the declaration attribute of the characteristic
+        """
         return self._decl_attr
 
     @property
     def value_attribute(self) -> GattcAttribute:
+        """
+        **Read Only**
+
+        Gets the value attribute of the characteristic
+        """
         return self._value_attr
 
     @property
     def value(self) -> bytes:
         """
-        The current value of the characteristic
+        **Read Only**
 
-        :return: The last known value of the characteristic
+        The current value of the characteristic. This is updated through read, write, and notify operations
         """
         return self._value_attr.value
 
     @property
     def readable(self) -> bool:
         """
+        **Read Only**
+
         Gets if the characteristic can be read from
         """
         return self._properties.read
@@ -75,6 +93,8 @@ class GattcCharacteristic(gatt.Characteristic):
     @property
     def writable(self) -> bool:
         """
+        **Read Only**
+
         Gets if the characteristic can be written to
         """
         return self._properties.write
@@ -82,6 +102,8 @@ class GattcCharacteristic(gatt.Characteristic):
     @property
     def writable_without_response(self) -> bool:
         """
+        **Read Only**
+
         Gets if the characteristic accepts write commands that don't require a confirmation response
         """
         return self._properties.write_no_response
@@ -89,6 +111,8 @@ class GattcCharacteristic(gatt.Characteristic):
     @property
     def subscribable(self) -> bool:
         """
+        **Read Only**
+
         Gets if the characteristic can be subscribed to
         """
         return self._properties.notify or self._properties.indicate
@@ -96,32 +120,34 @@ class GattcCharacteristic(gatt.Characteristic):
     @property
     def subscribed(self) -> bool:
         """
+        **Read Only**
+
         Gets if the characteristic is currently subscribed to
         """
         return self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED
 
     @property
-    def attributes(self) -> Tuple[GattcAttribute]:
+    def attributes(self) -> Iterable[GattcAttribute]:
         """
-        Returns the list of all attributes that reside in the characteristic.
+        **Read Only**
+
+        Returns the list of all attributes/descriptors that reside in the characteristic.
         This includes the declaration attribute, value attribute, and descriptors (CCCD, Name, etc.)
         """
         return self._attributes
 
     @property
-    def string_encoding(self):
+    def string_encoding(self) -> str:
         """
         The default method for encoding strings into bytes when a string is provided as a value
+
+        :getter: Gets the current string encoding for the characteristic
+        :setter: Sets the string encoding for the characteristic
         """
         return self._value_attr.string_encoding
 
     @string_encoding.setter
     def string_encoding(self, encoding):
-        """
-        Sets how the characteristic value is encoded when provided a string
-
-        :param encoding: the encoding to use (utf8, ascii, etc.)
-        """
         self._value_attr.string_encoding = encoding
 
     """
@@ -130,14 +156,23 @@ class GattcCharacteristic(gatt.Characteristic):
 
     @property
     def on_read_complete(self) -> Event[GattcCharacteristic, ReadCompleteEventArgs]:
+        """
+        Event that is raised when a read operation from the characteristic is completed
+        """
         return self._on_read_complete_event
 
     @property
     def on_write_complete(self) -> Event[GattcCharacteristic, WriteCompleteEventArgs]:
+        """
+        Event that is raised when a write operation to the characteristic is completed
+        """
         return self._on_write_complete_event
 
     @property
     def on_notification_received(self) -> Event[GattcCharacteristic, NotificationReceivedEventArgs]:
+        """
+        Event that is raised when an indication or notification is received on the characteristic
+        """
         return self._on_notification_event
 
     """
@@ -148,15 +183,13 @@ class GattcCharacteristic(gatt.Characteristic):
                   prefer_indications=False) -> EventWaitable[GattcCharacteristic, SubscriptionWriteCompleteEventArgs]:
         """
         Subscribes to the characteristic's indications or notifications, depending on what's available and the
-        prefer_indications setting. Returns a Waitable that executes when the subscription on the peripheral finishes.
-
-        The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
+        prefer_indications setting. Returns a Waitable that triggers when the subscription on the peripheral finishes.
 
         :param on_notification_handler: The handler to be called when an indication or notification is received from
             the peripheral. Must take two parameters: (GattcCharacteristic this, NotificationReceivedEventArgs event args)
         :param prefer_indications: If the peripheral supports both indications and notifications,
             will subscribe to indications instead of notifications
-        :return: A Waitable that will fire when the subscription finishes
+        :return: A Waitable that will trigger when the subscription finishes
         :raises: InvalidOperationException if the characteristic cannot be subscribed to
             (characteristic does not support indications or notifications)
         """
@@ -173,12 +206,12 @@ class GattcCharacteristic(gatt.Characteristic):
     def unsubscribe(self) -> EventWaitable[GattcCharacteristic, SubscriptionWriteCompleteEventArgs]:
         """
         Unsubscribes from indications and notifications from the characteristic and clears out all handlers
-        for the characteristic's on_notification event handler. Returns a Waitable that executes when the unsubscription
+        for the characteristic's on_notification event handler. Returns a Waitable that triggers when the unsubscription
         finishes.
 
-        The Waitable returns two parameters: (GattcCharacteristic this, SubscriptionWriteCompleteEventArgs event args)
-
-        :return: A Waitable that will fire when the unsubscription finishes
+        :return: A Waitable that will trigger when the unsubscription operation finishes
+        :raises: InvalidOperationException if characteristic cannot be subscribed to
+            (characteristic does not support indications or notifications)
         """
         if not self.subscribable:
             raise InvalidOperationException("Cannot subscribe to Characteristic {}".format(self.uuid))
@@ -190,12 +223,10 @@ class GattcCharacteristic(gatt.Characteristic):
 
     def read(self) -> EventWaitable[GattcCharacteristic, ReadCompleteEventArgs]:
         """
-        Initiates a read of the characteristic and returns a Waitable that executes when the read finishes with
+        Initiates a read of the characteristic and returns a Waitable that triggers when the read finishes with
         the data read.
 
-        The Waitable returns two parameters: (GattcCharacteristic this, ReadCompleteEventArgs event args)
-
-        :return: A waitable that will fire when the read finishes
+        :return: A waitable that will trigger when the read finishes
         :raises: InvalidOperationException if characteristic not readable
         """
         if not self.readable:
@@ -205,10 +236,8 @@ class GattcCharacteristic(gatt.Characteristic):
 
     def write(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
         """
-        Initiates a write of the data provided to the characteristic and returns a Waitable that executes
+        Performs a write request of the data provided to the characteristic and returns a Waitable that triggers
         when the write completes and the confirmation response is received from the other device.
-
-        The Waitable returns two parameters: (GattcCharacteristic this, WriteCompleteEventArgs event args)
 
         :param data: The data to write. Can be a string, bytes, or anything that can be converted to bytes
         :type data: str or bytes or bytearray
@@ -224,9 +253,9 @@ class GattcCharacteristic(gatt.Characteristic):
 
     def write_without_response(self, data) -> EventWaitable[GattcCharacteristic, WriteCompleteEventArgs]:
         """
-        Peforms a Write command, which does not require the peripheral to send a confirmation response packet.
-        This is a faster but lossy operation, in the case that the packet is dropped/never received by the other device.
-        This returns a waitable that executes when the write is transmitted to the peripheral device.
+        Performs a write command, which does not require the peripheral to send a confirmation response packet.
+        This is a faster but lossy operation in the case that the packet is dropped/never received by the peer.
+        This returns a waitable that triggers when the write is transmitted to the peripheral device.
 
         .. note:: Data sent without responses must fit within a single MTU minus 3 bytes for the operation overhead.
 
@@ -245,7 +274,9 @@ class GattcCharacteristic(gatt.Characteristic):
 
     def find_descriptor(self, uuid: Uuid) -> Optional[GattcAttribute]:
         """
-        Searches for the descriptor matching the UUID provided and returns the attribute. If not found, returns None
+        Searches for the descriptor/attribute matching the UUID provided and returns the attribute.
+        If not found, returns None.
+        If multiple attributes with the same UUID exist in the characteristic, this returns the first attribute found.
 
         :param uuid: The UUID to search for
         :return: THe descriptor attribute, if found
@@ -354,18 +385,23 @@ class GattcCharacteristic(gatt.Characteristic):
 
 
 class GattcService(gatt.Service):
+    """
+    Represents a service that lives within the server's GATT database.
+
+    This class is normally not instantiated directly and instead created when the database is discovered
+    via :meth:`Peer.discover_services() <blatann.peer.Peer.discover_services>`
+    """
     @property
     def characteristics(self) -> List[GattcCharacteristic]:
         """
         Gets the list of characteristics within the service
-
-        :rtype: list of GattcCharacteristic
         """
         return self._characteristics
 
     def find_characteristic(self, characteristic_uuid: Uuid) -> Optional[GattcCharacteristic]:
         """
-        Finds the characteristic matching the given UUID inside the service. If not found, returns None
+        Finds the characteristic matching the given UUID inside the service. If not found, returns None.
+        If multiple characteristics with the same UUID exist within the service, this will return the first one found.
 
         :param characteristic_uuid: The UUID of the characteristic to find
         :return: The characteristic if found, otherwise None
@@ -408,26 +444,26 @@ class GattcDatabase(gatt.GattDatabase):
     @property
     def services(self) -> List[GattcService]:
         """
-        :rtype: list of GattcService
+        Gets the list of services within the database
         """
         return self._services
 
     def find_service(self, service_uuid: Uuid) -> Optional[GattcService]:
         """
-        Finds the characteristic matching the given UUID inside the database. If not found, returns None
+        Finds the service matching the given UUID inside the database. If not found, returns None.
+        If multiple services with the same UUID exist in the database, this will return the first service found.
 
         :param service_uuid: The UUID of the service to find
-        :type service_uuid: blatann.uuid.Uuid
         :return: The service if found, otherwise None
-        :rtype: GattcService
         """
         for s in self.services:
             if s.uuid == service_uuid:
                 return s
 
-    def find_characteristic(self, characteristic_uuid):
+    def find_characteristic(self, characteristic_uuid) -> Optional[GattcCharacteristic]:
         """
-        Finds the characteristic matching the given UUID inside the database. If not found, returns None
+        Finds the characteristic matching the given UUID inside the database. If not found, returns None.
+        If multiple characteristics with the same UUID exist in the database, this will return the first characteristic found.
 
         :param characteristic_uuid: The UUID of the characteristic to find
         :type characteristic_uuid: blatann.uuid.Uuid
@@ -443,7 +479,6 @@ class GattcDatabase(gatt.GattDatabase):
         Iterates through all the characteristics in the database
 
         :return: An iterable of the characterisitcs in the database
-        :rtype: collections.Iterable[GattcCharacteristic]
         """
         for s in self.services:
             for c in s.characteristics:
@@ -452,10 +487,10 @@ class GattcDatabase(gatt.GattDatabase):
     def add_discovered_services(self, nrf_services):
         """
         Adds the discovered NRF services from the service_discovery module.
-        Used for internal purposes primarily.
+        Used for internal purposes.
 
         :param nrf_services: The discovered services with all the characteristics and descriptors
-        :type nrf_services: list of nrf_types.BLEGattService
+        :type nrf_services: List[nrf_types.BLEGattService]
         """
         for service in nrf_services:
             self.services.append(GattcService.from_discovered_service(self.ble_device, self.peer,

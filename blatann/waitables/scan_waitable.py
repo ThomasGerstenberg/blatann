@@ -6,6 +6,10 @@ from blatann.gap.advertise_data import ScanReport, ScanReportCollection
 
 
 class ScanFinishedWaitable(Waitable):
+    """
+    Waitable that triggers when a scan operation completes. It also provides a mechanism to acquire the received scan reports
+    in real-time
+    """
     def __init__(self, ble_device):
         super(ScanFinishedWaitable, self).__init__()
         self.scanner = ble_device.scanner
@@ -16,6 +20,10 @@ class ScanFinishedWaitable(Waitable):
 
     @property
     def scan_reports(self) -> Iterable[ScanReport]:
+        """
+        Iterable which yields the scan reports in real-time as they're received.
+        The iterable will block until scanning has timed out/finished
+        """
         scan_report = self._scan_report_queue.get()
         while scan_report:
             yield scan_report
@@ -41,5 +49,13 @@ class ScanFinishedWaitable(Waitable):
             self._event_occurred(ble_driver)
             self._scan_report_queue.put(None)
 
-    def wait(self, timeout=None, exception_on_timeout=True) -> ScanReportCollection:
+    def wait(self, timeout: float = None, exception_on_timeout: bool = True) -> ScanReportCollection:
+        """
+        Waits for the scanning operation to complete then returns the scan report collection
+
+        :param timeout: How long to wait for, in seconds
+        :param exception_on_timeout: Flag whether or not to throw an exception if the operation timed out.
+               If false and a timeout occurs, will return None
+        :return: The scan report collection
+        """
         return super(ScanFinishedWaitable, self).wait(timeout, exception_on_timeout)

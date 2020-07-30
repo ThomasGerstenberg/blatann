@@ -285,8 +285,7 @@ class SecurityManager(object):
         If the peer is a central and we are a local device, sends the peripheral security request to the central
         so they can start the pairing/encryption process
 
-        :return: A waitiable that will fire when pairing is complete
-        :rtype: blatann.waitables.EventWaitable
+        :return: A waitable that will trigger when pairing is complete
         """
         if self.pairing_in_process:
             logger.warning("Attempted to pair while pairing/encryption already in progress. Returning waitable for when it finishes")

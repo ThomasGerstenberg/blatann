@@ -31,17 +31,22 @@ allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated us
 
 ### Roadmap
 
-- [ ] Documentation
-    - [ ] ReadTheDocs integration (in progress)
-    - [ ] Better type hinting
-- [ ] GAP
+**NOTE**
+
+As of v0.3.0, the public-facing API is stable. There is not likely to be any major changes in method/property naming or functionality
+and all features added will aim to maintain backwards compatibility.
+
+- [ ] Documentation (majority covered, still needs some updates)
+    - [X] ReadTheDocs integration
+    - [X] Better type hinting
+- [X] GAP
     - [X] BLE Enable parameters
     - [X] BLE Connection parameters (functional, needs some work)
     - [X] Advertising
     - [X] Data Length Extensions
     - [X] Scanning
-    - [ ] Documentation
-- [ ] SMP
+    - [X] Documentation
+- [X] SMP
     - [X] Encryption/Authentication process
     - [X] MITM/Passcode pairing support
     - [X] Store bonding info
@@ -50,20 +55,20 @@ allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated us
     - [X] Bonding as Peripheral
     - [X] Bonding as Central
     - [X] LESC pairing
-    - [ ] Documentation
+    - [X] Documentation
 - [ ] GATT
     - [X] Configurable MTU
     - [ ] Generic Access service configuration
     - [ ] Service Changed characteristic
 - [ ] GATT Server
-    - [x] Characteristic Reads
-    - [x] Characteristic Writes
-    - [x] Notifications/Indications
-    - [x] Long reads/writes
-    - [ ] Characteristic User Description/Presentation format
+    - [X] Characteristic Reads
+    - [X] Characteristic Writes
+    - [X] Notifications/Indications
+    - [X] Long reads/writes
+    - [X] Characteristic User Description/Presentation format
     - [ ] CCCD Caching
     - [ ] Custom Read/Write authorization (#10)
-    - [ ] Documentation (partial)
+    - [X] Documentation
 - [ ] GATT Client
     - [X] Database Discovery procedure
     - [X] Client reads
@@ -71,7 +76,8 @@ allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated us
     - [X] Client long writes
     - [X] Notifications/Indications
     - [ ] CCCD Caching
-    - [ ] Documentation
+    - [ ] Service Discovery Caching
+    - [X] Documentation
 - [ ] Examples
     - [X] Advertiser/Broadcaster
     - [X] Scanner/Observer
@@ -88,10 +94,10 @@ allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated us
     - [X] Battery Service
     - [ ] Current Time Service
        - [X] Peripheral
-       - [ ] Central
+       - [ ] Central (Partially implemented)
     - [ ] Glucose Service
        - [X] Peripheral
-       - [ ] Central (Incomplete, untested)
+       - [ ] Central
     - [X] Nordic UART Service
     - More TBD (or on request)
 - [X] License
@@ -104,11 +110,6 @@ The library aims to support both event-driven and procedural program styles. It 
 where event handlers are passed  `object sender, EventArgs e` parameters.
 Additionally, all asynchronous function calls return a `Waitable` object which can be waited on (with timeout)
 until the event associated with the function call returns.
-
-**NOTE**
-
-As of v0.3.0, the public-facing API is stable. There is not likely to be any major changes in method/property naming or functionality
-
 
 ### Examples
 
@@ -128,6 +129,8 @@ At a minimum, two nordic devices are required to run the unit tests. These are s
 
 Optionally a third `BLATANN_DEV_3` can be specified to run tests which require more than two devices. If this environment variable is not defined, tests which require 3 devices are skipped.
 
-In order to speed up the tests, `BLATANN_TEST_QUICK=1` can be defined to skip long-running tests. Note that test cases which are defined as "long-running" is subjective and relative--the test suite will still take awhile to run (length TBD), but in general test cases which take longer than 20 seconds are skipped.
+In order to speed up the tests, `BLATANN_TEST_QUICK=1` can be defined to skip long-running tests. 
+Note that test cases which are defined as "long-running" is subjective and relative--the test suite will still take awhile to run, 
+but in general test cases which take longer than 20 seconds are skipped.
 
 The tests can also be ran through the makefile using `make run-tests`.

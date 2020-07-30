@@ -17,6 +17,9 @@ MAX_SCAN_TIMEOUT_S = nrf_types.scan_timeout_range.max
 
 
 class ScanParameters(nrf_types.BLEGapScanParams):
+    """
+    Class which holds scanning parameters
+    """
     def validate(self):
         self._validate(self.window_ms, self.interval_ms, self.timeout_s)
 
@@ -59,24 +62,31 @@ class Scanner(object):
     @property
     def on_scan_received(self) -> Event[Scanner, ScanReport]:
         """
-        Event that is triggered whenever a scan report is received
-
-        :return: An event which emits the Scanner and a ScanReport
+        Event that is raised whenever a scan report is received
         """
         return self._on_scan_received
 
     @property
     def on_scan_timeout(self) -> Event[Scanner, ScanReportCollection]:
         """
-        Event that is triggered when scanning completes/times out
+        Event that is raised when scanning completes/times out
         """
         return self._on_scan_timeout
 
     @property
     def is_scanning(self) -> bool:
+        """
+        **Read Only**
+
+        Current state of scanning
+        """
         return self._is_scanning
 
-    def set_default_scan_params(self, interval_ms=200, window_ms=150, timeout_seconds=10, active_scanning=True):
+    def set_default_scan_params(self,
+                                interval_ms: float = 200,
+                                window_ms: float = 150,
+                                timeout_seconds: int = 10,
+                                active_scanning: bool = True):
         """
         Sets the default scan parameters so they do not have to be specified each time a scan is started.
         Reference the Bluetooth specification for valid ranges for parameters.
@@ -89,16 +99,14 @@ class Scanner(object):
         """
         self._default_scan_params.update(window_ms, interval_ms, timeout_seconds, active_scanning)
 
-    def start_scan(self, scan_parameters=None, clear_scan_reports=True):
+    def start_scan(self, scan_parameters: ScanParameters = None, clear_scan_reports=True) -> scan_waitable.ScanFinishedWaitable:
         """
         Starts a scan and returns a waitable for when the scan completes
 
         :param scan_parameters: Optional scan parameters. Uses default if not specified
-        :type scan_parameters: ScanParameters
         :param clear_scan_reports: Flag to clear out previous scan reports
-        :return: A Waitable which will expire once the scan finishes based on the timeout specified.
+        :return: A Waitable which will trigger once the scan finishes based on the timeout specified.
                  Waitable returns a ScanReportCollection of the advertising packets found
-        :rtype: scan_waitable.ScanFinishedWaitable
         """
         self.stop()
         if clear_scan_reports:
@@ -114,7 +122,7 @@ class Scanner(object):
 
     def stop(self):
         """
-        Stops an active scan
+        Stops scanning
         """
         self._is_scanning = False
 

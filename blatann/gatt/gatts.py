@@ -1,6 +1,6 @@
 from __future__ import annotations
 import typing
-from typing import Optional, List, Iterable, Tuple
+from typing import Optional, List, Iterable
 from collections import namedtuple
 import logging
 
@@ -35,8 +35,23 @@ _security_mapping = {
 
 
 class GattsUserDescriptionProperties(GattsAttributeProperties):
-    def __init__(self, value, write=False, security_level=gatt.SecurityLevel.OPEN,
-                 max_length=0, variable_length=False):
+    """
+    Properties used to configure the User Description characteristic descriptor.
+
+    The most basic, set-once, read-only usage of this is ``GattsUserDescriptionProperties("my description")``
+    """
+    def __init__(self, value: Union[bytes, str],
+                 write: bool = False,
+                 security_level: gatt.SecurityLevel = gatt.SecurityLevel.OPEN,
+                 max_length: int = 0,
+                 variable_length: bool = False):
+        """
+        :param value: The value to set the user description to
+        :param write: Whether or not the client can write/update the user description
+        :param security_level: The security level for reads/writes
+        :param max_length: The max length the user description can be set to. If not supplied or less than len(value), will use the greater of the two
+        :param variable_length: Whether or not this description can vary in length
+        """
         if isinstance(value, str):
             value = value.encode("utf8")
         max_length = max(max_length, len(value))
@@ -67,25 +82,19 @@ class GattsCharacteristicProperties(gatt.CharacteristicProperties):
 class GattsCharacteristic(gatt.Characteristic):
     """
     Represents a single characteristic within a service. This class is usually not instantiated directly; it
-    is added to a service through GattsService::add_characteristic()
+    is added to a service through :meth:`GattsService.add_characteristic`
     """
     _QueuedChunk = namedtuple("QueuedChunk", ["offset", "data"])
 
-    def __init__(self, ble_device: BleDevice, peer: Peer, uuid: Uuid, properties: GattsCharacteristicProperties,
+    def __init__(self, ble_device: BleDevice,
+                 peer: Peer,
+                 uuid: Uuid,
+                 properties: GattsCharacteristicProperties,
                  value_handle: int, cccd_handle: int, sccd_handle: int, user_desc_handle: int,
                  notification_manager: _NotificationManager,
                  value=b"",
                  prefer_indications=True,
                  string_encoding="utf8"):
-        """
-        :param ble_device:
-        :param peer:
-        :param uuid:
-        :type properties: gatt.GattsCharacteristicProperties
-        :type notification_manager: _NotificationManager
-        :param value:
-        :param prefer_indications:
-        """
         super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties, string_encoding)
         self._value = value
         self.prefer_indications = prefer_indications
@@ -138,13 +147,15 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         Sets the value of the characteristic.
 
-        :param value: The value to set to. Must be an iterable type such as a str, bytearray, or list of uint8 values.
-                      Length must be less than the characteristic's max length.
-                      If a str is given, it will be encoded using the string_encoding property.
+        :param value: The value to set to. Must be an iterable type such as a str, bytes, or list of uint8 values,
+                      or a BleDataStream object.
+                      Length must be less than or equal to the characteristic's max length.
+                      If a string is given, it will be encoded using the string_encoding property of the characteristic.
         :param notify_client: Flag whether or not to notify the client. If indications and notifications are not set up
                               for the characteristic, will raise an InvalidOperationException
         :raises: InvalidOperationException if value length is too long, or notify client set and characteristic
                  is not notifiable
+        :raises: InvalidStateException if the client is not currently subscribed to the characteristic
         :return: If notify_client is true, this method will return the waitable for when the notification is sent to the client
         """
         if notify_client and not self.notifiable:
@@ -160,10 +171,14 @@ class GattsCharacteristic(gatt.Characteristic):
         Notifies the client with the data provided without setting the data into the characteristic value.
         If data is not provided (None), will notify with the currently-set value of the characteristic
 
-        :param data: The data to notify the client with
-        :return: An EventWaitable that will fire when the notification is successfully sent to the client. The waitable
+        :param data: Optional data to notify the client with. If supplied, must be an iterable type such as a str, bytes, or list of uint8 values,
+                     or a BleDataStream object.
+                     Length must be less than or equal to the characteristic's max length.
+                     If a string is given, it will be encoded using the string_encoding property of the characteristic.
+        :raises: InvalidStateException if the client is not subscribed to the characteristic
+        :raises: InvalidOperationException if the characteristic is not configured for notifications/indications
+        :return: An EventWaitable that will trigger when the notification is successfully sent to the client. The waitable
                  also contains the ID of the sent notification which is used in the on_notify_complete event
-        :rtype: NotificationCompleteEventWaitable
         """
         if isinstance(data, BleDataStream):
             value = data.value
@@ -184,9 +199,9 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         Creates and adds a descriptor to the characteristic
 
-        .. note:: Due to limitations of the stack, the CCCD, SCCD, User Description, Extended Properties,
+        .. note:: Due to limitations of the BLE stack, the CCCD, SCCD, User Description, Extended Properties,
            and Presentation Format descriptors cannot be added through this method. They must be added through the
-           GattsProperties fields when creating the characteristic.
+           ``GattsCharacteristicProperties`` fields when creating the characteristic.
 
         :param uuid: The UUID of the descriptor to add, and cannot be the UUIDs of any of the reserved descriptor UUIDs in the note
         :param properties: The properties of the descriptor
@@ -214,6 +229,17 @@ class GattsCharacteristic(gatt.Characteristic):
 
     def add_constant_value_descriptor(self, uuid: Uuid, value: bytes,
                                       security_level=gatt.SecurityLevel.OPEN) -> GattsAttribute:
+        """
+        Adds a descriptor to the characteristic which is a constant, read-only value that cannot be updated
+        after this call. This is a simplified parameter set built on top of :meth:`add_descriptor` for this common use-case.
+
+        .. note:: See note on :meth:`add_descriptor()` for limitations on descriptors that can be added through this method.
+
+        :param uuid: The UUID of the descriptor to add
+        :param value: The value to set the descriptor to
+        :param security_level: The security level for the descriptor
+        :return: The descriptor that was created and added to the characteristic
+        """
         props = GattsAttributeProperties(read=True, write=False, security_level=security_level,
                                          max_length=len(value), variable_length=False, write_auth=False, read_auth=False)
         return self.add_descriptor(uuid, props, value)
@@ -225,6 +251,8 @@ class GattsCharacteristic(gatt.Characteristic):
     @property
     def max_length(self) -> int:
         """
+        **Read Only**
+
         The max possible the value the characteristic can be set to
         """
         return self._properties.max_len
@@ -232,6 +260,8 @@ class GattsCharacteristic(gatt.Characteristic):
     @property
     def notifiable(self) -> bool:
         """
+        **Read Only**
+
         Gets if the characteristic is set up to asynchonously notify clients via notifications or indications
         """
         return self._properties.indicate or self._properties.notify
@@ -239,20 +269,27 @@ class GattsCharacteristic(gatt.Characteristic):
     @property
     def value(self) -> bytes:
         """
-        Gets the current value of the characteristic
+        **Read Only**
+
+        Gets the current value of the characteristic.
+        Value is updated using :meth:`set_value`
         """
         return self._value
 
     @property
     def client_subscribed(self) -> bool:
         """
+        **Read Only**
+
         Gets if the client is currently subscribed (notify or indicate) to this characteristic
         """
         return self.peer and self.cccd_state != gatt.SubscriptionState.NOT_SUBSCRIBED
 
     @property
-    def attributes(self) -> Tuple[GattsAttribute]:
+    def attributes(self) -> Iterable[GattsAttribute]:
         """
+        **Read Only**
+
         Gets all of the attributes and descriptors associated with this characteristic
         """
         return tuple(self._attrs)
@@ -260,27 +297,30 @@ class GattsCharacteristic(gatt.Characteristic):
     @property
     def user_description(self) -> Optional[GattsAttribute]:
         """
-        Gets the User Description attribute for the characteristic if set in the properties
+        **Read Only**
 
-        :return: The User Description attribute or None if it was not specified when the characteristic was created
+        Gets the User Description attribute for the characteristic if set in the properties.
+        If the user description was not configured for the characteristic, returns ``None``
         """
         return self._user_desc_attr
 
     @property
     def sccd(self) -> Optional[GattsAttribute]:
         """
-        Gets the Server Characteristic Configuration Descriptor attribute if set in the properties
+        **Read Only**
 
-        :return: The SCCD attribute or None if it was not specified when the characteristic was created
+        Gets the Server Characteristic Configuration Descriptor (SCCD) attribute if set in the properties.
+        If the SCCD was not configured for the characteristic, returns ``None``
         """
         return self._sccd_attr
 
     @property
     def presentation_format(self) -> Optional[PresentationFormat]:
         """
-        Gets the presentation format that was set for the characteristic
+        **Read Only**
 
-        :return: The characteristic's presentation format
+        Gets the presentation format that was set for the characteristic.
+        If the presentation format was not configured for the characteristic, returns ``None``
         """
         return self._presentation_format
 
@@ -288,16 +328,14 @@ class GattsCharacteristic(gatt.Characteristic):
     def string_encoding(self) -> str:
         """
         The default method for encoding strings into bytes when a string is provided as a value
+
+        :getter: Gets the string encoding in use
+        :setter: Sets the string encoding to use
         """
         return self._value_attr.string_encoding
 
     @string_encoding.setter
     def string_encoding(self, value: str):
-        """
-        Sets how the characteristic value is encoded when provided a string
-
-        :param value: the encoding to use (utf8, ascii, etc.)
-        """
         self._value_attr.string_encoding = value
 
     """
@@ -308,8 +346,6 @@ class GattsCharacteristic(gatt.Characteristic):
     def on_write(self) -> Event[GattsCharacteristic, WriteEventArgs]:
         """
         Event generated whenever a client writes to this characteristic.
-
-        EventArgs type: WriteEventArgs
 
         :return: an Event which can have handlers registered to and deregistered from
         """
@@ -327,8 +363,6 @@ class GattsCharacteristic(gatt.Characteristic):
         NOTE: if there are multiple handlers subscribed to this and each set the value differently, it may cause
         undefined behavior.
 
-        EventArgs type: None
-
         :return: an Event which can have handlers registered to and deregistered from
         """
         return self._on_read
@@ -339,8 +373,6 @@ class GattsCharacteristic(gatt.Characteristic):
         Event that is generated whenever a client changes its subscription state of the characteristic
         (notify, indicate, none).
 
-        EventArgs type: SubscriptionStateChangeEventArgs
-
         :return: an Event which can have handlers registered to and deregistered from
         """
         return self._on_sub_change
@@ -348,7 +380,9 @@ class GattsCharacteristic(gatt.Characteristic):
     @property
     def on_notify_complete(self) -> Event[GattsCharacteristic, NotificationCompleteEventArgs]:
         """
-        Event that is generated when a notification or indication sent to the client is successfully sent
+        Event that is generated when a notification or indication sent to the client successfully
+
+        :return: an event which can have handlers registered to and deregistered from
         """
         return self._on_notify_complete
 
@@ -373,9 +407,15 @@ class GattsCharacteristic(gatt.Characteristic):
 
 class GattsService(gatt.Service):
     """
-    Represents a registered GATT service that lives locally on the device
+    Represents a registered GATT service that lives locally on the device.
+
+    This class is usually not instantiated directly and is instead created through :meth:`GattsDatabase.add_service`.
     """
-    def __init__(self, ble_device, peer, uuid, service_type, notification_manager,
+    def __init__(self, ble_device: BleDevice,
+                 peer: Peer,
+                 uuid: Uuid,
+                 service_type: int,
+                 notification_manager: _NotificationManager,
                  start_handle=gatt.BLE_GATT_HANDLE_INVALID, end_handle=gatt.BLE_GATT_HANDLE_INVALID):
         super(GattsService, self).__init__(ble_device, peer, uuid, service_type, start_handle, end_handle)
         self._notification_manager = notification_manager
@@ -383,7 +423,11 @@ class GattsService(gatt.Service):
     @property
     def characteristics(self) -> List[GattsCharacteristic]:
         """
-        Gets the list of characteristics in this service
+        **Read Only**
+
+        Gets the list of characteristics in this service.
+
+        Characteristics are added through :meth:`add_characteristic`
         """
         return self._characteristics
 
@@ -472,9 +516,9 @@ class GattsDatabase(gatt.GattDatabase):
     @property
     def services(self) -> List[GattsService]:
         """
-        Gets the list of services registered in the database
+        **Read Only**
 
-        :return: list of services in the database
+        The list of services registered in the database
         """
         return self._services
 
@@ -483,7 +527,6 @@ class GattsDatabase(gatt.GattDatabase):
         Iterates through all of the registered services in the database
 
         :return: Generator of the database's services
-        :rtype: collections.Iterable[GattsService]
         """
         for s in self.services:
             yield s
@@ -501,8 +544,7 @@ class GattsDatabase(gatt.GattDatabase):
         handle = nrf_types.BleGattHandle()
         # Call code to add service to driver
         self.ble_device.ble_driver.ble_gatts_service_add(service_type.value, uuid.nrf_uuid, handle)
-        service = GattsService(self.ble_device, self.peer, uuid, service_type, self._notification_manager,
-                               handle.handle)
+        service = GattsService(self.ble_device, self.peer, uuid, service_type, self._notification_manager, handle.handle)
         service.start_handle = handle.handle
         service.end_handle = 0xFFFF
         if self.services:

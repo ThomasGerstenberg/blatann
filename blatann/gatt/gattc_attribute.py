@@ -32,10 +32,16 @@ class GattcAttribute(Attribute):
 
     @property
     def on_read_complete(self) -> Event[GattcAttribute, ReadCompleteEventArgs]:
+        """
+        Event that is triggered when a read from the attribute is completed
+        """
         return self._on_read_complete_event
 
     @property
     def on_write_complete(self) -> Event[GattcAttribute, WriteCompleteEventArgs]:
+        """
+        Event that is triggered when a write to the attribute is completed
+        """
         return self._on_write_complete_event
 
     """
@@ -47,9 +53,7 @@ class GattcAttribute(Attribute):
         Performs a read of the attribute and returns a Waitable that executes when the read finishes
         with the data read.
 
-        The Waitable returns two parameters: (GattcDescriptor this, ReadCompleteEventArgs event_args)
-
-        :return: A waitable that will fire when the read finishes
+        :return: A waitable that will trigger when the read finishes
         """
         read_id = self._manager.read(self._handle, self._read_complete)
         return IdBasedEventWaitable(self._on_read_complete_event, read_id)
@@ -58,8 +62,6 @@ class GattcAttribute(Attribute):
         """
         Initiates a write of the data provided to the attribute and returns a Waitable that executes
         when the write completes and the confirmation response is received from the other device.
-
-        The Waitable returns two parameters: (GattcAttribute this, WriteCompleteEventArgs event args)
 
         :param data: The data to write. Can be a string, bytes, or anything that can be converted to bytes
         :type data: str or bytes or bytearray

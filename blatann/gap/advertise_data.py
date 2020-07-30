@@ -1,5 +1,5 @@
 import time
-from typing import Iterable, List, Dict, Union, Optional
+from typing import Iterable, List, Dict, Union, Optional, Tuple
 import logging
 from blatann.nrf import nrf_types
 from blatann import uuid, exceptions
@@ -61,7 +61,14 @@ class AdvertisingData(object):
             del self.entries[t]
 
     @property
-    def flags(self) -> int:
+    def flags(self) -> Optional[int]:
+        """
+        The advertising flags in the payload, if set
+
+        :getter: Gets the advertising flags in the payload, or None if not set
+        :setter: Sets the advertising flags in the payload
+        :delete: Removes the advertising flags from the payload
+        """
         return self._get(self.Types.flags)
 
     @flags.setter
@@ -73,7 +80,14 @@ class AdvertisingData(object):
         self._del(self.Types.flags)
 
     @property
-    def service_data(self) -> Union[bytes, List[int]]:
+    def service_data(self) -> Union[bytes, List[int], None]:
+        """
+        The service data in the payload, if set
+
+        :getter: Gets the service data in the payload, or None if not set
+        :setter: Sets the service data for the payload
+        :delete: Removes the service data from the payload
+        """
         return self._get(self.Types.service_data, None)
 
     @service_data.setter
@@ -85,7 +99,14 @@ class AdvertisingData(object):
         self._del(self.Types.service_data)
 
     @property
-    def manufacturer_data(self) -> Union[bytes, List[int]]:
+    def manufacturer_data(self) -> Union[bytes, List[int], None]:
+        """
+        The manufacturer data in the payload, if set
+
+        :getter: Gets the manufacturer data in the payload, or None if not set
+        :setter: Sets the manufacturer data for the payload
+        :delete: Removes the manufacturer data from the payload
+        """
         return self._get(self.Types.manufacturer_specific_data, None)
 
     @manufacturer_data.setter
@@ -97,22 +118,18 @@ class AdvertisingData(object):
         self._del(self.Types.manufacturer_specific_data)
 
     @property
-    def service_uuids(self):
+    def service_uuids(self) -> List[uuid.Uuid]:
         """
         Gets all of the 16-bit and 128-bit service UUIDs specified in the advertising data
-
-        :return: list of the service UUIDs present in the advertising data
-        :rtype: list[uuid.Uuid]
         """
         return self.service_uuid16s + self.service_uuid128s
 
-    def check_encoded_length(self):
+    def check_encoded_length(self) -> Tuple[int, bool]:
         """
         Checks if the encoded length of this advertising data payload meets the maximum allowed
-        length specified by the Bluetooth spec
+        length specified by the Bluetooth specification
 
         :return: a tuple of the encoded length and a bool result of whether or not it meets requirements
-        :rtype: tuple[int, bool]
         """
         ble_adv_data = self.to_ble_adv_data()
         encoded_data = ble_adv_data.to_list()
@@ -146,7 +163,13 @@ class AdvertisingData(object):
         record_string_keys = {k.name: v for k, v in records.items()}
         return nrf_types.BLEAdvData(**record_string_keys)
 
-    def to_bytes(self):
+    def to_bytes(self) -> bytes:
+        """
+        Converts the advertising data to the encoded bytes that will be advertised over the air.
+        Advertising payloads are encoded in a length-type-value format
+
+        :return: The encoded payload
+        """
         adv_data = self.to_ble_adv_data()
         adv_data.to_list()
         return adv_data.raw_bytes
@@ -248,6 +271,9 @@ class AdvertisingData(object):
 
 
 class ScanReport(object):
+    """
+    Represents a payload and associated metadata that's received during scanning
+    """
     def __init__(self, adv_report):
         """
         :type adv_report: blatann.nrf.nrf_events.GapEvtAdvReport
@@ -262,11 +288,18 @@ class ScanReport(object):
         self.raw_bytes = adv_report.adv_data.raw_bytes
 
     @property
-    def device_name(self):
+    def device_name(self) -> str:
+        """
+        **Read Only**
+
+        The name of the device, pulled from the advertising data (if advertised) or uses the Peer's MAC Address if not set
+        """
         return self.advertise_data.local_name or str(self.peer_address)
 
     def update(self, adv_report):
         """
+        Used internally to merge a new advertising payload that was received into the current scan report
+
         :type adv_report: nrf_events.GapEvtAdvReport
         """
         if adv_report.peer_addr != self.peer_address:
@@ -303,21 +336,26 @@ class ScanReportCollection(object):
         from earlier packets, if the data has been modified.
 
         :return: The list of scan reports, with each being a unique peer
-        :rtype: list of ScanReport
         """
         return self._scans_by_peer_address.values()
 
     @property
-    def all_scan_reports(self) -> List[ScanReport]:
+    def all_scan_reports(self) -> Iterable[ScanReport]:
         """
-        Gets the list of all scanned advertising data found.
+        Gets the list of all of the individual advertising packets received.
 
         :return: The list of all scan reports
-        :rtype: list of ScanReport
         """
         return self._all_scans[:]
 
     def get_report_for_peer(self, peer_addr) -> Optional[ScanReport]:
+        """
+        Gets the combined/aggregated scan report for a given Peer's address.
+        If the peer's scan report isn't found, returns None
+
+        :param peer_addr: The peer's address to search for
+        :return: The associated scan report, if found
+        """
         return self._scans_by_peer_address.get(peer_addr)
 
     def clear(self):
@@ -327,9 +365,12 @@ class ScanReportCollection(object):
         self._all_scans = []
         self._scans_by_peer_address = {}
 
-    def update(self, adv_report):
+    def update(self, adv_report) -> ScanReport:
         """
+        Used internally to update the collection with a new advertising report received
+
         :type adv_report: nrf_events.GapEvtAdvReport
+        :return: The Scan Report created from the advertising report
         """
         scan_entry = ScanReport(adv_report)
         if scan_entry in self._all_scans:

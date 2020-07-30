@@ -63,17 +63,19 @@ class GattsAttribute(Attribute):
         self._queued_write_chunks = []
 
     @property
-    def parent(self):
+    def parent(self) -> GattsCharacteristic:
         """
-        Gets the parent characteristic which owns this attribute
+        **Read Only**
 
-        :rtype: blatann.gatt.gatts.GattsCharacteristic
+        Gets the parent characteristic which owns this attribute
         """
         return self._parent
 
     @property
     def max_length(self) -> int:
         """
+        **Read Only**
+
         The max possible length data the attribute can be set to
         """
         return self._properties.max_len
@@ -81,7 +83,9 @@ class GattsAttribute(Attribute):
     @property
     def read_in_process(self) -> bool:
         """
-        Gets whether or not the client is in the process of  reading out this attribute
+        **Read Only**
+
+        Gets whether or not the client is in the process of reading out this attribute
         """
         return self._read_in_process
 
@@ -93,7 +97,7 @@ class GattsAttribute(Attribute):
         """
         Sets the value of the attribute.
 
-        :param value: The value to set to. Must be an iterable type such as a str, bytearray, or list of uint8 values.
+        :param value: The value to set to. Must be an iterable type such as a str, bytes, or list of uint8 values, or a BleDataStream object.
                       Length must be less than the attribute's max length.
                       If a str is given, it will be encoded using the string_encoding property.
         :raises: InvalidOperationException if value length is too long
@@ -113,7 +117,7 @@ class GattsAttribute(Attribute):
     def get_value(self) -> bytes:
         """
         Fetches the attribute's value from hardware and updates the local copy.
-        This isn't often necessary and should use the value property directly
+        This isn't often necessary and should instead use the value property to avoid unnecessary reads from the hardware.
         """
         v = nrf_types.BLEGattsValue(b"")
         self._ble_device.ble_driver.ble_gatts_value_get(self._peer.conn_handle, self._handle, v)
@@ -129,8 +133,6 @@ class GattsAttribute(Attribute):
         """
         Event generated whenever a client writes to this attribute.
 
-        EventArgs type: WriteEventArgs
-
         :return: an Event which can have handlers registered to and deregistered from
         """
         return self._on_write
@@ -143,8 +145,8 @@ class GattsAttribute(Attribute):
 
         .. note:: This will only be triggered if the attribute was configured with the read_auth property
 
-        A good example of this is a "system time" characteristic which reports the applications system time in seconds.
-        Instead of updating this characteristic every second, it can be "lazily" updated only when read from.
+        A good example of using this is a "system time" characteristic which reports the application's current system time in seconds.
+        Instead of updating this characteristic every second, it can be "lazily" updated only when read.
 
         NOTE: if there are multiple handlers subscribed to this and each set the value differently, it may cause
         undefined behavior.
