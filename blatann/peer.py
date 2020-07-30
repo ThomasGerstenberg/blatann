@@ -33,7 +33,6 @@ class ConnectionParameters(nrf_events.BLEGapConnParams):
     the preferred min/max interval range, timeout, and slave latency
     """
     def __init__(self, min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency=0):
-        # TODO: Parameter validation
         super(ConnectionParameters, self).__init__(min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency)
         self.validate()
 
@@ -66,6 +65,8 @@ class ActiveConnectionParameters(object):
     @property
     def interval_ms(self) -> float:
         """
+        **Read Only**
+
         The connection interval, in milliseconds
         """
         return self._interval_ms
@@ -73,6 +74,8 @@ class ActiveConnectionParameters(object):
     @property
     def timeout_ms(self) -> float:
         """
+        **Read Only**
+
         The connection timeout, in milliseconds
         """
         return self._timeout_ms
@@ -80,6 +83,8 @@ class ActiveConnectionParameters(object):
     @property
     def slave_latency(self) -> int:
         """
+        **Read Only**
+
         The slave latency (the number of connection intervals the slave is allowed to skip before being
         required to respond)
         """
@@ -137,113 +142,128 @@ class Peer(object):
     @property
     def name(self) -> str:
         """
-        The name of the peer, if known
+        The name of the peer, if known. This property is for the user's benefit to name certain connections.
+        The name is is also saved in the case that the peer is subsequently bonded to and can be looked up that way
+        in the bond database
 
-        .. note:: For central peers this name is unknown unless set by the setter below.
+        .. note:: For central peers this name is unknown unless set by the setter.
            For peripheral peers the name is defaulted to the one found in the advertising payload, if any.
+
+       :getter: Gets the name of the peer
+       :setter: Sets the name of the peer
         """
         return self._name
 
     @name.setter
     def name(self, name: str):
-        """
-        Sets the name of the peer. This is
-        """
         self._name = name
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         """
-        Gets if this peer is currently connected
+        **Read Only**
 
-        :return: True if connected, False if not
+        Gets if this peer is currently connected
         """
         return self.connection_state == PeerState.CONNECTED
 
     @property
-    def bytes_per_notification(self):
+    def bytes_per_notification(self) -> int:
         """
-        Gets the maximum number of bytes that can be sent in a single notification/indication
+        **Read Only**
 
-        :return: Number of bytes that can be sent in a notification/indication
+        The maximum number of bytes that can be sent in a single notification/indication
         """
         return self._mtu_size - self.NOTIFICATION_INDICATION_OVERHEAD_BYTES
 
     @property
-    def is_peripheral(self):
+    def is_peripheral(self) -> bool:
         """
-        Gets if this peer is a Peripheral (the local device acting as a central/client)
+        **Read Only**
+
+        Gets if this peer is a peripheral (the local device acting as a central/client)
         """
         return isinstance(self, Peripheral)
 
     @property
-    def is_client(self):
+    def is_client(self) -> bool:
         """
+        **Read Only**
+
         Gets if this peer is a Client (the local device acting as a peripheral/server)
         """
         return isinstance(self, Client)
 
     @property
-    def is_previously_bonded(self):
+    def is_previously_bonded(self) -> bool:
         """
-        Gets if the peer this security manager is for was bonded in a previous connection
+        **Read Only**
+
+        Gets if the peer has bonding information stored in the bond database (the peer was bonded to in a previous connection)
         """
         return self.security.is_previously_bonded
 
     @property
     def preferred_connection_params(self) -> ConnectionParameters:
         """
-        Returns the connection parameters that were negotiated for this peer
+        **Read Only**
+
+        The connection parameters that were negotiated for this peer
         """
         return self._preferred_connection_params
 
     @property
     def active_connection_params(self) -> ActiveConnectionParameters:
         """
-        Gets the active connection parameters in use with the peer.
+        **Read Only**
+
+        The active connection parameters in use with the peer.
         If the peer is disconnected, this will return the connection parameters last used
         """
         return self._current_connection_params
 
     @property
-    def mtu_size(self):
+    def mtu_size(self) -> int:
         """
-        Gets the current negotiated size of the MTU for the peer
+        **Read Only**
 
-        :return: The current MTU size
+        The current size of the MTU for the connection to the peer
         """
         return self._mtu_size
 
     @property
-    def max_mtu_size(self):
+    def max_mtu_size(self) -> int:
         """
+        **Read Only**
+
         The maximum allowed MTU size. This is set when initially configuring the BLE Device
         """
         return self._ble_device.max_mtu_size
 
     @property
-    def preferred_mtu_size(self):
+    def preferred_mtu_size(self) -> int:
         """
-        Gets the user-set preferred MTU size. Defaults to the Default MTU size (23)
+        The user-set preferred MTU size. Defaults to the Bluetooth default MTU size (23).
+        This is the value that will be negotiated during an MTU Exchange but is not guaranteed in the case that the peer has a smaller MTU
+
+        :getter: Gets the preferred MTU size that was configured
+        :setter: Sets the preferred MTU size to use for MTU exchanges
         """
         return self._preferred_mtu_size
 
     @preferred_mtu_size.setter
-    def preferred_mtu_size(self, mtu_size):
-        """
-        Sets the preferred MTU size to use when a MTU Exchange Request is received
-        """
+    def preferred_mtu_size(self, mtu_size: int):
         self._validate_mtu_size(mtu_size)
         self._preferred_mtu_size = mtu_size
 
     @property
     def database(self) -> gattc.GattcDatabase:
         """
-        Gets the database on the peer.
+        **Read Only**
+
+        The GATT database of the peer.
 
         .. note:: This is not useful until services are discovered first
-
-        :return: The database instance
         """
         return self._db
 
@@ -275,7 +295,7 @@ class Peer(object):
     @property
     def on_mtu_size_updated(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
         """
-        Event generated when the effective MTU size has been updated on the connection.
+        Event generated when the effective MTU size has been updated on the connection
         """
         return self._on_mtu_size_updated
 
@@ -300,26 +320,33 @@ class Peer(object):
     def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection) -> DisconnectionWaitable:
         """
         Disconnects from the peer, giving the optional status code.
-        Returns a waitable that will fire when the disconnection is complete.
-        If the peer is already disconnected, the waitable will fire immediately
+        Returns a waitable that will trigger when the disconnection is complete.
+        If the peer is already disconnected, the waitable will trigger immediately
 
         :param status_code: The HCI Status code to send back to the peer
-        :return: A waitable that will fire when the peer is disconnected
+        :return: A waitable that will trigger when the peer is disconnected
         """
         if self.connection_state != PeerState.CONNECTED:
             return EmptyWaitable(self, self._disconnection_reason)
         self._ble_device.ble_driver.ble_gap_disconnect(self.conn_handle, status_code)
         return self._disconnect_waitable
 
-    def set_connection_parameters(self, min_connection_interval_ms, max_connection_interval_ms, connection_timeout_ms,
+    def set_connection_parameters(self,
+                                  min_connection_interval_ms: float,
+                                  max_connection_interval_ms: float,
+                                  connection_timeout_ms: int,
                                   slave_latency=0):
         """
         Sets the connection parameters for the peer and starts the connection parameter update process (if connected)
 
+        .. note:: Connection interval values should be a multiple of 1.25ms since that is the granularity allowed in the Bluetooth specification.
+           Any non-multiples will be rounded down to the nearest 1.25ms.
+           Additionally, the connection timeout has a granularity of 10 milliseconds and will also be rounded as such.
+
         :param min_connection_interval_ms: The minimum acceptable connection interval, in milliseconds
         :param max_connection_interval_ms: The maximum acceptable connection interval, in milliseconds
         :param connection_timeout_ms: The connection timeout, in milliseconds
-        :param slave_latency: The slave latency allowed
+        :param slave_latency: The slave latency allowed, which regulates how many connection intervals the peripheral is allowed to skip before responding
         """
         self._preferred_connection_params = ConnectionParameters(min_connection_interval_ms, max_connection_interval_ms,
                                                                  connection_timeout_ms, slave_latency)
@@ -337,10 +364,10 @@ class Peer(object):
         Initiates the MTU Exchange sequence with the peer device.
 
         If the MTU size is not provided the preferred_mtu_size value will be used.
-        If an MTU size is provided the preferred_mtu_size will be updated to this
+        If an MTU size is provided the preferred_mtu_size will be updated to the given value.
 
         :param mtu_size: Optional MTU size to use. If provided, it will also updated the preferred MTU size
-        :return: A waitable that will fire when the MTU exchange completes
+        :return: A waitable that will trigger when the MTU exchange completes
         """
         # If the MTU size has already been negotiated we need to use the same value
         # as the previous exchange (Vol 3, Part F 3.4.2.2)
@@ -359,7 +386,7 @@ class Peer(object):
         Starts the process which updates the link layer data length to the optimal value given the MTU.
         For best results call this method after the MTU is set to the desired size.
 
-        :return: A waitable that will fire when the process finishes
+        :return: A waitable that will trigger when the process finishes
         """
         self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle)
         return EventWaitable(self._on_data_length_updated)
@@ -368,9 +395,8 @@ class Peer(object):
         """
         Starts the database discovery process of the peer. This will discover all services, characteristics, and
         descriptors on the peer's database.
-        Returns an EventWaitable that will fire when the service discovery completes.
 
-        :return: a Waitable that will fire when service discovery is complete
+        :return: a Waitable that will trigger when service discovery is complete
         """
         self._discoverer.start()
         return EventWaitable(self._discoverer.on_discovery_complete)
@@ -381,7 +407,9 @@ class Peer(object):
 
     def peer_connected(self, conn_handle, peer_address, connection_params):
         """
-        Internal method called when the peer connects to set up the object
+        Internal method called when the peer connects to set up the object.
+
+        **Should not be called by the user**
         """
         self.conn_handle = conn_handle
         self.peer_address = peer_address
@@ -402,10 +430,6 @@ class Peer(object):
 
     def _check_driver_event_connection_handle_wrapper(self, func):
         def wrapper(driver, event):
-            """
-            :param driver:
-            :type event: blatann.nrf.nrf_events.BLEEvent
-            """
             if self.connected and self.conn_handle == event.conn_handle:
                 func(driver, event)
         return wrapper
@@ -413,7 +437,7 @@ class Peer(object):
     def driver_event_subscribe(self, handler, *event_types):
         """
         Internal method that subscribes handlers to NRF Driver events directed at this peer.
-        Handlers are automatically unsubscribed once the peer disconnects
+        Handlers are automatically unsubscribed once the peer disconnects.
 
         :param handler: The handler to subscribe
         :param event_types: The NRF Driver event types to subscribe to
@@ -426,7 +450,7 @@ class Peer(object):
 
     def driver_event_unsubscribe(self, handler, *event_types):
         """
-        Internal method that unsubscribes handlers from NRF Driver events
+        Internal method that unsubscribes handlers from NRF Driver events.
 
         :param handler: The handler to unsubscribe
         :param event_types: The event types to unsubscribe from

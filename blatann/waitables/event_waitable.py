@@ -31,7 +31,7 @@ class EventWaitable(Waitable, Generic[TSender, TEvent]):
 
 class IdBasedEventWaitable(EventWaitable, Generic[TSender, TEvent]):
     """
-    Extension of :class:`EventWaitable` for high-churn events which require IDs,
+    Extension of :class:`EventWaitable` for high-churn events which require IDs to ensure the correct operation is waited upon,
     such as characteristic read, write and notify operations
     """
     def __init__(self, event, event_id):

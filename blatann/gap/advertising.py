@@ -17,9 +17,14 @@ MAX_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.max
 
 
 class Advertiser(object):
+    """
+    Class which manages the advertising state of the BLE Device
+    """
     # Constant used to indicate that the BLE device should advertise indefinitely, until
     # connected to or stopped manually
     ADVERTISE_FOREVER = 0
+    """Special value used to indicate that the BLE device should advertise indefinitely 
+       until either a central is connected or stopped manually."""
 
     def __init__(self, ble_device, client, conn_tag=0):
         """
@@ -44,7 +49,7 @@ class Advertiser(object):
         """
         Event generated whenever advertising times out and finishes with no connections made
 
-        ..note:: If auto-restart advertising is enabled, this will trigger on each advertising timeout configured
+        .. note:: If auto-restart advertising is enabled, this will trigger on each advertising timeout configured
 
         :return: an Event which can have handlers registered to and deregistered from
         """
@@ -53,6 +58,8 @@ class Advertiser(object):
     @property
     def is_advertising(self) -> bool:
         """
+        **Read Only**
+
         Current state of advertising
         """
         return self._is_advertising
@@ -60,6 +67,8 @@ class Advertiser(object):
     @property
     def min_interval_ms(self) -> float:
         """
+        **Read Only**
+
         The minimum allowed advertising interval, in millseconds.
         This is defined by the Bluetooth specification.
         """
@@ -68,6 +77,8 @@ class Advertiser(object):
     @property
     def max_interval_ms(self) -> float:
         """
+        **Read Only**
+
         The maximum allowed advertising interval, in milliseconds.
         This is defined by the Bluetooth specification.
         """
@@ -76,10 +87,13 @@ class Advertiser(object):
     @property
     def auto_restart(self) -> bool:
         """
-        Property which enables/disables whether or not the device should automatically restart
+        Enables/disables whether or not the device should automatically restart
         advertising when an advertising timeout occurs or the client is disconnected.
 
-        .. note:: Auto-restart is disabled automatically when stop() is called
+        .. note:: Auto-restart is disabled automatically when :meth:`stop` is called
+
+        :getter: Gets the auto-restart flag
+        :setter: Sets/clears the auto-restart flag
         """
         return self._auto_restart
 
@@ -87,17 +101,20 @@ class Advertiser(object):
     def auto_restart(self, value: bool):
         self._auto_restart = bool(value)
 
-    def set_advertise_data(self, advertise_data=AdvertisingData(), scan_response=AdvertisingData()):
+    def set_advertise_data(self,
+                           advertise_data: AdvertisingData = AdvertisingData(),
+                           scan_response: AdvertisingData = AdvertisingData()):
         """
         Sets the advertising and scan response data which will be broadcasted to peers during advertising
 
-        Note: BLE Restricts advertise and scan response data to an encoded length of 31 bytes each.
-        Use AdvertisingData.check_encoded_length() to determine if the
+        .. note:: BLE Restricts advertise and scan response data to an encoded length of 31 bytes each.
+           Use :meth:`AdvertisingData.check_encoded_length() <blatann.gap.advertise_data.AdvertiseData.check_encoded_length>`
+           to determine if the payload is too large
 
-        :param advertise_data: The advertise data to use
-        :type advertise_data: AdvertisingData
-        :param scan_response: The scan response data to use
-        :type scan_response: AdvertisingData
+        :param advertise_data: The advertising data to use
+        :param scan_response: The scan response data to use.
+                              This data is only sent when a scanning device requests the scan response packet (active scanning)
+        :raises: InvalidOperationException if one of the payloads is too large
         """
         adv_len, adv_pass = advertise_data.check_encoded_length()
         scan_len, scan_pass = scan_response.check_encoded_length()
@@ -112,7 +129,10 @@ class Advertiser(object):
 
         self.ble_device.ble_driver.ble_gap_adv_data_set(advertise_data.to_ble_adv_data(), scan_response.to_ble_adv_data())
 
-    def set_default_advertise_params(self, advertise_interval_ms, timeout_seconds, advertise_mode=AdvertisingMode.connectable_undirected):
+    def set_default_advertise_params(self,
+                                     advertise_interval_ms: float,
+                                     timeout_seconds: int,
+                                     advertise_mode: AdvertisingMode = AdvertisingMode.connectable_undirected):
         """
         Sets the default advertising parameters so they do not need to be specified on each start
 
@@ -120,16 +140,19 @@ class Advertiser(object):
                                       Should be a multiple of 0.625ms, otherwise it'll be rounded down to the nearest 0.625ms
         :param timeout_seconds: How long to advertise for before timing out, in seconds. For no timeout, use ADVERTISE_FOREVER (0)
         :param advertise_mode: The mode the advertiser should use
-        :type advertise_mode: AdvertisingMode
         """
         nrf_types.adv_interval_range.validate(advertise_interval_ms)
         self._advertise_interval = advertise_interval_ms
         self._timeout = timeout_seconds
         self._advertise_mode = advertise_mode
 
-    def start(self, adv_interval_ms=None, timeout_sec=None, auto_restart=None, advertise_mode: AdvertisingMode = None):
+    def start(self,
+              adv_interval_ms: float = None,
+              timeout_sec: int = None,
+              auto_restart: bool = None,
+              advertise_mode: AdvertisingMode = None):
         """
-        Starts advertising with the given parameters. If none given, will use the default
+        Starts advertising with the given parameters. If none given, will use the default set through :meth:`set_default_advertise_params`
 
         :param adv_interval_ms: The interval at which to send out advertise packets, in milliseconds.
                                 Should be a multiple of 0.625ms, otherwise it'll be round down to the nearest 0.625ms

@@ -164,7 +164,7 @@ class BleDevice(NrfDriverObserver):
 
     def close(self):
         """
-        Closes the connection to the BLE device
+        Closes the connection to the BLE device. The connection to the device must be opened again to perform BLE operations.
         """
         if self.ble_driver.is_open:
             self.ble_driver.close()
@@ -183,39 +183,38 @@ class BleDevice(NrfDriverObserver):
         self.bond_db_loader.save(self.bond_db)
 
     @property
-    def address(self):
+    def address(self) -> nrf_types.BLEGapAddr:
         """
-        Gets the MAC address of the BLE device
+        The MAC Address of the BLE device
 
-        :rtype: nrf_types.gap.BLEGapAddr
+        :getter: Gets the MAC address of the BLE device
+        :setter: Sets the MAC address for the device to use
+
+        .. note:: The MAC address cannot be changed while the device is advertising, scanning, or initiating a connection
         """
         return self.ble_driver.ble_gap_addr_get()
 
     @address.setter
     def address(self, address):
-        """
-        Sets the new address of the device.
-
-        :note: This cannot be performed while the device is advertising, scanning, or initiating a connection
-
-        :param address: The new address
-        :type address: nrf_types.gap.BLEGapAddr
-        """
         self.ble_driver.ble_gap_addr_set(address)
 
     @property
     def database(self) -> gatts.GattsDatabase:
         """
-        Gets the local database instance that is accessed by connected clients
+        **Read Only**
 
-        :return: The local database
+        The local database instance that is accessed by connected clients
         """
         return self._db
 
     @property
     def max_mtu_size(self) -> int:
         """
+        **Read Only**
+
         The maximum allowed ATT MTU size that was configured for the device
+
+        .. note:: The Max MTU size is set through :meth:`configure`
         """
         return self._default_conn_config.max_att_mtu
 

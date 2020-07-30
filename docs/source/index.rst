@@ -12,6 +12,7 @@ library and the associated Connectivity firmware for the device.
    :caption: Contents:
 
    getting_started
+   core_classes
    examples
    compatibility_matrix
    troubleshooting

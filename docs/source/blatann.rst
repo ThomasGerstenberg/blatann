@@ -2,27 +2,30 @@ blatann package
 ===============
 
 .. automodule:: blatann
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-    blatann.examples
-    blatann.gap
-    blatann.gatt
-    blatann.nrf
-    blatann.services
-    blatann.utils
-    blatann.waitables
+   blatann.bt_sig
+   blatann.examples
+   blatann.gap
+   blatann.gatt
+   blatann.nrf
+   blatann.services
+   blatann.utils
+   blatann.waitables
 
 Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    blatann.device
    blatann.event_args
@@ -30,4 +33,3 @@ Submodules
    blatann.exceptions
    blatann.peer
    blatann.uuid
-

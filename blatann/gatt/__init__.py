@@ -44,7 +44,7 @@ The two notification types (notification, indication) used when a characteristic
 GattNotificationType = nrf_types.BLEGattHVXType
 
 
-class ServiceType(enum.Enum):
+class ServiceType(enum.IntEnum):
     PRIMARY = 1
     SECONDARY = 2
 

@@ -25,7 +25,7 @@ It is accessed via BleDevice.:attr:`~blatann.device.BleDevice.advertiser` attrib
 
 The :class:`~blatann.gap.scanning.Scanner` class provides the API for scanning for advertising packets.
 Scan reports are emitted during scanning and can be used to initiate connections with the advertising peripherals.
-It is accessed via BleDevice.:attr:`!blatann.device.BleDevice.scanner` attribute.
+It is accessed via BleDevice.:attr:`~blatann.device.BleDevice.scanner` attribute.
 
 **Peer**
 
@@ -58,6 +58,6 @@ or waited on (with or without timeout) from the main thread to make it synchrono
 :class:`concurrent.futures.Future <python:concurrent.futures.Future>`, just a different implementation.
 
 Since there is only a single thread which handles all events,
-**do not call** :meth:`Waitable.wait() <blatann.waitables.waitable.Waitable.wait>` **within an event hadler as it will cause a deadlock.**
+**do not call** :meth:`Waitable.wait() <blatann.waitables.waitable.Waitable.wait>` **within an event handler as it will cause a deadlock.**
 Calling BLE methods from the event handler context is perfectly fine and can use
 :meth:`Waitable.then(callback) <blatann.waitables.waitable.Waitable.then>` to handle the result of the operation asynchronously.

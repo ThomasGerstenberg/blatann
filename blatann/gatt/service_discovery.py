@@ -146,7 +146,7 @@ class _ServiceDiscoverer(_Discoverer):
         if self.peer.conn_handle != event.conn_handle:
             return
 
-        logger.info(("Got gattc read: {}".format(event)))
+        logger.debug(("Got gattc read: {}".format(event)))
         service = self._state.current_service
 
         if event.attr_handle != service.start_handle:
@@ -251,7 +251,7 @@ class _CharacteristicDiscoverer(_Discoverer):
         if self.peer.conn_handle != event.conn_handle:
             return
 
-        logger.info(("Got gattc read: {}".format(event)))
+        logger.debug(("Got gattc read: {}".format(event)))
         char = self._state.current_characteristic
 
         if event.attr_handle != char.handle_decl:
@@ -418,7 +418,7 @@ class DatabaseDiscoverer(object):
     def _on_complete(self, services, status):
         self.peer.database.add_discovered_services(services)
         self._on_discovery_complete.notify(self.peer, DatabaseDiscoveryCompleteEventArgs(status))
-        logger.info("Database Discovery complete!!")
+        logger.info("Database Discovery complete")
 
     def start(self):
         logger.info("Starting discovery..")
