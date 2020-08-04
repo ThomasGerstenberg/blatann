@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from blatann.gatt import Attribute
-from blatann.gatt.managers import _ReadWriteManager
+from blatann.gatt.managers import GattcOperationManager
 from blatann.nrf import nrf_types
 from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
 from blatann.event_args import ReadCompleteEventArgs, WriteCompleteEventArgs
@@ -18,7 +18,7 @@ class GattcAttribute(Attribute):
     """
     Represents a client-side interface to a single attribute which lives inside a Characteristic
     """
-    def __init__(self, uuid: Uuid, handle: int, read_write_manager: _ReadWriteManager,
+    def __init__(self, uuid: Uuid, handle: int, read_write_manager: GattcOperationManager,
                  initial_value=b"", string_encoding="utf8"):
         super(GattcAttribute, self).__init__(uuid, handle, initial_value, string_encoding)
         self._manager = read_write_manager

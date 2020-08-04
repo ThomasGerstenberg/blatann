@@ -1,3 +1,4 @@
+import logging
 import math
 import unittest
 import time
@@ -54,6 +55,13 @@ class TestGattWrites(BlatannTestCase):
         cls.write_no_resp_char_uuid = cls.service_uuid.new_uuid_from_base(0x0001)
         cls._setup_database()
         cls._setup_connection()
+        # Up minimum log level to increase throughput (less writing to console)
+        cls.prev_log_level = logging.root.level
+        logging.root.setLevel("INFO")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        logging.root.setLevel(cls.prev_log_level)
 
     @classmethod
     def _setup_database(cls):
@@ -98,12 +106,12 @@ class TestGattWrites(BlatannTestCase):
         self.assertTrue(self.central_conn.write_char.writable)
         self.assertTrue(self.central_conn.write_no_resp_char.writable_without_response)
 
-    def _run_throughput_test(self, periph_char: GattsCharacteristic, central_char: GattcCharacteristic):
+    def _run_throughput_test(self, periph_char: GattsCharacteristic, central_char: GattcCharacteristic, data_size=20000):
         # Queue up 20k of data, track the time it takes to send
         periph_stopwatch = Stopwatch()
         central_stopwatch = Stopwatch()
 
-        n_packets = math.ceil(20000 / self.write_size)
+        n_packets = math.ceil(data_size / self.write_size)
         bytes_to_send = n_packets * self.write_size
         bytes_sent = 0
         bytes_received = [0]
@@ -138,4 +146,5 @@ class TestGattWrites(BlatannTestCase):
         self._run_throughput_test(self.periph_conn.write_char, self.central_conn.write_char)
 
     def test_write_without_response_throughput(self):
-        self._run_throughput_test(self.periph_conn.write_no_resp_char, self.central_conn.write_no_resp_char)
+        self._run_throughput_test(self.periph_conn.write_no_resp_char,
+                                  self.central_conn.write_no_resp_char, 80000)

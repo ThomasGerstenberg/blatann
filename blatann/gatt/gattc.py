@@ -4,7 +4,7 @@ from typing import List, Optional, Iterable
 
 from blatann import gatt
 from blatann.gatt.gattc_attribute import GattcAttribute
-from blatann.gatt.managers import _ReadWriteManager
+from blatann.gatt.managers import GattcOperationManager
 from blatann.bt_sig.uuids import Uuid, DeclarationUuid, DescriptorUuid
 from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
@@ -342,7 +342,7 @@ class GattcCharacteristic(gatt.Characteristic):
 
         :type ble_device: blatann.BleDevice
         :type peer: blatann.peer.Peer
-        :type read_write_manager: _ReadWriteManager
+        :type read_write_manager: GattcOperationManager
         :type nrf_characteristic: nrf_types.BLEGattCharacteristic
         """
         char_decl_uuid = DeclarationUuid.characteristic
@@ -418,7 +418,7 @@ class GattcService(gatt.Service):
 
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peer
-        :type read_write_manager: _ReadWriteManager
+        :type read_write_manager: GattcOperationManager
         :type nrf_service: nrf_types.BLEGattService
         """
         service_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_service.uuid)
@@ -435,11 +435,11 @@ class GattcDatabase(gatt.GattDatabase):
     Represents a remote GATT Database which lives on a connected peripheral. Contains all discovered services,
     characteristics, and descriptors
     """
-    def __init__(self, ble_device, peer):
+    def __init__(self, ble_device, peer, write_no_resp_queue_size=1):
         super(GattcDatabase, self).__init__(ble_device, peer)
         self._writer = GattcWriter(ble_device, peer)
         self._reader = GattcReader(ble_device, peer)
-        self._read_write_manager = _ReadWriteManager(self._reader, self._writer)
+        self._read_write_manager = GattcOperationManager(ble_device, peer, self._reader, self._writer, write_no_resp_queue_size)
 
     @property
     def services(self) -> List[GattcService]:

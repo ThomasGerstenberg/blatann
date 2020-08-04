@@ -106,7 +106,7 @@ class Peer(object):
 
     def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS,
-                 name=""):
+                 name="", write_no_resp_queue_size=1):
         """
         :type ble_device: blatann.device.BleDevice
         """
@@ -132,7 +132,7 @@ class Peer(object):
         self._connection_handler_lock = threading.Lock()
 
         self.security = smp.SecurityManager(self._ble_device, self, security_params)
-        self._db = gattc.GattcDatabase(ble_device, self)
+        self._db = gattc.GattcDatabase(ble_device, self, write_no_resp_queue_size)
         self._discoverer = service_discovery.DatabaseDiscoverer(ble_device, self)
 
     """
@@ -550,9 +550,10 @@ class Peripheral(Peer):
     def __init__(self, ble_device, peer_address,
                  connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS,
-                 name=""):
+                 name="",
+                 write_no_resp_queue_size=1):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params,
-                                         security_params, name)
+                                         security_params, name, write_no_resp_queue_size)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
 
@@ -564,9 +565,10 @@ class Client(Peer):
     def __init__(self, ble_device,
                  connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS,
-                 name=""):
+                 name="",
+                 write_no_resp_queue_size=1):
         super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params,
-                                     security_params, name)
+                                     security_params, name, write_no_resp_queue_size)
         self._first_connection = True
 
     def peer_connected(self, conn_handle, peer_address, connection_params):
