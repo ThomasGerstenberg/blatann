@@ -6,7 +6,7 @@ import logging
 
 
 from blatann.gatt.gatts_attribute import GattsAttribute, GattsAttributeProperties
-from blatann.gatt.managers import _NotificationManager
+from blatann.gatt.managers import GattsOperationManager
 from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.bt_sig.uuids import DescriptorUuid
@@ -49,7 +49,8 @@ class GattsUserDescriptionProperties(GattsAttributeProperties):
         :param value: The value to set the user description to
         :param write: Whether or not the client can write/update the user description
         :param security_level: The security level for reads/writes
-        :param max_length: The max length the user description can be set to. If not supplied or less than len(value), will use the greater of the two
+        :param max_length: The max length the user description can be set to.
+                           If not supplied or less than len(value), will use the greater of the two
         :param variable_length: Whether or not this description can vary in length
         """
         if isinstance(value, str):
@@ -91,7 +92,7 @@ class GattsCharacteristic(gatt.Characteristic):
                  uuid: Uuid,
                  properties: GattsCharacteristicProperties,
                  value_handle: int, cccd_handle: int, sccd_handle: int, user_desc_handle: int,
-                 notification_manager: _NotificationManager,
+                 notification_manager: GattsOperationManager,
                  value=b"",
                  prefer_indications=True,
                  string_encoding="utf8"):
@@ -143,7 +144,7 @@ class GattsCharacteristic(gatt.Characteristic):
     Public Methods
     """
 
-    def set_value(self, value, notify_client=False) -> Optional[EventWaitable[GattsCharacteristic, NotificationCompleteEventArgs]]:
+    def set_value(self, value, notify_client=False) -> Optional[IdBasedEventWaitable[GattsCharacteristic, NotificationCompleteEventArgs]]:
         """
         Sets the value of the characteristic.
 
@@ -166,13 +167,13 @@ class GattsCharacteristic(gatt.Characteristic):
         if notify_client and self.client_subscribed and not self._value_attr.read_in_process:
             return self.notify(None)
 
-    def notify(self, data) -> EventWaitable[GattsCharacteristic, NotificationCompleteEventArgs]:
+    def notify(self, data) -> IdBasedEventWaitable[GattsCharacteristic, NotificationCompleteEventArgs]:
         """
         Notifies the client with the data provided without setting the data into the characteristic value.
         If data is not provided (None), will notify with the currently-set value of the characteristic
 
-        :param data: Optional data to notify the client with. If supplied, must be an iterable type such as a str, bytes, or list of uint8 values,
-                     or a BleDataStream object.
+        :param data: Optional data to notify the client with. If supplied, must be an iterable type such as a
+                     str, bytes, or list of uint8 values, or a BleDataStream object.
                      Length must be less than or equal to the characteristic's max length.
                      If a string is given, it will be encoded using the string_encoding property of the characteristic.
         :raises: InvalidStateException if the client is not subscribed to the characteristic
@@ -415,7 +416,7 @@ class GattsService(gatt.Service):
                  peer: Peer,
                  uuid: Uuid,
                  service_type: int,
-                 notification_manager: _NotificationManager,
+                 notification_manager: GattsOperationManager,
                  start_handle=gatt.BLE_GATT_HANDLE_INVALID, end_handle=gatt.BLE_GATT_HANDLE_INVALID):
         super(GattsService, self).__init__(ble_device, peer, uuid, service_type, start_handle, end_handle)
         self._notification_manager = notification_manager
@@ -507,11 +508,11 @@ class GattsDatabase(gatt.GattDatabase):
     """
     Represents the entire GATT server that lives locally on the device which clients read from and write to
     """
-    def __init__(self, ble_device, peer):
+    def __init__(self, ble_device, peer, notification_hardware_queue_size=1):
         super(GattsDatabase, self).__init__(ble_device, peer)
         self.ble_device.ble_driver.event_subscribe(self._on_rw_auth_request,
                                                    nrf_events.GattsEvtReadWriteAuthorizeRequest)
-        self._notification_manager = _NotificationManager(ble_device, peer)
+        self._notification_manager = GattsOperationManager(ble_device, peer, notification_hardware_queue_size)
 
     @property
     def services(self) -> List[GattsService]:

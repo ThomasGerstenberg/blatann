@@ -92,14 +92,17 @@ class BleDevice(NrfDriverObserver):
     Represents the Bluetooth device itself. Provides the high-level bluetooth APIs (Advertising, Scanning, Connections),
     configuration, and bond database
     """
-    def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False):
+    def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False,
+                 notification_hw_queue_size=16, write_command_hw_queue_size=16):
         self.ble_driver = NrfDriver(comport, baud, log_driver_comms)
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
         self.ble_driver.event_subscribe(self._on_user_mem_request, nrf_events.EvtUserMemoryRequest)
         self.ble_driver.event_subscribe(self._on_sys_attr_missing, nrf_events.GattsEvtSysAttrMissing)
         self._ble_configuration = self.ble_driver.ble_enable_params_setup()
-        self._default_conn_config = nrf_types.BleConnConfig(event_length=6)  # The minimum event length which supports max DLE
+        self._default_conn_config = nrf_types.BleConnConfig(event_length=6,                                       # Minimum event length required for max DLE
+                                                            hvn_tx_queue_size=notification_hw_queue_size,         # Hardware queue of 16 notifications
+                                                            write_cmd_tx_queue_size=write_command_hw_queue_size)  # Hardware queue of 16 write cmds (no response)
 
         self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader()
         self.bond_db = default_bond_db.DefaultBondDatabase()
@@ -112,7 +115,7 @@ class BleDevice(NrfDriverObserver):
         self.advertiser = advertising.Advertiser(self, self.client, self._default_conn_config.conn_tag)
         self.scanner = scanning.Scanner(self)
         self._generic_access_service = GenericAccessService(self.ble_driver)
-        self._db = gatts.GattsDatabase(self, self.client)
+        self._db = gatts.GattsDatabase(self, self.client, self._default_conn_config.hvn_tx_queue_size)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
         self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
         self._att_mtu_max = MTU_SIZE_MINIMUM
@@ -257,7 +260,8 @@ class BleDevice(NrfDriverObserver):
         if not connection_params:
             connection_params = self._default_conn_params
 
-        self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params, self._default_security_params, name)
+        self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params, self._default_security_params, name,
+                                                     self._default_conn_config.write_cmd_tx_queue_size)
         periph_connection_waitable = PeripheralConnectionWaitable(self, self.connecting_peripheral)
         self.ble_driver.ble_gap_connect(peer_address, conn_params=connection_params,
                                         conn_cfg_tag=self._default_conn_config.conn_tag)

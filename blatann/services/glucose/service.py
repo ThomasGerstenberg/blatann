@@ -51,21 +51,14 @@ class GlucoseServer(object):
         """
         self.feature_characteristic.set_value(features.encode().value, False)
 
-    def _report_next_record(self):
+    def _report_records(self):
         if self._current_command:
-            if len(self._records_to_report) > 0:
-                next_record = self._records_to_report.pop(0)
-                noti_id = self.measurement_characteristic.notify(next_record.encode().value).id
+            for record in self._records_to_report:
+                noti_id = self.measurement_characteristic.notify(record.encode().value).id
                 self._active_notifications.append(noti_id)
-                if next_record.context and self.context_characteristic and self.context_characteristic.client_subscribed:
-                    noti_id = self.context_characteristic.notify(next_record.context.encode().value).id
+                if record.context and self.context_characteristic and self.context_characteristic.client_subscribed:
+                    noti_id = self.context_characteristic.notify(record.context.encode().value).id
                     self._active_notifications.append(noti_id)
-            else:
-                # Done reporting
-                response = RacpResponse(self._current_command.opcode, RacpResponseCode.success)
-                self._current_command = None
-                self.racp_characteristic.notify(response.encode().value)
-        return None
 
     def _on_report_records_request(self, command):
         """
@@ -97,7 +90,7 @@ class GlucoseServer(object):
         self._records_to_report = sorted(records, key=lambda r: r.sequence_number)
         self._current_command = command
 
-        self._report_next_record()
+        self._report_records()
         # Do not send a response, will be sent once all records reported
         return None
 
@@ -152,8 +145,11 @@ class GlucoseServer(object):
         if event_args.id in self._active_notifications:
             self._active_notifications.remove(event_args.id)
 
-        if self._current_command is not None:
-            self._report_next_record()
+        if not self._active_notifications:
+            # Done reporting
+            response = RacpResponse(self._current_command.opcode, RacpResponseCode.success)
+            self._current_command = None
+            self.racp_characteristic.notify(response.encode().value)
 
     def _on_disconnect(self, peer, event_args):
         self._current_command = None

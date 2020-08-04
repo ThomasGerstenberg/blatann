@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
 import logging
+
+from blatann.utils import repr_format
 from pc_ble_driver_py.exceptions import NordicSemiException
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
@@ -338,6 +340,9 @@ class BLEGapDataLengthParams(object):
         params.max_tx_time_us = self.max_tx_time_us
         params.max_rx_time_us = self.max_rx_time_us
         return params
+
+    def __repr__(self):
+        return repr_format(self, tx=self.max_tx_octets, rx=self.max_rx_octets)
 
 
 class BLEGapPhys(object):
