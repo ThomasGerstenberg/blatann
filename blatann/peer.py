@@ -5,7 +5,7 @@ import enum
 
 from blatann.event_type import EventSource, Event
 from blatann.gap import smp
-from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM
+from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM, DLE_MAX, DLE_MIN, DLE_OVERHEAD
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.nrf.nrf_types import conn_interval_range, conn_timeout_range, BLEGapDataLengthParams
@@ -381,14 +381,23 @@ class Peer(object):
         self._ble_device.ble_driver.ble_gattc_exchange_mtu_req(self.conn_handle, self._negotiated_mtu_size)
         return EventWaitable(self._on_mtu_exchange_complete)
 
-    def update_data_length(self) -> EventWaitable[Peripheral, DataLengthUpdatedEventArgs]:
+    def update_data_length(self, data_length: int = None) -> EventWaitable[Peripheral, DataLengthUpdatedEventArgs]:
         """
         Starts the process which updates the link layer data length to the optimal value given the MTU.
         For best results call this method after the MTU is set to the desired size.
 
+        :param data_length: Optional value to override the data length to.
+                            If not provided, uses the optimal value based on the current MTU
         :return: A waitable that will trigger when the process finishes
         """
-        self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle)
+        if data_length is not None:
+            if data_length > DLE_MAX or data_length < DLE_MIN:
+                raise ValueError(f"Data length must be between {DLE_MIN} and {DLE_MAX} (inclusive)")
+        else:
+            data_length = self.mtu_size + DLE_OVERHEAD
+
+        params = BLEGapDataLengthParams(data_length, data_length)
+        self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle, params)
         return EventWaitable(self._on_data_length_updated)
 
     def discover_services(self) -> EventWaitable[Peripheral, DatabaseDiscoveryCompleteEventArgs]:

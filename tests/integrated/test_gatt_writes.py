@@ -105,6 +105,7 @@ class TestGattWrites(BlatannTestCase):
         self.assertIsNotNone(self.central_conn.write_no_resp_char)
         self.assertTrue(self.central_conn.write_char.writable)
         self.assertTrue(self.central_conn.write_no_resp_char.writable_without_response)
+        self.write_size = self.periph_conn.peer.mtu_size - 3
 
     def _run_throughput_test(self, periph_char: GattsCharacteristic, central_char: GattcCharacteristic, data_size=20000):
         # Queue up 20k of data, track the time it takes to send

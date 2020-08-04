@@ -33,6 +33,11 @@ LONG_WRITE_BYTE_OVERHEAD = 5
 NOTIFICATION_BYTE_OVERHEAD = 3
 READ_BYTE_OVERHEAD = 1
 
+# Maximum value for data length
+DLE_MAX = 251
+DLE_MIN = 27
+DLE_OVERHEAD = 4
+
 """
 Status codes that can be returned during GATT Operations (reads, writes, etc.)
 """
