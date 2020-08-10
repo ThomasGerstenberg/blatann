@@ -253,6 +253,18 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized(api_lock)
+    def ble_opt_set(self, ble_opt):
+        assert isinstance(ble_opt, BleOption)
+        opt = driver.ble_opt_t()
+        sub_attr = opt
+        path = ble_opt.path.split(".")
+        for name in path[:-1]:
+            sub_attr = getattr(sub_attr, name)
+        setattr(sub_attr, path[-1], ble_opt.to_c())
+        return driver.sd_ble_opt_set(self.rpc_adapter, ble_opt.option_flag, opt)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized(api_lock)
     def ble_user_mem_reply(self, conn_handle):
         return driver.sd_ble_user_mem_reply(self.rpc_adapter, conn_handle, None)
 

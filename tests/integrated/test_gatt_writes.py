@@ -148,8 +148,8 @@ class TestGattWrites(BlatannTestCase):
         self.assertEqual(bytes_sent, bytes_received[0])
 
     def test_write_with_response_throughput(self):
-        self._run_throughput_test(self.periph_conn.write_char, self.central_conn.write_char, 100000)
+        self._run_throughput_test(self.periph_conn.write_char, self.central_conn.write_char, 50000)
 
     def test_write_without_response_throughput(self):
         self._run_throughput_test(self.periph_conn.write_no_resp_char,
-                                  self.central_conn.write_no_resp_char, 400000)
+                                  self.central_conn.write_no_resp_char, 200000)
