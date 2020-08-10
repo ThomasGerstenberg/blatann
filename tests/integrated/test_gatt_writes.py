@@ -9,7 +9,7 @@ from blatann.event_args import WriteEventArgs
 from blatann.gap.advertise_data import AdvertisingData
 from blatann.gatt.gattc import GattcCharacteristic
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsCharacteristic
-from blatann.peer import conn_interval_range, ConnectionParameters, Client, Peripheral
+from blatann.peer import conn_interval_range, ConnectionParameters, Client, Peripheral, Phy
 from blatann.utils import Stopwatch
 from blatann.uuid import Uuid128
 
@@ -49,7 +49,8 @@ class TestGattWrites(BlatannTestCase):
         super(TestGattWrites, cls).setUpClass()
         cls.periph = cls.dev1
         cls.central = cls.dev2
-        cls.write_size = cls.periph.max_mtu_size-3
+        cls.periph.client.preferred_mtu_size = cls.periph.max_mtu_size
+        cls.write_size = cls.periph.client.preferred_mtu_size - 3
         cls.service_uuid = Uuid128("00112233-4455-6677-8899-aabbccddeeff")
         cls.write_char_uuid = cls.service_uuid.new_uuid_from_base(0x0000)
         cls.write_no_resp_char_uuid = cls.service_uuid.new_uuid_from_base(0x0001)
@@ -92,6 +93,7 @@ class TestGattWrites(BlatannTestCase):
 
         cls.central_conn.peer.exchange_mtu(cls.central.max_mtu_size).wait(10)
         cls.central_conn.peer.update_data_length().wait(10)
+        cls.central_conn.peer.update_phy(Phy.two_mbps).wait(10)
         cls.central_conn.peer.discover_services().wait(10)
         cls.central_conn.write_char = cls.central_conn.db.find_characteristic(cls.write_char_uuid)
         cls.central_conn.write_no_resp_char = cls.central_conn.db.find_characteristic(cls.write_no_resp_char_uuid)
@@ -142,10 +144,12 @@ class TestGattWrites(BlatannTestCase):
         self.logger.info(f"{bytes_sent} bytes sent in {periph_stopwatch.elapsed:.3f}s/{central_stopwatch.elapsed:.3f}. "
                          f"Bytes Received: {bytes_received[0]}, Packets: {packets_received[0]}")
         self.logger.info(f"Throughput: {bytes_sent/central_stopwatch.elapsed/1024.0:.3f}kB/s")
+        # Verify all the bytes sent were received by the peripheral
+        self.assertEqual(bytes_sent, bytes_received[0])
 
     def test_write_with_response_throughput(self):
-        self._run_throughput_test(self.periph_conn.write_char, self.central_conn.write_char)
+        self._run_throughput_test(self.periph_conn.write_char, self.central_conn.write_char, 50000)
 
     def test_write_without_response_throughput(self):
         self._run_throughput_test(self.periph_conn.write_no_resp_char,
-                                  self.central_conn.write_no_resp_char, 80000)
+                                  self.central_conn.write_no_resp_char, 200000)

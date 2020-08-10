@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import logging
 
 from pc_ble_driver_py.lib import nrf_ble_driver_sd_api_v5
@@ -9,7 +9,7 @@ from blatann.nrf.nrf_dll_load import driver
 logger = logging.getLogger(__name__)
 
 
-class BleOptionFlag(Enum):
+class BleOptionFlag(IntEnum):
     pa_lna = driver.BLE_COMMON_OPT_PA_LNA
     conn_event_extension = driver.BLE_COMMON_OPT_CONN_EVT_EXT
     gap_channel_map = driver.BLE_GAP_OPT_CH_MAP
@@ -23,9 +23,7 @@ class BleOptionFlag(Enum):
 
 class BleOption(object):
     option_flag = None
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        raise NotImplementedError
+    path = ""
 
     def to_c(self):
         raise NotImplementedError
@@ -38,9 +36,6 @@ class BleEnableOpt(BleOption):
     def __init__(self, enabled=_default):
         self.enabled = enabled
 
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        raise NotImplementedError
-
     def to_c(self):
         opt = self._driver_type()
         opt.enable = self.enabled
@@ -49,10 +44,8 @@ class BleEnableOpt(BleOption):
 
 class BleOptConnEventExtenion(BleEnableOpt):
     option_flag = BleOptionFlag.conn_event_extension
+    path = "common_opt.conn_evt_ext"
     _driver_type = driver.ble_common_opt_conn_evt_ext_t
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.common_opt.conn_evt_ext
 
 
 class BlePaLnaConfig(object):
@@ -71,6 +64,7 @@ class BlePaLnaConfig(object):
 
 class BleOptPaLna(BleOption):
     option_flag = BleOptionFlag.pa_lna
+    path = "common_opt.pa_lna"
 
     def __init__(self, pa_config=None, lna_cfg=None, ppi_channel_set=0,
                  ppi_channel_clear=0, gpiote_channel=0):
@@ -79,9 +73,6 @@ class BleOptPaLna(BleOption):
         self.ppi_channel_set = ppi_channel_set
         self.ppi_channel_clear = ppi_channel_clear
         self.gpiote_channel = gpiote_channel
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.common_opt.pa_lna
 
     def to_c(self):
         opt = driver.ble_common_opt_pa_lna_t()
@@ -95,13 +86,11 @@ class BleOptPaLna(BleOption):
 
 class BleOptGapChannelMap(BleOption):
     option_flag = BleOptionFlag.gap_channel_map
+    path = "gap_opt.ch_map"
 
     def __init__(self, enabled_channels=None, conn_handle=0):
         self.conn_handle = conn_handle
         self.channel_map = enabled_channels or list(range(37))
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.ch_map
 
     def to_c(self):
         opt = driver.ble_gap_opt_ch_map_t()
@@ -119,13 +108,11 @@ class BleOptGapChannelMap(BleOption):
 
 class BleOptGapLocalConnLatency(BleOption):
     option_flag = BleOptionFlag.gap_local_conn_latency
+    path = "gap_opt.local_conn_latency"
 
     def __init__(self, conn_handle=0, requested_latency=0):
         self.conn_handle = conn_handle
         self.requested_latency = requested_latency
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.local_conn_latency
 
     def to_c(self):
         opt = driver.ble_gap_opt_local_conn_latency_t()
@@ -136,12 +123,10 @@ class BleOptGapLocalConnLatency(BleOption):
 
 class BleOptGapPasskey(BleOption):
     option_flag = BleOptionFlag.gap_passkey
+    path = "gap_opt.passkey"
 
     def __init__(self, passkey="000000"):
         self.passkey = passkey
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.passkey
 
     def to_c(self):
         opt = driver.ble_gap_opt_passkey_t()
@@ -151,29 +136,23 @@ class BleOptGapPasskey(BleOption):
 
 class BleOptGapScanRequestReport(BleEnableOpt):
     option_flag = BleOptionFlag.gap_scan_req_report
+    path = "gap_opt.scan_req_report"
     _driver_type = driver.ble_gap_opt_scan_req_report_t
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.scan_req_report
 
 
 class BleOptGapCompatMode1(BleEnableOpt):
     option_flag = BleOptionFlag.gap_compat_mode_1
+    path = "gap_opt.compat_mode_q"
     _driver_type = driver.ble_gap_opt_compat_mode_1_t
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.compat_mode_1
 
 
 class BleOptGapAuthPayloadTimeout(BleOption):
     option_flag = BleOptionFlag.gap_auth_payload_timeout
+    path = "gap_opt.auth_payload_timeout"
 
     def __init__(self, conn_handle, timeout_ms=driver.BLE_GAP_AUTH_PAYLOAD_TIMEOUT_MAX):
         self.conn_handle = conn_handle
         self.timeout_ms = timeout_ms
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.auth_payload_timeout
 
     def to_c(self):
         opt = driver.ble_gap_opt_auth_payload_timeout_t()
@@ -184,13 +163,11 @@ class BleOptGapAuthPayloadTimeout(BleOption):
 
 class BleOptGapSlaveLatencyDisable(BleOption):
     option_flag = BleOptionFlag.gap_slave_latency_disable
+    path = "gap_opt.slave_latency_disable"
 
     def __init__(self, conn_handle, disabled=False):
         self.conn_handle = conn_handle
         self.disabled = disabled
-
-    def get_opt_subfield(self, opt: driver.ble_opt_t):
-        return opt.gap_opt.slave_latency_disable
 
     def to_c(self):
         opt = driver.ble_gap_opt_slave_latency_disable_t()

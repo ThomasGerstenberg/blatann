@@ -216,7 +216,7 @@ class BleDevice(NrfDriverObserver):
     @property
     def generic_access_service(self) -> GenericAccessService:
         """
-        **Read Only
+        **Read Only**
 
         The Generic Access service in the local database
         """

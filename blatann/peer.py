@@ -18,9 +18,25 @@ logger = logging.getLogger(__name__)
 
 
 class PeerState(enum.Enum):
-    DISCONNECTED = 0
-    CONNECTING = 1
-    CONNECTED = 2
+    """
+    Connection state of the peer
+    """
+    DISCONNECTED = 0  #: Peer is disconnected
+    CONNECTING = 1    #: Peer is in the process of connecting
+    CONNECTED = 2     #: Peer is connected
+
+
+class Phy(enum.IntFlag):
+    """
+    The supported PHYs
+
+    .. note:: Coded PHY is currently not supported (hardware limitation)
+    """
+    auto = int(nrf_events.BLEGapPhy.auto)          #: Automatically select the PHY based on what's supported
+    one_mbps = int(nrf_events.BLEGapPhy.one_mbps)  #: 1 Mbps PHY
+    two_mbps = int(nrf_events.BLEGapPhy.two_mbps)  #: 2 Mbps PHY
+
+    # NOT SUPPORTED coded = int(nrf_events.BLEGapPhy.coded)
 
 
 class PeerAddress(nrf_events.BLEGapAddr):
@@ -123,9 +139,12 @@ class Peer(object):
         self._on_mtu_exchange_complete = EventSource("On MTU Exchange Complete", logger)
         self._on_mtu_size_updated = EventSource("On MTU Size Updated", logger)
         self._on_data_length_updated = EventSource("On Data Length Updated", logger)
+        self._on_phy_updated = EventSource("On Phy Updated", logger)
         self._mtu_size = MTU_SIZE_DEFAULT
         self._preferred_mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
+        self._preferred_phy = Phy.auto
+        self._current_phy = Phy.one_mbps
         self._disconnection_reason = nrf_events.BLEHci.local_host_terminated_connection
 
         self._connection_based_driver_event_handlers = {}
@@ -257,6 +276,33 @@ class Peer(object):
         self._preferred_mtu_size = mtu_size
 
     @property
+    def preferred_phy(self) -> Phy:
+        """
+        The PHY that is preferred for this connection.
+        This value is used for Peer-initiated PHY update procedures and
+        as the default for :meth:`update_phy`.
+
+        Default value is :attr:`Phy.auto`
+
+        :getter: Gets the preferred PHY
+        :setter: Sets the preferred PHY
+        """
+        return self._preferred_phy
+
+    @preferred_phy.setter
+    def preferred_phy(self, phy: Phy):
+        self._preferred_phy = phy
+
+    @property
+    def phy_channel(self) -> Phy:
+        """
+        **Read Only**
+
+        The current PHY in use for the connection
+        """
+        return self._current_phy
+
+    @property
     def database(self) -> gattc.GattcDatabase:
         """
         **Read Only**
@@ -305,6 +351,13 @@ class Peer(object):
         Event generated when the link layer data length has been updated
         """
         return self._on_data_length_updated
+
+    @property
+    def on_phy_updated(self) -> Event[Peer, PhyUpdatedEventArgs]:
+        """
+        Event generated when the PHY in use for this peer has been updated
+        """
+        return self._on_phy_updated
 
     @property
     def on_database_discovery_complete(self) -> Event[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
@@ -363,8 +416,8 @@ class Peer(object):
         """
         Initiates the MTU Exchange sequence with the peer device.
 
-        If the MTU size is not provided the preferred_mtu_size value will be used.
-        If an MTU size is provided the preferred_mtu_size will be updated to the given value.
+        If the MTU size is not provided :attr:`preferred_mtu_size` value will be used.
+        If an MTU size is provided ``preferred_mtu_size`` will be updated to the given value.
 
         :param mtu_size: Optional MTU size to use. If provided, it will also updated the preferred MTU size
         :return: A waitable that will trigger when the MTU exchange completes
@@ -400,7 +453,24 @@ class Peer(object):
         self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle, params)
         return EventWaitable(self._on_data_length_updated)
 
-    def discover_services(self) -> EventWaitable[Peripheral, DatabaseDiscoveryCompleteEventArgs]:
+    def update_phy(self, phy: Phy = None) -> EventWaitable[Peer, PhyUpdatedEventArgs]:
+        """
+        Performs the PHY update procedure, negotiating a new PHY (1Mbps, 2Mbps, or coded PHY)
+        to use for the connection. Performing this procedure does not guarantee that the PHY
+        will change based on what the peer supports.
+
+        :param phy: Optional PHY to use. If None, uses the :attr:`preferred_phy` attribute.
+                    If not None, the preferred PHY is updated to this value.
+        :return: An event waitable that triggers when the phy process completes
+        """
+        if phy is None:
+            phy = self._preferred_phy
+        else:
+            self._preferred_phy = phy
+        self._ble_device.ble_driver.ble_gap_phy_update(self.conn_handle, phy, phy)
+        return EventWaitable(self._on_phy_updated)
+
+    def discover_services(self) -> EventWaitable[Peer, DatabaseDiscoveryCompleteEventArgs]:
         """
         Starts the database discovery process of the peer. This will discover all services, characteristics, and
         descriptors on the peer's database.
@@ -435,6 +505,7 @@ class Peer(object):
         self.driver_event_subscribe(self._on_data_length_update_request, nrf_events.GapEvtDataLengthUpdateRequest)
         self.driver_event_subscribe(self._on_data_length_update, nrf_events.GapEvtDataLengthUpdate)
         self.driver_event_subscribe(self._on_phy_update_request, nrf_events.GapEvtPhyUpdateRequest)
+        self.driver_event_subscribe(self._on_phy_update, nrf_events.GapEvtPhyUpdate)
         self._on_connect.notify(self)
 
     def _check_driver_event_connection_handle_wrapper(self, func):
@@ -544,6 +615,10 @@ class Peer(object):
 
     def _on_phy_update_request(self, driver, event):
         self._ble_device.ble_driver.ble_gap_phy_update(self.conn_handle)
+
+    def _on_phy_update(self, driver, event: nrf_events.GapEvtPhyUpdate):
+        self._current_phy = Phy(event.rx_phy) | Phy(event.tx_phy)
+        self._on_phy_updated.notify(self, PhyUpdatedEventArgs(event.status, self._current_phy))
 
     def __nonzero__(self):
         return self.conn_handle != BLE_CONN_HANDLE_INVALID
