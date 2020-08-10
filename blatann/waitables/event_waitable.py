@@ -35,8 +35,8 @@ class IdBasedEventWaitable(EventWaitable, Generic[TSender, TEvent]):
     such as characteristic read, write and notify operations
     """
     def __init__(self, event, event_id):
-        super(IdBasedEventWaitable, self).__init__(event)
         self.id = event_id
+        super(IdBasedEventWaitable, self).__init__(event)
 
     def _on_event(self, sender, event_args):
         if event_args.id == self.id:

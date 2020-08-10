@@ -73,6 +73,15 @@ class DataLengthUpdatedEventArgs(EventArgs):
         self.rx_time_us = rx_time_us
 
 
+class PhyUpdatedEventArgs(EventArgs):
+    """
+    Event arguments for when the phy channel is updated
+    """
+    def __init__(self, status, phy_channel):
+        self.status = status
+        self.phy_channel = phy_channel
+
+
 # SMP Event Args
 
 class PairingCompleteEventArgs(EventArgs):

@@ -90,6 +90,7 @@ class EventSource(Event):
                 h(sender, event_args)
             except Exception as e:
                 if self._logger:
+                    self._logger.error(f"Error occurred while handling event '{self.name}'. Sender: {sender}, Event Args: {event_args}")
                     self._logger.exception(e)
 
 
