@@ -1,3 +1,4 @@
+import threading
 from typing import Generic, Tuple, Callable
 from blatann.waitables.waitable import Waitable
 from blatann.event_type import Event, TSender, TEvent
@@ -41,3 +42,17 @@ class IdBasedEventWaitable(EventWaitable, Generic[TSender, TEvent]):
     def _on_event(self, sender, event_args):
         if event_args.id == self.id:
             super(IdBasedEventWaitable, self)._on_event(sender, event_args)
+
+
+class MultiIdEventWaitable(EventWaitable, Generic[TSender, TEvent]):
+    def __init__(self, event, ids):
+        self.ids = ids or []
+        self.events = []
+        super(MultiIdEventWaitable, self).__init__(event)
+
+    def _on_event(self, sender, event_args):
+        if event_args.id in self.ids:
+            self.ids.remove(event_args.id)
+            self.events.append(event_args)
+            if not self.ids:
+                super(MultiIdEventWaitable, self)._on_event(sender, self.events)

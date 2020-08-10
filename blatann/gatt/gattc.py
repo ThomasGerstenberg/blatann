@@ -10,7 +10,7 @@ from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter
 from blatann.nrf import nrf_types, nrf_events
-from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
+from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable, MultiIdEventWaitable
 from blatann.exceptions import InvalidOperationException
 from blatann.event_args import *
 
@@ -271,6 +271,31 @@ class GattcCharacteristic(gatt.Characteristic):
             data = data.encode(self.string_encoding)
         waitable = self._value_attr.write(bytes(data), False)
         return IdBasedEventWaitable(self._on_write_complete_event, waitable.id)
+
+    def write_multi(self, data, with_response=True):
+        if with_response and not self.writable:
+            raise InvalidOperationException("Characteristic {} is not writable".format(self.uuid))
+        elif not with_response and not self.writable_without_response:
+            raise InvalidOperationException("Characteristic {} does not accept "
+                                            "writes without responses".format(self.uuid))
+
+        write_size = self.peer.mtu_size - 3
+        if isinstance(data, str):
+            data = data.encode(self.string_encoding)
+
+        if isinstance(data, bytes):
+            packets = []
+            i = 0
+            while i < len(data):
+                end = min(i+write_size, len(data))
+                packets.append(data[i:end])
+                i = end
+        elif isinstance(data, (list, tuple)):
+            raise NotImplementedError("list/tuple support not supported yet")
+        else:
+            raise ValueError("Data must be one of bytes or str, or lists of str/bytes")
+        ids = self._value_attr.write_multi(packets, with_response).ids
+        return MultiIdEventWaitable(self._on_write_complete_event, ids)
 
     def find_descriptor(self, uuid: Uuid) -> Optional[GattcAttribute]:
         """

@@ -5,7 +5,7 @@ import logging
 from blatann.gatt import Attribute
 from blatann.gatt.managers import GattcOperationManager
 from blatann.nrf import nrf_types
-from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
+from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable, MultiIdEventWaitable
 from blatann.event_args import ReadCompleteEventArgs, WriteCompleteEventArgs
 from blatann.event_type import EventSource, Event
 from blatann.uuid import Uuid
@@ -73,6 +73,10 @@ class GattcAttribute(Attribute):
             data = data.encode(self._string_encoding)
         write_id = self._manager.write(self._handle, bytes(data), self._write_complete, with_response)
         return IdBasedEventWaitable(self._on_write_complete_event, write_id)
+
+    def write_multi(self, packets, with_response=True):
+        write_ids = self._manager.write_multi(self._handle, packets, self._write_complete, with_response)
+        return MultiIdEventWaitable(self._on_write_complete_event, write_ids)
 
     def update(self, value):
         """

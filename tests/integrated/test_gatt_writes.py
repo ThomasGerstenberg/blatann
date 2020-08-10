@@ -115,12 +115,11 @@ class TestGattWrites(BlatannTestCase):
         central_stopwatch = Stopwatch()
 
         n_packets = math.ceil(data_size / self.write_size)
-        bytes_to_send = n_packets * self.write_size
-        bytes_sent = 0
+        bytes_sent = data_size
         bytes_received = [0]
         packets_received = [0]
 
-        data = bytes(random.randint(0, 255) for _ in range(self.write_size))
+        data = bytes(random.randint(0, 255) for _ in range(data_size))
 
         def on_write_received(char: GattsCharacteristic, event_data: WriteEventArgs):
             if periph_stopwatch.is_running:
@@ -134,18 +133,17 @@ class TestGattWrites(BlatannTestCase):
 
         with periph_char.on_write.register(on_write_received):
             central_stopwatch.start()
-            while bytes_sent < bytes_to_send:
-                waitable = write_func(data)
-                bytes_sent += self.write_size
-            waitable.wait(60)
+            waitable = central_char.write_multi(data, False)
+            _, events = waitable.wait(60)
+            self.logger.info(f"Events: {len(events)}")
             central_stopwatch.stop()
             time.sleep(0.5)
-
         self.logger.info(f"{bytes_sent} bytes sent in {periph_stopwatch.elapsed:.3f}s/{central_stopwatch.elapsed:.3f}. "
                          f"Bytes Received: {bytes_received[0]}, Packets: {packets_received[0]}")
         self.logger.info(f"Throughput: {bytes_sent/central_stopwatch.elapsed/1024.0:.3f}kB/s")
         # Verify all the bytes sent were received by the peripheral
         self.assertEqual(bytes_sent, bytes_received[0])
+        self.assertEqual(n_packets, len(events))
 
     def test_write_with_response_throughput(self):
         self._run_throughput_test(self.periph_conn.write_char, self.central_conn.write_char, 50000)

@@ -1,5 +1,5 @@
 import threading
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, Iterable
 import queue
 import logging
 
@@ -37,6 +37,11 @@ class QueuedTasksManagerBase(Generic[T]):
                         self._in_process_queue.put_nowait(task)
                 except Exception as e:
                     self._process_exception(task, e)
+
+    def _add_tasks(self, tasks: Iterable[T]):
+        with self._lock:
+            for t in tasks:
+                self._add_task(t)
 
     def _pop_task_in_process(self) -> Optional[T]:
         # Pops the earliest task from the process queue, will be completed shortly

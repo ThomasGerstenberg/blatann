@@ -175,6 +175,12 @@ class _WriteWithoutResponseManager(QueuedTasksManagerBase[_WriteTask]):
         self._add_task(write_task)
         return write_task.id
 
+    def write_multi(self, handle, packets, callback):
+        write_tasks = [_WriteTask(handle, packet, callback, False) for packet in packets]
+        task_ids = [t.id for t in write_tasks]
+        self._add_tasks(write_tasks)
+        return task_ids
+
     def clear_all(self):
         self._clear_all(GattOperationCompleteReason.QUEUE_CLEARED)
 
@@ -222,6 +228,12 @@ class GattcOperationManager:
             return self._read_write_manager.write(handle, value, callback)
         else:
             return self._write_no_response_manager.write(handle, value, callback)
+
+    def write_multi(self, handle, packets, callback, with_response=True):
+        if with_response:
+            pass
+        else:
+            return self._write_no_response_manager.write_multi(handle, packets, callback)
 
     def clear_all(self):
         self._read_write_manager.clear_all()
