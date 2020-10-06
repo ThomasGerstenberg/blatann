@@ -174,8 +174,9 @@ class BLEGapEncryptInfo(object):
         self.auth = auth
 
     def to_c(self):
+        ltk = util.list_to_uint8_array(self.ltk)
         info = driver.ble_gap_enc_info_t()
-        info.ltk = util.list_to_uint8_array(self.ltk).cast()
+        info.ltk = ltk.cast()
         info.lesc = self.lesc
         info.auth = self.auth
         info.ltk_len = len(self.ltk)
@@ -228,10 +229,11 @@ class BLEGapIdKey(object):
         self.peer_addr = peer_addr
 
     def to_c(self):
-        irk_key = driver.ble_gap_id_key_t()
+        irk_array = util.list_to_uint8_array(self.irk)
 
+        irk_key = driver.ble_gap_id_key_t()
         irk = driver.ble_gap_irk_t()
-        irk.irk = util.list_to_uint8_array(self.irk).cast()
+        irk.irk = irk_array.cast()
         irk_key.id_info = irk
 
         if self.peer_addr:
@@ -258,8 +260,9 @@ class BLEGapPublicKey(object):
         self.key = key
 
     def to_c(self):
+        pk = util.list_to_uint8_array(self.key)
         key = driver.ble_gap_lesc_p256_pk_t()
-        key.pk = util.list_to_uint8_array(self.key).cast()
+        key.pk = pk.cast()
         return key
 
     @classmethod
@@ -280,8 +283,9 @@ class BLEGapDhKey(object):
         self.key = key
 
     def to_c(self):
+        k = util.list_to_uint8_array(self.key)
         key = driver.ble_gap_lesc_dhkey_t()
-        key.key = util.list_to_uint8_array(self.key).cast()
+        key.key = k.cast()
 
         return key
 
@@ -303,8 +307,9 @@ class BLEGapSignKey(object):
         self.key = key
 
     def to_c(self):
+        csrk = util.list_to_uint8_array(self.key)
         key = driver.ble_gap_sign_info_t()
-        key.csrk = util.list_to_uint8_array(self.key).cast()
+        key.csrk = csrk.cast()
         return key
 
     @classmethod
