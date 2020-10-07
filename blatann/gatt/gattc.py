@@ -118,6 +118,24 @@ class GattcCharacteristic(gatt.Characteristic):
         return self._properties.notify or self._properties.indicate
 
     @property
+    def subscribable_indications(self) -> bool:
+        """
+        **Read Only**
+
+        Gets if the characteristic can be subscribed to using indications
+        """
+        return self._properties.indicate
+
+    @property
+    def subscribable_notifications(self) -> bool:
+        """
+        **Read Only**
+
+        Gets if the characteristic can be subscribed to using notifications
+        """
+        return self._properties.notify
+
+    @property
     def subscribed(self) -> bool:
         """
         **Read Only**
