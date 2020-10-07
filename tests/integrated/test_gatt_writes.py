@@ -63,6 +63,7 @@ class TestGattWrites(BlatannTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         logging.root.setLevel(cls.prev_log_level)
+        super(TestGattWrites, cls).tearDownClass()
 
     @classmethod
     def _setup_database(cls):

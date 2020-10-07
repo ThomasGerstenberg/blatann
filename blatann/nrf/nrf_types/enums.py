@@ -94,6 +94,38 @@ class NrfError(Enum):
     ble_gatts_invalid_attr_type = 0x3400
     ble_gatts_sys_attr_missing = 0x3401
 
+    # pc-ble-driver RPC error codes
+    rpc_encode = driver.NRF_ERROR_SD_RPC_ENCODE  # 32769
+    rpc_decode = driver.NRF_ERROR_SD_RPC_DECODE  # 32770
+    rpc_send = driver.NRF_ERROR_SD_RPC_SEND  # 32771
+    rpc_invalid_argument = driver.NRF_ERROR_SD_RPC_INVALID_ARGUMENT  # 32772
+    rpc_no_response = driver.NRF_ERROR_SD_RPC_NO_RESPONSE  # 32773
+    rpc_invalid_state = driver.NRF_ERROR_SD_RPC_INVALID_STATE  # 32774
+
+    rpc_serialization_transport = driver.NRF_ERROR_SD_RPC_SERIALIZATION_TRANSPORT  # 32788
+    rpc_serialization_transport_invalid_state = driver.NRF_ERROR_SD_RPC_SERIALIZATION_TRANSPORT_INVALID_STATE  # 32789
+    rpc_serialization_transport_no_response = driver.NRF_ERROR_SD_RPC_SERIALIZATION_TRANSPORT_NO_RESPONSE  # 32790
+    rpc_serialization_transport_already_open = driver.NRF_ERROR_SD_RPC_SERIALIZATION_TRANSPORT_ALREADY_OPEN  # 32791
+    rpc_serialization_transport_already_closed = driver.NRF_ERROR_SD_RPC_SERIALIZATION_TRANSPORT_ALREADY_CLOSED  # 32792
+
+    rpc_h5_transport = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT  # 32808
+    rpc_h5_transport_state = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_STATE  # 32809
+    rpc_h5_transport_no_response = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_NO_RESPONSE  # 32810
+    rpc_h5_transport_slip_payload_size = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_SLIP_PAYLOAD_SIZE  # 32811
+    rpc_h5_transport_slip_calculated_payload_size = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_SLIP_CALCULATED_PAYLOAD_SIZE  # 32812
+    rpc_h5_transport_slip_decoding = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_SLIP_DECODING  # 32813
+    rpc_h5_transport_header_checksum = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_HEADER_CHECKSUM  # 32814
+    rpc_h5_transport_packet_checksum = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_PACKET_CHECKSUM  # 32815
+    rpc_h5_transport_already_open = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_ALREADY_OPEN  # 32816
+    rpc_h5_transport_already_closed = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_ALREADY_CLOSED  # 32817
+
+    rpc_h5_transport_internal_error = driver.NRF_ERROR_SD_RPC_H5_TRANSPORT_INTERNAL_ERROR  # 32818
+    rpc_serial_port = driver.NRF_ERROR_SD_RPC_SERIAL_PORT  # 32828
+    rpc_serial_port_state = driver.NRF_ERROR_SD_RPC_SERIAL_PORT_STATE  # 32829
+    rpc_serial_port_already_open = driver.NRF_ERROR_SD_RPC_SERIAL_PORT_ALREADY_OPEN  # 32830
+    rpc_serial_port_already_closed = driver.NRF_ERROR_SD_RPC_SERIAL_PORT_ALREADY_CLOSED  # 32831
+    rpc_serial_port_internal_error = driver.NRF_ERROR_SD_RPC_SERIAL_PORT_INTERNAL_ERROR  # = 32832
+
 
 """
 Gap Enums
