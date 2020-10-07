@@ -1,6 +1,59 @@
 Changelog
 =========
 
+v0.3.4
+------
+
+v0.3.4 brings several new features (including characteristic descriptors) and a couple bug fixes.
+A fairly large refactoring of the GATT layer took place ot make room for the descriptors, however no public-facing APIs were modified.
+
+**Highlights**
+
+- `Issue 11`_ - Adds support for adding descriptor attributes to characteristics
+
+  - See the `Central Descriptor Example`_ and `Peripheral Descriptor Example`_ for how they can be used
+
+- Adds a new ``bt_sig`` sub-package which provides constants and UUIDs defined by Bluetooth SIG.
+
+- Adds visibility to the device's Generic Access Service: :attr:`BleDevice.generic_access_service <blatann.device.BleDevice.generic_access_service>`
+
+  - Example usage has been added to the peripheral example
+
+- Adds support for performing PHY channel updates
+
+  - **Note**: Coded PHY is currently not supported, only 1Mbps and 2Mbps PHYs
+
+- Adds a description attribute to the UUID class. The standard UUIDs have descriptions filled out, custom UUIDs can be set by the user.
+
+**Fixes**
+
+- Fixes an issue with bonding failing on linux
+
+- Fixes an issue where the ``sys_attr_missing`` event was not being handled
+
+- Adds missing low-level error codes for the RPC layer
+
+- Fixes race condition when waiting on ID-based events causing an ``AttributeError``.
+  Event subscription previously occurred before the ID was set and there was a window where the callback could be triggered before the ID
+  was set in the object instance.
+  This issue was most prominent after introducing the write/notification queuing changes in combination with a short connection interval.
+
+**Changes**
+
+- The ``device_name`` parameter has been removed from :meth:`BleDevice.configure() <blatann.device.BleDevice.configure>`.
+  This wasn't working before and has been added into the Generic Access Service.
+
+- Write, notification, and indication queuing has been tweaked such that non-ack operations (write w/o response, notifications)
+  now take advantage of a hardware queue independent of the acked counterparts (write request, indications)
+
+- Service discovery was modified to allow descriptor discovery and in some cases (depending on peripheral stack) run faster
+
+- ``DecodedReadWriteEventDispatcher`` has been moved from ``blatann.services`` to ``blatann.services.decoded_event_dispatcher``.
+  This was to solve a circular dependency issue once new features were added in.
+
+- The glucose service has been updated to make better use of the notification queuing mechanism. Glucose record transmission is sped up greatly
+
+
 v0.3.3
 ------
 
@@ -150,5 +203,8 @@ public API should be mostly unchanged except for the noted changes below.
 
 .. _Event callback example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/tests/integrated/test_advertising_duration.py#L48
 .. _ScanFinishedWaitable example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/blatann/examples/scanner.py#L20
+.. _Peripheral Descriptor Example: https://github.com/ThomasGerstenberg/blatann/blob/master/blatann/examples/peripheral_descriptors.py
+.. _Central Descriptor Example: https://github.com/ThomasGerstenberg/blatann/blob/master/blatann/examples/central_descriptors.py
+.. _Issue 11: https://github.com/ThomasGerstenberg/blatann/issues/11
 .. _Issue 40: https://github.com/ThomasGerstenberg/blatann/issues/40
 .. _Issue 42: https://github.com/ThomasGerstenberg/blatann/issues/42
