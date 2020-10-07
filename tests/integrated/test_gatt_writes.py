@@ -2,36 +2,31 @@ import logging
 import math
 import unittest
 import time
-import random
 
 from blatann import BleDevice
 from blatann.event_args import WriteEventArgs
-from blatann.gap.advertise_data import AdvertisingData
 from blatann.gatt.gattc import GattcCharacteristic
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsCharacteristic
-from blatann.peer import conn_interval_range, ConnectionParameters, Client, Peripheral, Phy
+from blatann.peer import Phy
 from blatann.utils import Stopwatch
 from blatann.uuid import Uuid128
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
+from tests.integrated.helpers import PeriphConn, CentralConn, setup_connection, rand_bytes
 
 
-class _PeriphConn(object):
+class _PeriphConn(PeriphConn):
     def __init__(self):
-        self.peer: Client = None
+        super(_PeriphConn, self).__init__()
         self.write_char: GattsCharacteristic = None
         self.write_no_resp_char: GattsCharacteristic = None
 
 
-class _CentralConn(object):
+class _CentralConn(CentralConn):
     def __init__(self):
-        self.peer: Peripheral = None
+        super(_CentralConn, self).__init__()
         self.write_char: GattcCharacteristic = None
         self.write_no_resp_char: GattcCharacteristic = None
-
-    @property
-    def db(self):
-        return self.peer.database
 
 
 class TestGattWrites(BlatannTestCase):
@@ -47,6 +42,8 @@ class TestGattWrites(BlatannTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super(TestGattWrites, cls).setUpClass()
+        cls.periph_conn.dev = cls.dev1
+        cls.central_conn.dev = cls.dev2
         cls.periph = cls.dev1
         cls.central = cls.dev2
         cls.periph.client.preferred_mtu_size = cls.periph.max_mtu_size
@@ -78,24 +75,12 @@ class TestGattWrites(BlatannTestCase):
     @classmethod
     def _setup_connection(cls):
         cls.periph.client.preferred_mtu_size = cls.periph.max_mtu_size
-        conn_params = ConnectionParameters(conn_interval_range.min, conn_interval_range.min, 4000)
 
-        cls.periph.set_default_peripheral_connection_params(conn_params.min_conn_interval_ms,
-                                                            conn_params.max_conn_interval_ms,
-                                                            conn_params.conn_sup_timeout_ms)
-        cls.periph.advertiser.set_advertise_data(AdvertisingData(flags=0x06, local_name="Blatann Test"))
-        adv_addr = cls.periph.address
+        setup_connection(cls.periph_conn, cls.central_conn)
 
-        # Start advertising, then initiate connection from central.
-        # Once central reports its connected wait for the peripheral to be connected before continuing
-        waitable = cls.periph.advertiser.start(timeout_sec=30)
-        cls.central_conn.peer = cls.central.connect(adv_addr, conn_params).wait(10)
-        cls.periph_conn.peer = waitable.wait(10)
-
-        cls.central_conn.peer.exchange_mtu(cls.central.max_mtu_size).wait(10)
+        cls.central_conn.peer.exchange_mtu(cls.central_conn.dev.max_mtu_size).wait(10)
         cls.central_conn.peer.update_data_length().wait(10)
         cls.central_conn.peer.update_phy(Phy.two_mbps).wait(10)
-        cls.central_conn.peer.discover_services().wait(10)
         cls.central_conn.write_char = cls.central_conn.db.find_characteristic(cls.write_char_uuid)
         cls.central_conn.write_no_resp_char = cls.central_conn.db.find_characteristic(cls.write_no_resp_char_uuid)
 
@@ -121,7 +106,7 @@ class TestGattWrites(BlatannTestCase):
         bytes_received = [0]
         packets_received = [0]
 
-        data = bytes(random.randint(0, 255) for _ in range(self.write_size))
+        data = rand_bytes(self.write_size)
 
         def on_write_received(char: GattsCharacteristic, event_data: WriteEventArgs):
             if periph_stopwatch.is_running:
