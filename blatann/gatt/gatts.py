@@ -68,6 +68,7 @@ class GattsCharacteristicProperties(gatt.CharacteristicProperties):
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  write_no_response=False, signed_write=False, security_level=gatt.SecurityLevel.OPEN,
                  max_length=20, variable_length=True, sccd=False,
+                 cccd_security_level=gatt.SecurityLevel.OPEN,
                  user_description: GattsUserDescriptionProperties = None,
                  presentation_format: PresentationFormat = None):
         super(GattsCharacteristicProperties, self).__init__(read, write, notify, indicate, broadcast,
@@ -78,6 +79,7 @@ class GattsCharacteristicProperties(gatt.CharacteristicProperties):
         self.user_description = user_description
         self.presentation = presentation_format
         self.sccd = sccd
+        self.cccd_security_level = cccd_security_level
 
 
 class GattsCharacteristic(gatt.Characteristic):
@@ -466,7 +468,7 @@ class GattsService(gatt.Service):
         char_md = nrf_types.BLEGattsCharMetadata(props)
         # Create cccd metadata if notify/indicate enabled
         if properties.notify or properties.indicate:
-            char_md.cccd_metadata = nrf_types.BLEGattsAttrMetadata()
+            char_md.cccd_metadata = nrf_types.BLEGattsAttrMetadata(write_permissions=_security_mapping[properties.cccd_security_level])
 
         if properties.sccd:
             char_md.sccd_metadata = nrf_types.BLEGattsAttrMetadata()
