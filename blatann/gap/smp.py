@@ -297,8 +297,8 @@ class SecurityManager(object):
             if bond_entry:
                 logger.info("Re-establishing encryption with peer using LTKs")
                 self.ble_device.ble_driver.ble_gap_encrypt(self.peer.conn_handle,
-                                                           bond_entry.bonding_data.own_ltk.master_id,
-                                                           bond_entry.bonding_data.own_ltk.enc_info)
+                                                           bond_entry.bonding_data.peer_ltk.master_id,
+                                                           bond_entry.bonding_data.peer_ltk.enc_info)
                 self._initiated_encryption = True
                 return EventWaitable(self.on_pairing_complete)
 
