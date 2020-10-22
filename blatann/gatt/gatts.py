@@ -68,9 +68,9 @@ class GattsCharacteristicProperties(gatt.CharacteristicProperties):
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  write_no_response=False, signed_write=False, security_level=gatt.SecurityLevel.OPEN,
                  max_length=20, variable_length=True, sccd=False,
-                 cccd_write_security_level=gatt.SecurityLevel.OPEN,
                  user_description: GattsUserDescriptionProperties = None,
-                 presentation_format: PresentationFormat = None):
+                 presentation_format: PresentationFormat = None,
+                 cccd_write_security_level=gatt.SecurityLevel.OPEN):
         super(GattsCharacteristicProperties, self).__init__(read, write, notify, indicate, broadcast,
                                                             write_no_response, signed_write)
         self.security_level = security_level
