@@ -4,7 +4,7 @@ import time
 import unittest
 from typing import Union
 
-from blatann.event_args import PasskeyDisplayEventArgs, PasskeyEntryEventArgs
+from blatann.event_args import PasskeyDisplayEventArgs, PasskeyEntryEventArgs, SecurityProcess
 
 from blatann.gap import SecurityStatus, SecurityLevel, IoCapabilities, PairingPolicy, SecurityParameters
 from blatann.peer import Client, Peripheral, PairingRejectedReason, DEFAULT_SECURITY_PARAMS
@@ -33,6 +33,15 @@ class TestSecurity(BlatannTestCase):
         cls.central_dev.set_default_peripheral_connection_params(10, 10, 4000)
         cls.peer_cen = cls.periph_dev.client
 
+    def setUp(self) -> None:
+        self.periph_dev.clear_bonding_data()
+        self.central_dev.clear_bonding_data()
+
+        self._connect()
+
+        self.assertFalse(self.peer_per.is_previously_bonded)
+        self.assertFalse(self.peer_cen.is_previously_bonded)
+
     def tearDown(self) -> None:
         self._disconnect()
 
@@ -41,26 +50,71 @@ class TestSecurity(BlatannTestCase):
         self.periph_dev.advertiser.start()
         self.peer_per = self.central_dev.connect(addr).wait(5)
 
-    def _disconnect(self):
+    def _disconnect(self, clear_peer=True):
         if self.peer_per:
             self.peer_per.disconnect().wait(5)
-            self.peer_per = None
+            time.sleep(0.5)
+            if clear_peer:
+                self.peer_per = None
+
+    def _reconnect(self, should_be_bonded):
+        time.sleep(0.5)
+        self._disconnect(clear_peer=False)
+        self._connect()
+        if should_be_bonded:
+            self.assertTrue(self.peer_per.is_previously_bonded)
+            self.assertTrue(self.peer_cen.is_previously_bonded)
+        else:
+            self.assertFalse(self.peer_per.is_previously_bonded)
+            self.assertFalse(self.peer_cen.is_previously_bonded)
 
     def _set_security_parameters(self, passcode_pairing: bool,
-                            io_capabilities: IoCapabilities,
-                            bond: bool,
-                            reject_pairing_requests: Union[bool, PairingPolicy] = False,
-                            lesc_pairing: bool = False):
+                                 io_capabilities: IoCapabilities,
+                                 bond: bool,
+                                 reject_pairing_requests: Union[bool, PairingPolicy] = False,
+                                 lesc_pairing: bool = False):
         security_params1 = SecurityParameters(passcode_pairing, io_capabilities, bond, False, reject_pairing_requests, lesc_pairing)
         security_params2 = SecurityParameters(passcode_pairing, io_capabilities, bond, False, reject_pairing_requests, lesc_pairing)
         self.peer_per.security.security_params = security_params1
         self.peer_cen.security.security_params = security_params2
 
-    def test_nonbonded_devices_rejects_by_default(self):
-        self.periph_dev.clear_bonding_data()
-        self.central_dev.clear_bonding_data()
+    def _perform_pairing(self, initiate_using_central: bool,
+                         passcode_pairing: bool,
+                         io_capabilities: IoCapabilities,
+                         bond: bool,
+                         reject_pairing_requests: Union[bool, PairingPolicy] = False,
+                         lesc_pairing: bool = False,
+                         peer_io_caps: IoCapabilities = None):
+        if self.peer_per.is_previously_bonded:
+            expected_process = SecurityProcess.ENCRYPTION
+        elif bond:
+            expected_process = SecurityProcess.BONDING
+        else:
+            expected_process = SecurityProcess.PAIRING
 
-        self._connect()
+        if passcode_pairing:
+            if lesc_pairing:
+                expected_level = SecurityLevel.LESC_MITM
+            else:
+                expected_level = SecurityLevel.MITM
+        else:
+            expected_level = SecurityLevel.JUST_WORKS
+
+        self._set_security_parameters(passcode_pairing, io_capabilities, bond, reject_pairing_requests, lesc_pairing)
+        if peer_io_caps is not None:
+            self.peer_per.security.security_params.io_capabilities = peer_io_caps
+
+        initiator = self.peer_per if initiate_using_central else self.peer_cen
+
+        _, result = initiator.security.pair().wait(10)
+
+        time.sleep(0.5)
+        self.assertEqual(SecurityStatus.success, result.status)
+        self.assertEqual(expected_process, result.security_process)
+        self.assertEqual(expected_level, self.peer_per.security.security_level)
+        self.assertEqual(expected_level, self.peer_cen.security.security_level)
+
+    def test_nonbonded_devices_rejects_by_default(self):
         self.peer_per.security.security_params = DEFAULT_SECURITY_PARAMS
         self.peer_cen.security.security_params = DEFAULT_SECURITY_PARAMS
 
@@ -87,33 +141,44 @@ class TestSecurity(BlatannTestCase):
         self.assertEqual(SecurityLevel.OPEN, result.security_level)
         self.assertEqual(PairingRejectedReason.non_bonded_peripheral_request, rejection.reason)
 
-    def test_bonding_no_mitm_happy_path(self):
-        self.periph_dev.clear_bonding_data()
-        self.central_dev.clear_bonding_data()
+    def test_bonding_just_works_lesc_happy_path(self):
+        initiate_using_central = True
+        use_passcode = False
+        io_caps = IoCapabilities.NONE
+        bond = True
+        reject = False
+        lesc = True
 
-        self._connect()
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
-        self.assertFalse(self.peer_per.is_previously_bonded)
-        self.assertFalse(self.peer_cen.is_previously_bonded)
+        # Reconnect and pair again. Should be able to re-establish security using previous encryption
+        self._reconnect(bond)
 
-        self._set_security_parameters(False, IoCapabilities.NONE, True, False, True)
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
-        _, result = self.peer_per.security.pair().wait(10)
+    def test_bonding_just_works_legacy_happy_path(self):
+        initiate_using_central = True
+        use_passcode = False
+        io_caps = IoCapabilities.NONE
+        bond = True
+        reject = False
+        lesc = False
 
-        self.assertEqual(SecurityStatus.success, result.status)
-        self.assertEqual(SecurityLevel.JUST_WORKS, self.peer_per.security.security_level)
-        self.assertEqual(SecurityLevel.JUST_WORKS, self.peer_cen.security.security_level)
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
-    def test_bonding_passcode_match_happy_path(self):
-        self.periph_dev.clear_bonding_data()
-        self.central_dev.clear_bonding_data()
+        # Reconnect and pair again. Should be able to re-establish security using previous encryption
+        self._reconnect(bond)
 
-        self._connect()
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
-        self.assertFalse(self.peer_per.is_previously_bonded)
-        self.assertFalse(self.peer_cen.is_previously_bonded)
+    def test_bonding_passcode_match_lesc_happy_path(self):
+        initiate_using_central = True
+        use_passcode = True
+        io_caps = IoCapabilities.DISPLAY_YESNO
+        bond = True
+        reject = False
+        lesc = True
 
-        self._set_security_parameters(True, IoCapabilities.DISPLAY_YESNO, True, False, True)
         per_passcode_q = queue.Queue()
         cen_passcode_q = queue.Queue()
         per_event = threading.Event()
@@ -135,25 +200,30 @@ class TestSecurity(BlatannTestCase):
 
         with self.peer_cen.security.on_passkey_display_required.register(on_display_request):
             with self.peer_per.security.on_passkey_display_required.register(on_display_request):
-                _, result = self.peer_per.security.pair().wait(10)
+                self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
-        self.assertEqual(SecurityStatus.success, result.status)
-        self.assertEqual(SecurityLevel.LESC_MITM, self.peer_per.security.security_level)
-        self.assertEqual(SecurityLevel.LESC_MITM, self.peer_cen.security.security_level)
         self.assertTrue(per_event.is_set())
         self.assertTrue(cen_event.is_set())
 
-    def test_bonding_passkey_entry_happy_path(self):
-        self.periph_dev.clear_bonding_data()
-        self.central_dev.clear_bonding_data()
+        # Reconnect and pair again. Should be able to re-establish security using previous encryption
+        self._reconnect(bond)
+        per_event.clear()
+        cen_event.clear()
 
-        self._connect()
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
-        self.assertFalse(self.peer_per.is_previously_bonded)
-        self.assertFalse(self.peer_cen.is_previously_bonded)
+        self.assertFalse(per_event.is_set())
+        self.assertFalse(cen_event.is_set())
 
-        self._set_security_parameters(True, IoCapabilities.DISPLAY_ONLY, True, False, True)
-        self.peer_per.security.security_params.io_capabilities = IoCapabilities.KEYBOARD_DISPLAY
+    def test_bonding_passkey_entry_lesc_happy_path(self):
+        initiate_using_central = True
+        use_passcode = True
+        io_caps = IoCapabilities.DISPLAY_ONLY
+        bond = True
+        reject = False
+        lesc = True
+        per_io_caps = IoCapabilities.KEYBOARD_DISPLAY
+
         passcode_q = queue.Queue()
         display_event = threading.Event()
         entry_event = threading.Event()
@@ -171,12 +241,35 @@ class TestSecurity(BlatannTestCase):
 
         with self.peer_cen.security.on_passkey_display_required.register(on_display_request):
             with self.peer_per.security.on_passkey_required.register(on_entry_request):
-                _, result = self.peer_per.security.pair().wait(10)
+                self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc, per_io_caps)
 
-        self.assertEqual(SecurityStatus.success, result.status)
-        self.assertEqual(SecurityLevel.LESC_MITM, self.peer_per.security.security_level)
-        self.assertEqual(SecurityLevel.LESC_MITM, self.peer_cen.security.security_level)
         self.assertTrue(display_event.is_set())
         self.assertTrue(entry_event.is_set())
+
+        # Reconnect and pair again. Should be able to re-establish security using previous encryption
+        self._reconnect(bond)
+        display_event.clear()
+        entry_event.clear()
+
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc, per_io_caps)
+
+        self.assertFalse(display_event.is_set())
+        self.assertFalse(entry_event.is_set())
+
+    def test_pairing_peripheral_initiated_just_works_lesc_happy_path(self):
+        initiate_using_central = False
+        use_passcode = False
+        io_caps = IoCapabilities.NONE
+        bond = True
+        reject = False
+        lesc = True
+
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
+
+        # Reconnect and pair again. Should be able to re-establish security using previous encryption
+        self._reconnect(bond)
+
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
+
 
     # TODO: Add more tests

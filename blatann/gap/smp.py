@@ -296,9 +296,13 @@ class SecurityManager(object):
             bond_entry = self._find_db_entry(self.peer.peer_address)
             if bond_entry:
                 logger.info("Re-establishing encryption with peer using LTKs")
-                self.ble_device.ble_driver.ble_gap_encrypt(self.peer.conn_handle,
-                                                           bond_entry.bonding_data.peer_ltk.master_id,
-                                                           bond_entry.bonding_data.peer_ltk.enc_info)
+                # If bonding data was created using LESC use our own LTKs, otherwise use the peer's
+                if bond_entry.bonding_data.own_ltk.enc_info.lesc:
+                    ltk = bond_entry.bonding_data.own_ltk
+                else:
+                    ltk = bond_entry.bonding_data.peer_ltk
+
+                self.ble_device.ble_driver.ble_gap_encrypt(self.peer.conn_handle, ltk.master_id, ltk.enc_info)
                 self._initiated_encryption = True
                 return EventWaitable(self.on_pairing_complete)
 
@@ -346,6 +350,9 @@ class SecurityManager(object):
         self._pairing_in_process = False
         self._initiated_encryption = False
         self._security_level = SecurityLevel.OPEN
+        self.keyset = nrf_types.BLEGapSecKeyset()
+        self.keyset.own_keys.public_key.key = smp_crypto.lesc_pubkey_to_raw(self._public_key)
+
         self.peer.driver_event_subscribe(self._on_security_params_request, nrf_events.GapEvtSecParamsRequest)
         self.peer.driver_event_subscribe(self._on_authentication_status, nrf_events.GapEvtAuthStatus)
         self.peer.driver_event_subscribe(self._on_conn_sec_status, nrf_events.GapEvtConnSecUpdate)
@@ -354,6 +361,7 @@ class SecurityManager(object):
         self.peer.driver_event_subscribe(self._on_security_info_request, nrf_events.GapEvtSecInfoRequest)
         self.peer.driver_event_subscribe(self._on_lesc_dhkey_request, nrf_events.GapEvtLescDhKeyRequest)
         self.peer.driver_event_subscribe(self._on_security_request, nrf_events.GapEvtSecRequest)
+
         # Search the bonding DB for this peer's info
         self.bond_db_entry = self._find_db_entry(self.peer.peer_address)
         if self.bond_db_entry:
@@ -362,23 +370,44 @@ class SecurityManager(object):
         else:
             self._is_previously_bonded_device = False
 
-    def _find_db_entry(self, peer_address):
-        if peer_address.addr_type == nrf_types.BLEGapAddrTypes.random_private_non_resolvable:
-            return None
-
+    def _find_db_entry(self, peer_address, master_id=None):
         for r in self.ble_device.bond_db:
+            # Check that roles match
             if self.peer.is_client != r.peer_is_client:
                 continue
-
-            # If peer address is public or random static, check directly if they match (no IRK needed)
-            if peer_address.addr_type in [nrf_types.BLEGapAddrTypes.random_static, nrf_types.BLEGapAddrTypes.public]:
-                if r.peer_addr == peer_address:
+            # Check if peer address matches
+            if self._peer_address_matches_or_resolves(peer_address, r):
+                # If the bonding data is LESC, always return it.
+                # Otherwise if a master ID is provided to match against, it should be used
+                if r.bonding_data.own_ltk.enc_info.lesc or not master_id:
+                    logger.debug("Matched database entry on peer address")
                     return r
-            elif smp_crypto.private_address_resolves(peer_address, r.bonding_data.peer_id.irk):
-                logger.info("Resolved Peer ID to {}".format(r.peer_addr))
-                return r
+
+            # Check for master IDs
+            if master_id:
+                own_mid = r.bonding_data.own_ltk.master_id
+                peer_mid = r.bonding_data.peer_ltk.master_id
+                if own_mid == master_id:
+                    logger.debug("Found matching record with own master ID")
+                    return r
+                if peer_mid == master_id:
+                    logger.debug("Found matching record with peer master ID")
+                    return r
 
         return None
+
+    def _peer_address_matches_or_resolves(self, peer_address, bond_record):
+        if peer_address.addr_type == nrf_types.BLEGapAddrTypes.random_private_non_resolvable:
+            return False
+
+        # If peer address is public or random static, check directly if they match (no IRK needed)
+        if peer_address.addr_type in [nrf_types.BLEGapAddrTypes.random_static, nrf_types.BLEGapAddrTypes.public]:
+            if bond_record.peer_addr == peer_address:
+                return True
+        elif smp_crypto.private_address_resolves(peer_address, bond_record.bonding_data.peer_id.irk):
+            logger.info("Resolved Peer address to {}".format(bond_record.peer_addr))
+            return True
+        return False
 
     def _get_security_params(self):
         keyset_own = nrf_types.BLEGapSecKeyDist(True, True, False, False)
@@ -464,31 +493,18 @@ class SecurityManager(object):
         """
         :type event: nrf_events.GapEvtSecInfoRequest
         """
-        found_record = None
-        # Find the database entry based on the sec info given
-        for r in self.ble_device.bond_db:
-            # Check that roles match
-            if r.peer_is_client != self.peer.is_client:
-                continue
-            own_mid = r.bonding_data.own_ltk.master_id
-            peer_mid = r.bonding_data.peer_ltk.master_id
-            if event.master_id.ediv == own_mid.ediv and event.master_id.rand == own_mid.rand:
-                logger.info("Found matching record with own master ID for sec info request")
-                found_record = r
-                break
-            if event.master_id.ediv == peer_mid.ediv and event.master_id.rand == peer_mid.rand:
-                logger.info("Found matching record with peer master ID for sec info request")
-                found_record = r
-                break
+        # If bond entry wasn't found on connect, try another time now just in case
+        if not self.bond_db_entry:
+            self.bond_db_entry = self._find_db_entry(self.peer.peer_address, event.master_id)
 
-        if not found_record:
+        if self.bond_db_entry:
+            self._initiated_encryption = True
+            ltk = self.bond_db_entry.bonding_data.own_ltk
+            id_key = self.bond_db_entry.bonding_data.peer_id
+            self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle, ltk.enc_info, id_key, None)
+        else:
             logger.info("Unable to find Bonding record for peer master id {}".format(event.master_id))
             self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle)
-        else:
-            self.bond_db_entry = found_record
-            ltk = found_record.bonding_data.own_ltk
-            id_key = found_record.bonding_data.peer_id
-            self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle, ltk.enc_info, id_key, None)
 
     def _on_lesc_dhkey_request(self, driver, event):
         """
@@ -505,6 +521,7 @@ class SecurityManager(object):
         self._security_level = SecurityLevel(event.sec_level)
         self._on_security_level_changed_event.notify(self.peer, SecurityLevelChangedEventArgs(self._security_level))
         if self._initiated_encryption:
+            # Re-established using existing keys, notify auth complete event
             self._initiated_encryption = False
             if event.sec_level > 0 and event.sec_mode > 0:
                 status = SecurityStatus.success
@@ -513,15 +530,17 @@ class SecurityManager(object):
                 # Peer failed to find/load the keys, return failure status code and remove key from database
                 self.delete_bonding_data()
                 status = SecurityStatus.unspecified
-            self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(status, self.security_level))
+            self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(status, self.security_level, SecurityProcess.ENCRYPTION))
 
     def _on_authentication_status(self, driver, event):
         """
         :type event: nrf_events.GapEvtAuthStatus
         """
         self._pairing_in_process = False
+        security_process = SecurityProcess.BONDING if event.bonded else SecurityProcess.PAIRING
         self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(event.auth_status,
-                                                                                          self.security_level))
+                                                                                          self.security_level,
+                                                                                          security_process))
         # Save keys in the database if authenticated+bonded successfully
         if event.auth_status == SecurityStatus.success and event.bonded:
             # Reload the keys from the C Memory space (were updated during the pairing process)

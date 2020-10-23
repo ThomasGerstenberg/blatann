@@ -144,7 +144,9 @@ class BLEGapSecParams(object):
 class BLEGapMasterId(object):
     RAND_LEN = driver.BLE_GAP_SEC_RAND_LEN
 
-    def __init__(self, ediv=0, rand=""):
+    RAND_INVALID = b"\x00" * RAND_LEN
+
+    def __init__(self, ediv=0, rand=b""):
         self.ediv = ediv
         self.rand = rand
 
@@ -155,11 +157,20 @@ class BLEGapMasterId(object):
         master_id.rand = rand_array.cast()
         return master_id
 
+    @property
+    def is_valid(self) -> bool:
+        return len(self.rand) == self.RAND_LEN and self.rand != self.RAND_INVALID
+
     @classmethod
     def from_c(cls, master_id):
-        rand = bytearray(util.uint8_array_to_list(master_id.rand, cls.RAND_LEN))
+        rand = util.uint8_array_to_list(master_id.rand, cls.RAND_LEN)
         ediv = master_id.ediv
-        return cls(ediv, rand)
+        return cls(ediv, bytearray(rand))
+
+    def __eq__(self, other):
+        if not isinstance(other, BLEGapMasterId):
+            return False
+        return self.is_valid and self.ediv == other.ediv and self.rand == other.rand
 
     def __repr__(self):
         return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, binascii.hexlify(self.rand))
@@ -168,7 +179,7 @@ class BLEGapMasterId(object):
 class BLEGapEncryptInfo(object):
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 
-    def __init__(self, ltk="", lesc=False, auth=False):
+    def __init__(self, ltk=b"", lesc=False, auth=False):
         self.ltk = ltk
         self.lesc = lesc
         self.auth = auth
@@ -197,16 +208,14 @@ class BLEGapEncryptInfo(object):
 
 class BLEGapEncryptKey(object):
     def __init__(self, enc_info=None, master_id=None):
-        self.enc_info = enc_info
-        self.master_id = master_id
+        self.enc_info = enc_info or BLEGapEncryptInfo()
+        self.master_id = master_id or BLEGapMasterId()
 
     def to_c(self):
         key = driver.ble_gap_enc_key_t()
 
-        if self.enc_info:
-            key.enc_info = self.enc_info.to_c()
-        if self.master_id:
-            key.master_id = self.master_id.to_c()
+        key.enc_info = self.enc_info.to_c()
+        key.master_id = self.master_id.to_c()
         return key
 
     @classmethod

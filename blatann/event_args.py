@@ -84,19 +84,28 @@ class PhyUpdatedEventArgs(EventArgs):
 
 # SMP Event Args
 
+class SecurityProcess(Enum):
+    ENCRYPTION = 0  # Re-established security using existing long-term keys
+    PAIRING = 1     # Created new short-term keys, but no bonding performed
+    BONDING = 1     # Created new long-term keys
+
+
 class PairingCompleteEventArgs(EventArgs):
     """
     Event arguments when pairing completes, whether it failed or was successful
     """
-    def __init__(self, status, security_level):
+    def __init__(self, status, security_level, security_process):
         """
         :param status: The pairing status
         :type status: blatann.gap.SecurityStatus
         :param security_level: The security level after pairing/bonding
         :type security_level: blatann.gap.smp.SecurityLevel
+        :param security_process: The process that was performed
+        :type security_process: SecurityProcess
         """
         self.status = status
         self.security_level = security_level
+        self.security_process = security_process
 
 
 class SecurityLevelChangedEventArgs(EventArgs):
