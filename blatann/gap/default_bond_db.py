@@ -10,13 +10,19 @@ from blatann.gap.bond_db import BondDatabase, BondDbEntry, BondDatabaseLoader
 logger = logging.getLogger(__name__)
 
 
-default_db_file = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db.pkl")
+system_default_db_file = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db.pkl")
+user_default_db_file = os.path.join(os.path.expanduser("~"), ".blatann", "bonding_db.pkl")
 
 
 # TODO 04.16.2019: Replace pickling with something more secure
 class DefaultBondDatabaseLoader(BondDatabaseLoader):
-    def __init__(self, filename=default_db_file):
+    def __init__(self, filename=user_default_db_file):
         self.filename = filename
+
+    def _create_dirs(self):
+        dirname = os.path.dirname(self.filename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
 
     def load(self):
         if not os.path.exists(self.filename):
@@ -27,13 +33,11 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
                 logger.info("Loaded Bond DB '{}'".format(self.filename))
                 return db
         except Exception as e:
-            logger.info("Failed to load Bond DB '{}' -  {}:{}".format(self.filename, type(e).__name__, e.message))
+            logger.error("Failed to load Bond DB '{}' -  {}:{}".format(self.filename, type(e).__name__, e.message))
             return DefaultBondDatabase()
 
     def save(self, db):
-        dirname = os.path.dirname(default_db_file)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
+        self._create_dirs()
         with open(self.filename, "wb") as f:
             pickle.dump(db, f)
 
