@@ -1,6 +1,33 @@
 Changelog
 =========
 
+v0.3.5
+------
+
+v0.3.5 is a small update that primarily provides some bug fixes and cleanup to the bonding process.
+
+**Highlights**
+
+- Overall increased stability when restoring encryption using long-term keys for a previously-bonded device
+
+- Adds param to set the CCCD write security level for a characteristic
+
+**Fixes**
+
+- Restoring legacy bonding LTKs as a central now works correctly
+
+**Changes**
+
+- `Issue 60`_ - The default bonding database file has been moved into the user directory instead of within the package contents (``~/.blatann/bonding_db.pkl``).
+
+  - An optional parameter has been added to the :class:`~blatann.device.BleDevice` constructor for specifying the file to use for convenience
+
+  - To revert to the previous implementation, specify ``bond_db_filename="system"`` when creating the BleDevice object
+
+  - To use the new storage location but keep the bonding data from previous version,
+    copy over the database file from ``<blatann_install_loc>/.user/bonding_db.pkl`` to the location noted above
+
+
 v0.3.4
 ------
 
@@ -208,3 +235,4 @@ public API should be mostly unchanged except for the noted changes below.
 .. _Issue 11: https://github.com/ThomasGerstenberg/blatann/issues/11
 .. _Issue 40: https://github.com/ThomasGerstenberg/blatann/issues/40
 .. _Issue 42: https://github.com/ThomasGerstenberg/blatann/issues/42
+.. _Issue 60: https://github.com/ThomasGerstenberg/blatann/issues/60
