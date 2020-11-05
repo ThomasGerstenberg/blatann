@@ -90,10 +90,27 @@ class _UuidManager(object):
 class BleDevice(NrfDriverObserver):
     """
     Represents the Bluetooth device itself. Provides the high-level bluetooth APIs (Advertising, Scanning, Connections),
-    configuration, and bond database
+    configuration, and bond database.
+
+    :param comport: The port the nRF52 device lives on, e.g. ``"COM3"``, ``"/dev/ttyS0"``
+    :param baud: The baud rate to use. By default the connectivity firmware images for v0.3+ use 1M baud.
+    :param log_driver_comms: debug flag which will enable extra-verbose logging of all communications to the nRF52 hardware
+    :param notification_hw_queue_size: Hardware-based queue size to use for notifications.
+                                       This queue lives within the nRF52 hardware itself and has memory usage implications based on MTU size, etc.
+                                       This probably won't need to be changed, and from current testing the queue isn't fully exercised
+    :param write_command_hw_queue_size: Hardware-based queue size to use for write commands (write w/o response).
+                                        Same comments about notification queue apply here.
+    :param bond_db_filename: Optional filename to use for loading/saving the bonding database. Two special values also exist:
+
+                             - ``"user"`` [default] - saves the database within the user's home directory  (``~/.blatann/bonding_db.pkl``).
+                               This is useful for cases where you may not have write access to the python install location, want to
+                               persist the bonding database across virtualenvs, or limit the access to just the logged-in user
+                             - ``"system"`` - saves the database within this library's directory structure, wherever it is installed or imported from.
+                               Useful if you want the bonding database to be constrained to just that python/virtualenv installation
     """
     def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False,
-                 notification_hw_queue_size=16, write_command_hw_queue_size=16):
+                 notification_hw_queue_size=16, write_command_hw_queue_size=16,
+                 bond_db_filename="user"):
         self.ble_driver = NrfDriver(comport, baud, log_driver_comms)
         self.event_logger = _EventLogger(self.ble_driver)
         self.ble_driver.observer_register(self)
@@ -104,7 +121,10 @@ class BleDevice(NrfDriverObserver):
                                                             hvn_tx_queue_size=notification_hw_queue_size,         # Hardware queue of 16 notifications
                                                             write_cmd_tx_queue_size=write_command_hw_queue_size)  # Hardware queue of 16 write cmds (no response)
 
-        self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader()
+        special_bond_db_filemap = {"user": default_bond_db.user_default_db_file, "system": default_bond_db.system_default_db_file}
+        bond_db_filename = special_bond_db_filemap.get(bond_db_filename.lower(), bond_db_filename)
+
+        self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader(bond_db_filename)
         self.bond_db = default_bond_db.DefaultBondDatabase()
 
         self.client = peer.Client(self)
