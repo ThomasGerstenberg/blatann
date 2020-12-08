@@ -363,40 +363,29 @@ class GattcCharacteristic(gatt.Characteristic):
         :type read_write_manager: GattcOperationManager
         :type nrf_characteristic: nrf_types.BLEGattCharacteristic
         """
-        char_decl_uuid = DeclarationUuid.characteristic
         char_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_characteristic.uuid)
-        cccd_uuid = DescriptorUuid.cccd
-
         properties = gatt.CharacteristicProperties.from_nrf_properties(nrf_characteristic.char_props)
 
-        decl_attr = None
-        value_attr = None
+        # Create the declaration and value attributes to start
+        decl_attr = GattcAttribute(DeclarationUuid.characteristic, nrf_characteristic.handle_decl,
+                                   read_write_manager, nrf_characteristic.data_decl)
+        value_attr = GattcAttribute(char_uuid, nrf_characteristic.handle_value,
+                                    read_write_manager, nrf_characteristic.data_value)
         cccd_attr = None
-        attributes = []
+
+        attributes = [decl_attr, value_attr]
+
         for nrf_desc in nrf_characteristic.descs:
-            d_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_desc.uuid)
-            d_attr = GattcAttribute(d_uuid, nrf_desc.handle, read_write_manager)
+            # Already added the handle and value attributes, skip them here
+            if nrf_desc.handle in [nrf_characteristic.handle_decl, nrf_characteristic.handle_value]:
+                continue
 
-            if d_uuid == char_decl_uuid:
-                decl_attr = d_attr
-            elif d_uuid == char_uuid:
-                value_attr = d_attr
-            elif d_uuid == cccd_uuid:
-                cccd_attr = d_attr
-            attributes.append(d_attr)
+            attr_uuid = ble_device.uuid_manager.nrf_uuid_to_uuid(nrf_desc.uuid)
+            attr = GattcAttribute(attr_uuid, nrf_desc.handle, read_write_manager)
 
-        if not decl_attr:
-            logger.debug(f"Failed to find declaration attribute within list "
-                         f"(char uuid: {char_uuid}), creating new...")
-            decl_attr = GattcAttribute(char_decl_uuid, nrf_characteristic.handle_decl,
-                                       read_write_manager, nrf_characteristic.data_decl)
-            attributes.append(decl_attr)
-        if not value_attr:
-            logger.debug(f"Failed to find value attribute within list "
-                         f"(char uuid: {char_uuid}), creating new...")
-            value_attr = GattcAttribute(char_uuid, nrf_characteristic.handle_value,
-                                        read_write_manager, nrf_characteristic.data_value)
-            attributes.append(value_attr)
+            if attr_uuid == DescriptorUuid.cccd:
+                cccd_attr = attr
+            attributes.append(attr)
 
         return GattcCharacteristic(ble_device, peer, char_uuid, properties,
                                    decl_attr, value_attr, cccd_attr, attributes)

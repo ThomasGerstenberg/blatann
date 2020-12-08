@@ -62,6 +62,14 @@ class _DiscoveryState(object):
         """
         return self.services[self.service_index]
 
+    def iter_remaining(self):
+        first_service = True
+        for service in self.services[self.service_index:]:
+            start_char_index = self.char_index if first_service else 0
+            first_service = False
+            for c in service.chars[start_char_index:]:
+                yield service, c
+
 
 class _Discoverer(object):
     def __init__(self, name, ble_device, peer):
@@ -286,15 +294,12 @@ class _DescriptorDiscoverer(_Discoverer):
     def start(self, services):
         self._state.reset()
         self._state.services = services
-        # Compile the characteristics into a single list so its easier to iterate
-        for s in services:
-            self._state.characteristics.extend(s.chars)
         self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
         on_complete_waitable = EventWaitable(self.on_complete)
         if not self._state.services:
             self._on_complete()
         else:
-            self._discover_descriptors()
+            self._discover_next_handle_range()
         return on_complete_waitable
 
     def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
@@ -306,6 +311,16 @@ class _DescriptorDiscoverer(_Discoverer):
         ending_handle = self._state.services[-1].end_handle
         self.peer.driver_event_subscribe(self._on_descriptor_discovery, nrf_events.GattcEvtDescriptorDiscoveryResponse)
         self.ble_device.ble_driver.ble_gattc_desc_disc(self.peer.conn_handle, starting_handle, ending_handle)
+
+    def _discover_next_handle_range(self):
+        for service, characteristic in self._state.iter_remaining():
+            missing_handles = characteristic.missing_handles()
+            if missing_handles:
+                self._state.current_handle = missing_handles[0]
+                self._discover_descriptors()
+                return
+        logger.info("No more handles left to discover!")
+        self._on_complete()
 
     def _find_descriptor_owner(self, desc):
         if self._state.end_of_services:
@@ -358,7 +373,7 @@ class _DescriptorDiscoverer(_Discoverer):
         if last_handle >= self._state.services[-1].end_handle:
             self._on_complete()
 
-        self._discover_descriptors()
+        self._discover_next_handle_range()
 
 
 class DatabaseDiscoverer(object):
