@@ -89,7 +89,6 @@ class NrfDriverObserver(object):
 
 
 class NrfDriver(object):
-    api_lock = Lock()
     default_baud_rate = 1000000
     ATT_MTU_DEFAULT = driver.BLE_GATT_ATT_MTU_DEFAULT
 
@@ -121,7 +120,7 @@ class NrfDriver(object):
         return self._serial_port
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def open(self):
         if self.is_open:
             logger.warning("Trying to open already opened driver")
@@ -156,7 +155,7 @@ class NrfDriver(object):
         return self._event_thread is not None
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def close(self):
         if not self.is_open:
             return driver.NRF_SUCCESS
@@ -228,7 +227,7 @@ class NrfDriver(object):
     BLE Generic methods
     """
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_conn_configure(self, conn_params):
         assert isinstance(conn_params, BleConnConfig)
         for tag, cfg in conn_params.get_configs():
@@ -238,7 +237,7 @@ class NrfDriver(object):
         return driver.NRF_SUCCESS
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_enable(self, ble_enable_params=None):
         if not ble_enable_params:
             ble_enable_params = self.ble_enable_params_setup()
@@ -252,7 +251,7 @@ class NrfDriver(object):
         return driver.sd_ble_enable(self.rpc_adapter, None)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_opt_set(self, ble_opt):
         assert isinstance(ble_opt, BleOption)
         opt = driver.ble_opt_t()
@@ -264,12 +263,12 @@ class NrfDriver(object):
         return driver.sd_ble_opt_set(self.rpc_adapter, ble_opt.option_flag, opt)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_user_mem_reply(self, conn_handle):
         return driver.sd_ble_user_mem_reply(self.rpc_adapter, conn_handle, None)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_vs_uuid_add(self, uuid_base):
         assert isinstance(uuid_base, BLEUUIDBase), 'Invalid argument type'
         uuid_type = driver.new_uint8()
@@ -286,7 +285,7 @@ class NrfDriver(object):
     """
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_addr_get(self):
         addr = driver.ble_gap_addr_t()
         err_code = driver.sd_ble_gap_addr_get(self.rpc_adapter, addr)
@@ -297,14 +296,14 @@ class NrfDriver(object):
         return err_code, addr
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_addr_set(self, address):
         assert isinstance(address, BLEGapAddr), "Invalid argument type"
         addr_c = address.to_c()
         return driver.sd_ble_gap_addr_set(self.rpc_adapter, addr_c)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_device_name_set(self, name):
         if isinstance(name, str):
             name = name.encode("utf8")
@@ -314,19 +313,19 @@ class NrfDriver(object):
         return driver.sd_ble_gap_device_name_set(self.rpc_adapter, write_perm, data, length)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_appearance_set(self, value):
         return driver.sd_ble_gap_appearance_set(self.rpc_adapter, value)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_ppcp_set(self, conn_params):
         assert isinstance(conn_params, BLEGapConnParams), "Invalid argument type"
         params = conn_params.to_c()
         return driver.sd_ble_gap_ppcp_set(self.rpc_adapter, params)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_adv_start(self, adv_params=None, conn_cfg_tag=0):
         if not adv_params:
             adv_params = self.adv_params_setup()
@@ -334,7 +333,7 @@ class NrfDriver(object):
         return driver.sd_ble_gap_adv_start(self.rpc_adapter, adv_params.to_c(), conn_cfg_tag)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_conn_param_update(self, conn_handle, conn_params):
         assert isinstance(conn_params, (BLEGapConnParams, NoneType)), 'Invalid argument type'
         if conn_params:
@@ -342,12 +341,12 @@ class NrfDriver(object):
         return driver.sd_ble_gap_conn_param_update(self.rpc_adapter, conn_handle, conn_params)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_adv_stop(self):
         return driver.sd_ble_gap_adv_stop(self.rpc_adapter)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_scan_start(self, scan_params=None):
         if not scan_params:
             scan_params = self.scan_params_setup()
@@ -355,12 +354,12 @@ class NrfDriver(object):
         return driver.sd_ble_gap_scan_start(self.rpc_adapter, scan_params.to_c())
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_scan_stop(self):
         return driver.sd_ble_gap_scan_stop(self.rpc_adapter)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_connect(self, address, scan_params=None, conn_params=None, conn_cfg_tag=0):
         assert isinstance(address, BLEGapAddr), 'Invalid argument type'
 
@@ -379,7 +378,7 @@ class NrfDriver(object):
                                          conn_cfg_tag)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_disconnect(self, conn_handle, hci_status_code=BLEHci.remote_user_terminated_connection):
         assert isinstance(hci_status_code, BLEHci), 'Invalid argument type'
         return driver.sd_ble_gap_disconnect(self.rpc_adapter,
@@ -387,7 +386,7 @@ class NrfDriver(object):
                                             hci_status_code.value)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_adv_data_set(self, adv_data=BLEAdvData(), scan_data=BLEAdvData()):
         assert isinstance(adv_data, BLEAdvData), 'Invalid argument type'
         assert isinstance(scan_data, BLEAdvData), 'Invalid argument type'
@@ -401,7 +400,7 @@ class NrfDriver(object):
                                               scan_data_len)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_data_length_update(self, conn_handle, params=None):
         assert isinstance(params, (BLEGapDataLengthParams, NoneType))
         if isinstance(params, BLEGapDataLengthParams):
@@ -409,7 +408,7 @@ class NrfDriver(object):
         return driver.sd_ble_gap_data_length_update(self.rpc_adapter, conn_handle, params, None)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_phy_update(self, conn_handle, tx_phy=BLEGapPhy.auto, rx_phy=BLEGapPhy.auto):
         params = BLEGapPhys(tx_phy, rx_phy)
         return driver.sd_ble_gap_phy_update(self.rpc_adapter, conn_handle, params.to_c())
@@ -419,7 +418,7 @@ class NrfDriver(object):
     """
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_authenticate(self, conn_handle, sec_params):
         assert isinstance(sec_params, (BLEGapSecParams, NoneType)), 'Invalid argument type'
         return driver.sd_ble_gap_authenticate(self.rpc_adapter,
@@ -427,7 +426,7 @@ class NrfDriver(object):
                                               sec_params.to_c() if sec_params else None)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_sec_params_reply(self, conn_handle, sec_status, sec_params, sec_keyset):
         assert isinstance(sec_status, BLEGapSecStatus), 'Invalid argument type'
         assert isinstance(sec_params, (BLEGapSecParams, NoneType)), 'Invalid argument type'
@@ -440,7 +439,7 @@ class NrfDriver(object):
                                                   sec_keyset.to_c())
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_auth_key_reply(self, conn_handle, key_type, key):
         if key is not None:
             key_buf = util.list_to_uint8_array(key).cast()
@@ -449,7 +448,7 @@ class NrfDriver(object):
         return driver.sd_ble_gap_auth_key_reply(self.rpc_adapter, conn_handle, key_type, key_buf)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_sec_info_reply(self, conn_handle, enc_info=None, irk=None, sign_info=None):
         assert isinstance(enc_info, (BLEGapEncryptInfo, NoneType)), "Invalid argument type"
         assert isinstance(irk, (BLEGapIdKey, NoneType)), "Invalid argument type"
@@ -464,7 +463,7 @@ class NrfDriver(object):
         return driver.sd_ble_gap_sec_info_reply(self.rpc_adapter, conn_handle, enc_info, irk, sign_info)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_encrypt(self, conn_handle, master_id, enc_info):
         assert isinstance(master_id, BLEGapMasterId)
         assert isinstance(enc_info, BLEGapEncryptInfo)
@@ -472,7 +471,7 @@ class NrfDriver(object):
         return driver.sd_ble_gap_encrypt(self.rpc_adapter, conn_handle, master_id.to_c(), enc_info.to_c())
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gap_lesc_dhkey_reply(self, conn_handle, dh_key):
         assert isinstance(dh_key, BLEGapDhKey)
 
@@ -486,7 +485,7 @@ class NrfDriver(object):
     # sd_ble_gatts_initial_user_handle_get, sd_ble_gatts_attr_get
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_service_add(self, service_type, uuid, service_handle):
         handle = driver.new_uint16()
         uuid_c = uuid.to_c()
@@ -499,7 +498,7 @@ class NrfDriver(object):
         return err_code
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_characteristic_add(self, service_handle, char_md, attr_char_value, char_handle):
         # TODO type assertions
         handle_params = driver.ble_gatts_char_handles_t()
@@ -516,7 +515,7 @@ class NrfDriver(object):
         return err_code
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_descriptor_add(self, char_handle, attr):
         assert isinstance(attr, BLEGattsAttribute)
         handle = driver.new_uint16()
@@ -527,13 +526,13 @@ class NrfDriver(object):
 
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_rw_authorize_reply(self, conn_handle, authorize_reply_params):
         assert isinstance(authorize_reply_params, BLEGattsRwAuthorizeReplyParams)
         return driver.sd_ble_gatts_rw_authorize_reply(self.rpc_adapter, conn_handle, authorize_reply_params.to_c())
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_value_get(self, conn_handle, attribute_handle, gatts_value, max_bytes_read=512):
         assert isinstance(gatts_value, BLEGattsValue)
         value_params = gatts_value.to_c()
@@ -547,30 +546,30 @@ class NrfDriver(object):
         return err_code
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_value_set(self, conn_handle, attribute_handle, gatts_value):
         assert isinstance(gatts_value, BLEGattsValue)
         value_params = gatts_value.to_c()
         return driver.sd_ble_gatts_value_set(self.rpc_adapter, conn_handle, attribute_handle, value_params)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_hvx(self, conn_handle, hvx_params):
         assert isinstance(hvx_params, BLEGattsHvx)
         return driver.sd_ble_gatts_hvx(self.rpc_adapter, conn_handle, hvx_params.to_c())
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_service_changed(self, conn_handle, start_handle, end_handle):
         return driver.sd_ble_gatts_service_changed(self.rpc_adapter, conn_handle, start_handle, end_handle)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_exchange_mtu_reply(self, conn_handle, server_mtu):
         return driver.sd_ble_gatts_exchange_mtu_reply(self.rpc_adapter, conn_handle, server_mtu)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gatts_sys_attr_set(self, conn_handle, sys_attr_data, flags=0):
         if sys_attr_data is not None:
             data = util.list_to_uint8_array(sys_attr_data).cast()
@@ -585,7 +584,7 @@ class NrfDriver(object):
     """
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_write(self, conn_handle, write_params):
         assert isinstance(write_params, BLEGattcWriteParams), 'Invalid argument type'
         return driver.sd_ble_gattc_write(self.rpc_adapter,
@@ -593,7 +592,7 @@ class NrfDriver(object):
                                          write_params.to_c())
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_prim_srvc_disc(self, conn_handle, srvc_uuid, start_handle):
         assert isinstance(srvc_uuid, (BLEUUID, NoneType)), 'Invalid argument type'
         return driver.sd_ble_gattc_primary_services_discover(self.rpc_adapter,
@@ -602,7 +601,7 @@ class NrfDriver(object):
                                                              srvc_uuid.to_c() if srvc_uuid else None)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_char_disc(self, conn_handle, start_handle, end_handle):
         handle_range = driver.ble_gattc_handle_range_t()
         handle_range.start_handle = start_handle
@@ -612,7 +611,7 @@ class NrfDriver(object):
                                                             handle_range)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_desc_disc(self, conn_handle, start_handle, end_handle):
         handle_range = driver.ble_gattc_handle_range_t()
         handle_range.start_handle = start_handle
@@ -622,7 +621,7 @@ class NrfDriver(object):
                                                         handle_range)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_attr_info_disc(self, conn_handle, start_handle, end_handle):
         handle_range = driver.ble_gattc_handle_range_t()
         handle_range.start_handle = start_handle
@@ -630,19 +629,19 @@ class NrfDriver(object):
         return driver.sd_ble_gattc_attr_info_discover(self.rpc_adapter, conn_handle, handle_range)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_read(self, conn_handle, read_handle, offset=0):
         return driver.sd_ble_gattc_read(self.rpc_adapter, conn_handle, read_handle, offset)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_exchange_mtu_req(self, conn_handle, att_mtu_size):
         return driver.sd_ble_gattc_exchange_mtu_request(self.rpc_adapter,
                                                         conn_handle,
                                                         att_mtu_size)
 
     @NordicSemiErrorCheck
-    @wrapt.synchronized(api_lock)
+    @wrapt.synchronized
     def ble_gattc_hv_confirm(self, conn_handle, attr_handle):
         return driver.sd_ble_gattc_hv_confirm(self.rpc_adapter, conn_handle, attr_handle)
 
@@ -651,8 +650,8 @@ class NrfDriver(object):
     """
 
     def _status_handler(self, adapter, status_code, status_message):
-        # print(status_message)
-        pass
+        if self._log_driver_comms:
+            logger.info("STATUS [{}]: {}".format(status_code, status_message))
 
     def _log_message_handler(self, adapter, severity, log_message):
         if self._log_driver_comms:
