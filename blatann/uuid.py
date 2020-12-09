@@ -24,6 +24,10 @@ class Uuid(object):
     def __hash__(self):
         raise NotImplementedError()
 
+    @property
+    def descriptive_string(self) -> str:
+        return f"{self.description} ({self})" if self.description else str(self)
+
 
 class Uuid128(Uuid):
     """

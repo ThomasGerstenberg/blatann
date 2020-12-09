@@ -156,7 +156,7 @@ class Attribute(object):
         self._string_encoding = value
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._uuid}, {self._handle})"
+        return f"Attribute({self._handle}): {self._uuid.descriptive_string}"
 
 
 class Characteristic(object):
@@ -184,7 +184,7 @@ class Characteristic(object):
         attr_str = newline.join(str(d) for d in self._attributes)
         if attr_str:
             attr_str = newline + attr_str + "\n    "
-        return f"Characteristic({self.uuid}, {self._properties}, attributes: [{attr_str}])"
+        return f"Characteristic: {self.uuid.descriptive_string}, {self._properties}, attributes: [{attr_str}]"
 
 
 class Service(object):
@@ -215,8 +215,7 @@ class Service(object):
         char_str = newline.join(str(c) for c in self._characteristics)
         if char_str:
             char_str = newline + char_str + "\n"
-
-        return f"Service({self.uuid} [{self.start_handle}-{self.end_handle}], characteristics: [{char_str}])"
+        return f"Service: {self.uuid.descriptive_string} [{self.start_handle}-{self.end_handle}], characteristics: [{char_str}]"
 
 
 class GattDatabase(object):

@@ -119,6 +119,13 @@ class BLEGattCharacteristic(object):
         self.end_handle = None
         self.descs = list()
 
+    def discovered_handles(self):
+        return sorted([self.handle_decl, self.handle_value] + [d.handle for d in self.descs])
+
+    def missing_handles(self):
+        all_handles = set(range(self.handle_decl, self.end_handle+1))
+        return sorted(all_handles - set(self.discovered_handles()))
+
     @classmethod
     def from_c(cls, gattc_char):
         return cls(uuid=BLEUUID.from_c(gattc_char.uuid),
