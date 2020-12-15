@@ -33,7 +33,7 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
                 logger.info("Loaded Bond DB '{}'".format(self.filename))
                 return db
         except Exception as e:
-            logger.error("Failed to load Bond DB '{}' -  {}:{}".format(self.filename, type(e).__name__, e.message))
+            logger.exception("Failed to load Bond DB '{}'".format(self.filename))
             return DefaultBondDatabase()
 
     def save(self, db):
