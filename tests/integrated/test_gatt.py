@@ -4,7 +4,7 @@ import unittest
 from blatann import BleDevice, gatt
 from blatann.bt_sig.uuids import DescriptorUuid
 from blatann.event_args import WriteEventArgs
-from blatann.gatt import PresentationFormat
+from blatann.gatt import PresentationFormat, SubscriptionState
 from blatann.gatt.gattc import GattcCharacteristic
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsCharacteristic, GattsUserDescriptionProperties
 from blatann.uuid import Uuid128, generate_random_uuid128
@@ -258,3 +258,41 @@ class TestGatt(BlatannTestCase):
 
         _, read_resp = self.central_conn.large_char.read().wait(10)
         self.assertEqual(value, read_resp.value)
+
+    def test_notification(self):
+        event_queue = queue.Queue()
+        data_to_send = bytes(list(range(10)))
+
+        def handler(char, event):
+            event_queue.put(event)
+
+        self.central_conn.notify_char.subscribe(handler).wait(10)
+        self.assertTrue(self.periph_conn.notify_char.client_subscribed)
+        self.assertEqual(SubscriptionState.NOTIFY, self.periph_conn.notify_char.cccd_state)
+
+        _, result = self.periph_conn.notify_char.notify(data_to_send).wait(10)
+        self.assertEqual(result.Reason.SUCCESS, result.reason)
+
+        event_data = event_queue.get(block=True, timeout=10)
+        self.assertEqual(data_to_send, event_data.value)
+        self.assertFalse(event_data.is_indication)
+        self.central_conn.notify_char.unsubscribe().wait()
+
+    def test_indication(self):
+        event_queue = queue.Queue()
+        data_to_send = bytes(list(range(10)))
+
+        def handler(char, event):
+            event_queue.put(event)
+
+        self.central_conn.indicate_char.subscribe(handler).wait(10)
+        self.assertTrue(self.periph_conn.indicate_char.client_subscribed)
+        self.assertEqual(SubscriptionState.INDICATION, self.periph_conn.indicate_char.cccd_state)
+
+        _, result = self.periph_conn.indicate_char.notify(data_to_send).wait(10)
+        self.assertEqual(result.Reason.SUCCESS, result.reason)
+
+        event_data = event_queue.get(block=True, timeout=10)
+        self.assertEqual(data_to_send, event_data.value)
+        self.assertTrue(event_data.is_indication)
+        self.central_conn.indicate_char.unsubscribe().wait()

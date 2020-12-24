@@ -307,6 +307,7 @@ class _NotificationManager(QueuedTasksManagerBase[_Notification]):
     def _on_hvc(self, driver, event):
         notification = self._pop_task_in_process()
         if notification:
+            notification.notify_complete(NotificationCompleteEventArgs.Reason.SUCCESS)
             self._task_completed(notification)
 
     def _on_notify_complete(self, driver, event: nrf_events.GattsEvtNotificationTxComplete):
