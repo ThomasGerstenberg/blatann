@@ -1,6 +1,25 @@
 Changelog
 =========
 
+
+v0.3.6
+------
+
+v0.3.6 is a minor bugfix update and some small improvements
+
+**Fixes**
+
+- Fixes an uncaught exception caused when handling a failed bond database load (thanks @dkkeller)
+
+- Fixes an issue where waiting on indications to be confirmed did not work. Regression introduced in v0.3.4
+
+**Changes**
+
+- Updates the descriptor discovery portion of service discovery to be more efficient, speeding up service discovery times
+
+- Updates the API lock at the driver layer to be per-device. This will reduce lock contention when using multiple BLE Devices in different threads
+
+
 v0.3.5
 ------
 
