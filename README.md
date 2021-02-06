@@ -12,6 +12,24 @@ Documentation is available on [ReadTheDocs](https://blatann.readthedocs.io)
 
 `pip install blatann`
 
+#### Using with macOS brew python
+
+`pc-ble-driver-py` consists of a shared object which is linked to mac's system python.
+In order to use it with brew's python install, you'll need to run `install_name_tool` to modify the `.so` to 
+point to brew python instead of system python.
+
+Example shell script to do so, which should be run after blatann is installed into your python env of choice:
+```shell
+# Adjust versions as needed and double-check these paths before running
+SYSTEM_PYTHON=/System/Library/Frameworks/Python.framework/Versions/3.9/Python
+SITE_PACKAGES=`python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"` # Make sure you're in the correct env/virtualenv first!
+PC_BLE_DRIVER_LOC=$SITE_PACKAGES/pc_ble_driver_py/lib/macos
+BREW_PYTHON=/usr/local/Cellar/python@3.8/3.8.3_2/Frameworks/Python.framework/Versions/3.8/lib/libpython3.8.dylib
+
+install_name_tool -change $SYSTEM_PYTHON $BREW_PYTHON $PC_BLE_DRIVER_LOC/_pc_ble_driver_sd_api_v2.so
+install_name_tool -change $SYSTEM_PYTHON $BREW_PYTHON $PC_BLE_DRIVER_LOC/_pc_ble_driver_sd_api_v5.so
+```
+
 #### Supported Devices/Software
 
 This library has been tested using both the nRF52 Dev Kits, the nRF52840 USB Dongle and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
@@ -58,7 +76,7 @@ and all features added will aim to maintain backwards compatibility.
     - [X] Documentation
 - [ ] GATT
     - [X] Configurable MTU
-    - [ ] Generic Access service configuration
+    - [X] Generic Access service configuration
     - [ ] Service Changed characteristic
 - [ ] GATT Server
     - [X] Characteristic Reads
@@ -102,7 +120,7 @@ and all features added will aim to maintain backwards compatibility.
     - More TBD (or on request)
 - [X] License
 - [ ] Unit Tests
-- [ ] Integration Tests
+- [X] Integration Tests
     - In progress. Advertising and Scanning mostly done
 
 
