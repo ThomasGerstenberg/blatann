@@ -18,17 +18,9 @@ Documentation is available on [ReadTheDocs](https://blatann.readthedocs.io)
 In order to use it with brew's python install, you'll need to run `install_name_tool` to modify the `.so` to 
 point to brew python instead of system python.
 
-Example shell script to do so, which should be run after blatann is installed into your python env of choice:
-```shell
-# Adjust versions as needed and double-check these paths before running
-SYSTEM_PYTHON=/System/Library/Frameworks/Python.framework/Versions/3.9/Python
-SITE_PACKAGES=`python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"` # Make sure you're in the correct env/virtualenv first!
-PC_BLE_DRIVER_LOC=$SITE_PACKAGES/pc_ble_driver_py/lib/macos
-BREW_PYTHON=/usr/local/Cellar/python@3.8/3.8.3_2/Frameworks/Python.framework/Versions/3.8/lib/libpython3.8.dylib
+_Note: This is the case with any custom-installed python on mac (like anaconda), brew is the most popular and what has been tested_
 
-install_name_tool -change $SYSTEM_PYTHON $BREW_PYTHON $PC_BLE_DRIVER_LOC/_pc_ble_driver_sd_api_v2.so
-install_name_tool -change $SYSTEM_PYTHON $BREW_PYTHON $PC_BLE_DRIVER_LOC/_pc_ble_driver_sd_api_v5.so
-```
+An example shell script to do so can be found [here](./tools/macos_retarget_pc_ble_driver_py.sh)  
 
 #### Supported Devices/Software
 
