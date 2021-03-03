@@ -67,4 +67,4 @@ If things do not seem to be working, check out the :doc:`./troubleshooting` page
 
 
 .. _nRF Connect: https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Connect-for-desktop
-.. _macos script: https://github.com/ThomasGerstenberg/blatann/tree/master/blatann/examples
+.. _macos script: https://github.com/ThomasGerstenberg/blatann/blob/master/tools/macos_retarget_pc_ble_driver_py.sh
