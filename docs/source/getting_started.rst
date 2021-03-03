@@ -45,7 +45,7 @@ There are other methods you can use (such as ``nrfutil``), however this is the l
 for using nRF Connect are out of scope for this as Nordic has great documentation for using their app already.
 
 The firmware image to use can be found within the installed ``pc-ble-driver-py`` python package under the ``hex/`` directory.
-From there, it's a drag and drop operation to get the image onto the firmware.
+From there, it's a drag and drop operation to get the fimrware image onto the hardware.
 
 See the :doc:`./compatibility_matrix` which lists what software, firmware, and hardware components work together.
 
