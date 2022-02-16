@@ -326,6 +326,11 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized
+    def ble_gap_tx_power_set(self, tx_power):
+        return driver.sd_ble_gap_tx_power_set(self.rpc_adapter, tx_power)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized
     def ble_gap_adv_start(self, adv_params=None, conn_cfg_tag=0):
         if not adv_params:
             adv_params = self.adv_params_setup()

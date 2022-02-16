@@ -43,6 +43,7 @@ class Advertiser(object):
         self._timeout = self.ADVERTISE_FOREVER
         self._advertise_mode = AdvertisingMode.connectable_undirected
         self._conn_tag = conn_tag
+        self._channel_disable_mask = [False, False, False]
 
     @property
     def on_advertising_timeout(self) -> Event[Advertiser, None]:
@@ -100,6 +101,23 @@ class Advertiser(object):
     @auto_restart.setter
     def auto_restart(self, value: bool):
         self._auto_restart = bool(value)
+
+    def set_channel_mask(self, ch37_enabled=True, ch38_enabled=True, ch39_enabled=True):
+        """
+        Enables/disables which channels advertising packets are sent out on.
+        By default, all 3 channels (37, 38, 39) are enabled.
+        At least one of the 3 channels MUST be enabled, otherwise a ValueError exception will be raised.
+
+        This mask will take effect the next time advertising is started or restarted due to timeout/disconnect.
+
+        :param ch37_enabled: True to enable advertising on channel 37, False to disable
+        :param ch38_enabled: True to enable advertising on channel 38, False to disable
+        :param ch39_enabled: True to enable advertising on channel 39, False to disable
+        """
+        if not any([ch37_enabled, ch38_enabled, ch39_enabled]):
+            raise ValueError("At least one advertising channel must be enabled")
+        # nRF API has the mask inverted, but didn't make sense to have this API inverted also
+        self._channel_disable_mask = [not ch37_enabled, not ch38_enabled, not ch39_enabled]
 
     def set_advertise_data(self,
                            advertise_data: AdvertisingData = AdvertisingData(),
@@ -187,7 +205,8 @@ class Advertiser(object):
         return ClientConnectionWaitable(self.ble_device, self.client)
 
     def _start(self):
-        params = nrf_types.BLEGapAdvParams(self._advertise_interval, self._timeout, self._advertise_mode)
+        params = nrf_types.BLEGapAdvParams(self._advertise_interval, self._timeout,
+                                           self._advertise_mode, self._channel_disable_mask)
         logger.info("Starting advertising, params: {}, auto-restart: {}".format(params, self._auto_restart))
         self.ble_device.ble_driver.ble_gap_adv_start(params, self._conn_tag)
         self._is_advertising = True

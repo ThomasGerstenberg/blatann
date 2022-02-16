@@ -253,6 +253,20 @@ class BleDevice(NrfDriverObserver):
         """
         return self._default_conn_config.max_att_mtu
 
+    def set_tx_power(self, tx_power):
+        """
+        Sets the radio transmit power. This is used for all connections, advertising, active scanning, etc.
+        Method can be called at any time
+
+        Valid transmit power values are -40, -20, -16, -12, -8, -4, 0, 3, and 4 dBm
+
+        :param tx_power: The transmit power to use, in dBm
+        """
+        valid_tx_power_values = [-40, -20, -16, -12, -8, -4, 0, 3, 4]
+        if tx_power not in valid_tx_power_values:
+            raise ValueError("Invalid transmit power value {}. Must be one of: {}".format(tx_power, valid_tx_power_values))
+        self.ble_driver.ble_gap_tx_power_set(tx_power)
+
     def connect(self, peer_address, connection_params=None) -> PeripheralConnectionWaitable:
         """
         Initiates a connection to a peripheral peer with the specified connection parameters, or uses the default
