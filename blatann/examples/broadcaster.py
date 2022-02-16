@@ -33,7 +33,7 @@ def main(serial_port):
     ble_device = BleDevice(serial_port)
     ble_device.open()
 
-    interval_ms = 100  # Send out an advertising packet every 500ms
+    interval_ms = 100  # Send out an advertising packet every 100ms
     timeout_sec = 0    # Advertise forever
     mode = AdvertisingMode.non_connectable_undirected  # Set mode to not allow connections
 

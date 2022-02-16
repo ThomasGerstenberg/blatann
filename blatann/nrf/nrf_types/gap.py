@@ -60,10 +60,11 @@ conn_timeout_range = TimeRange("Connection Timeout",
 
 
 class BLEGapAdvParams(object):
-    def __init__(self, interval_ms, timeout_s, advertising_type=BLEGapAdvType.connectable_undirected):
+    def __init__(self, interval_ms, timeout_s, advertising_type=BLEGapAdvType.connectable_undirected, channel_mask=None):
         self.interval_ms = interval_ms
         self.timeout_s = timeout_s
         self.advertising_type = advertising_type
+        self.channel_mask = channel_mask or [False, False, False]
 
     def to_c(self):
         adv_params = driver.ble_gap_adv_params_t()
@@ -75,13 +76,22 @@ class BLEGapAdvParams(object):
                                                  util.UNIT_0_625_MS)
         adv_params.timeout = self.timeout_s
 
+        mask = driver.ble_gap_adv_ch_mask_t()
+        mask.ch_37_off = self.channel_mask[0]
+        mask.ch_38_off = self.channel_mask[1]
+        mask.ch_39_off = self.channel_mask[2]
+        adv_params.channel_mask = mask
+
         return adv_params
 
     def __repr__(self):
-        return "{!r}(type: {!r}, interval: {!r}ms, timeout: {!r}s)".format(self.__class__.__name__,
-                                                                           self.advertising_type,
-                                                                           self.interval_ms,
-                                                                           self.timeout_s)
+        ch_mask_str = "".join([str(int(c)) for c in self.channel_mask])
+        return "{!r}(type: {!r}, interval: {!r}ms, timeout: {!r}s, ch mask: {})".format(
+            self.__class__.__name__,
+            self.advertising_type,
+            self.interval_ms,
+            self.timeout_s,
+            ch_mask_str)
 
 
 class BLEGapScanParams(object):
