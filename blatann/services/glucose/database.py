@@ -86,9 +86,9 @@ class BasicGlucoseDatabase(IGlucoseDatabase):
             records = self._records[:]
 
         if min_seq_num is not None:
-            records = filter(lambda r: r.sequence_number >= min_seq_num, records)
+            records = [r for r in records if r.sequence_number >= min_seq_num]
         if max_seq_num is not None:
-            records = filter(lambda r: r.sequence_number <= max_seq_num, records)
+            records = [r for r in records if r.sequence_number <= max_seq_num]
         return records
 
     def delete_records(self, min_seq_num=None, max_seq_num=None):
