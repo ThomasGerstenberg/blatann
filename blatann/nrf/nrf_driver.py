@@ -309,7 +309,8 @@ class NrfDriver(object):
             name = name.encode("utf8")
         write_perm = BLEGapSecMode(0, 0).to_c()
         length = len(name)
-        data = util.list_to_uint8_array(name).cast()
+        data_array = util.list_to_uint8_array(name)
+        data = data_array.cast()
         return driver.sd_ble_gap_device_name_set(self.rpc_adapter, write_perm, data, length)
 
     @NordicSemiErrorCheck
@@ -446,8 +447,10 @@ class NrfDriver(object):
     @NordicSemiErrorCheck
     @wrapt.synchronized
     def ble_gap_auth_key_reply(self, conn_handle, key_type, key):
+        key_data = None
         if key is not None:
-            key_buf = util.list_to_uint8_array(key).cast()
+            key_data = util.list_to_uint8_array(key)
+            key_buf = key_data.cast()
         else:
             key_buf = None
         return driver.sd_ble_gap_auth_key_reply(self.rpc_adapter, conn_handle, key_type, key_buf)
@@ -576,8 +579,10 @@ class NrfDriver(object):
     @NordicSemiErrorCheck
     @wrapt.synchronized
     def ble_gatts_sys_attr_set(self, conn_handle, sys_attr_data, flags=0):
+        data_array = None
         if sys_attr_data is not None:
-            data = util.list_to_uint8_array(sys_attr_data).cast()
+            data_array = util.list_to_uint8_array(sys_attr_data)
+            data = data_array.cast()
             length = len(sys_attr_data)
         else:
             data = None
