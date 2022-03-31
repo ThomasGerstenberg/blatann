@@ -2,9 +2,11 @@ from __future__ import annotations
 import logging
 import threading
 import enum
+from typing import Optional
 
 from blatann.event_type import EventSource, Event
 from blatann.gap import smp
+from blatann.gap.gap_types import Phy, PeerAddress, ConnectionParameters, ActiveConnectionParameters
 from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM, DLE_MAX, DLE_MIN, DLE_OVERHEAD
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
@@ -24,87 +26,6 @@ class PeerState(enum.Enum):
     DISCONNECTED = 0  #: Peer is disconnected
     CONNECTING = 1    #: Peer is in the process of connecting
     CONNECTED = 2     #: Peer is connected
-
-
-class Phy(enum.IntFlag):
-    """
-    The supported PHYs
-
-    .. note:: Coded PHY is currently not supported (hardware limitation)
-    """
-    auto = int(nrf_events.BLEGapPhy.auto)          #: Automatically select the PHY based on what's supported
-    one_mbps = int(nrf_events.BLEGapPhy.one_mbps)  #: 1 Mbps PHY
-    two_mbps = int(nrf_events.BLEGapPhy.two_mbps)  #: 2 Mbps PHY
-
-    # NOT SUPPORTED coded = int(nrf_events.BLEGapPhy.coded)
-
-
-class PeerAddress(nrf_events.BLEGapAddr):
-    pass
-
-
-class ConnectionParameters(nrf_events.BLEGapConnParams):
-    """
-    Represents the connection parameters that are sent during negotiation. This includes
-    the preferred min/max interval range, timeout, and slave latency
-    """
-    def __init__(self, min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency=0):
-        super(ConnectionParameters, self).__init__(min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency)
-        self.validate()
-
-    def validate(self):
-        conn_interval_range.validate(self.min_conn_interval_ms)
-        conn_interval_range.validate(self.max_conn_interval_ms)
-        conn_timeout_range.validate(self.conn_sup_timeout_ms)
-        if self.min_conn_interval_ms > self.max_conn_interval_ms:
-            raise ValueError(f"Minimum connection interval must be <= max connection interval "
-                             f"(Min: {self.min_conn_interval_ms} Max: {self.max_conn_interval_ms}")
-
-
-class ActiveConnectionParameters(object):
-    """
-    Represents the connection parameters that are currently in use with a peer device.
-    This is similar to ConnectionParameters with the sole difference being
-    the connection interval is not a min/max range but a single number
-    """
-    def __init__(self, conn_params: ConnectionParameters):
-        self._interval_ms = conn_params.min_conn_interval_ms
-        self._timeout_ms = conn_params.conn_sup_timeout_ms
-        self._slave_latency = conn_params.slave_latency
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return f"ConnectionParams({self._interval_ms}ms/{self._slave_latency}/{self._timeout_ms}ms)"
-
-    @property
-    def interval_ms(self) -> float:
-        """
-        **Read Only**
-
-        The connection interval, in milliseconds
-        """
-        return self._interval_ms
-
-    @property
-    def timeout_ms(self) -> float:
-        """
-        **Read Only**
-
-        The connection timeout, in milliseconds
-        """
-        return self._timeout_ms
-
-    @property
-    def slave_latency(self) -> int:
-        """
-        **Read Only**
-
-        The slave latency (the number of connection intervals the slave is allowed to skip before being
-        required to respond)
-        """
-        return self._slave_latency
 
 
 DEFAULT_CONNECTION_PARAMS = ConnectionParameters(15, 30, 4000, 0)
@@ -138,6 +59,7 @@ class Peer(object):
         self._on_disconnect = EventSource("On Disconnect", logger)
         self._on_mtu_exchange_complete = EventSource("On MTU Exchange Complete", logger)
         self._on_mtu_size_updated = EventSource("On MTU Size Updated", logger)
+        self._on_conn_params_updated = EventSource("On Connection Parameters Updated", logger)
         self._on_data_length_updated = EventSource("On Data Length Updated", logger)
         self._on_phy_updated = EventSource("On Phy Updated", logger)
         self._mtu_size = MTU_SIZE_DEFAULT
@@ -162,7 +84,7 @@ class Peer(object):
     def name(self) -> str:
         """
         The name of the peer, if known. This property is for the user's benefit to name certain connections.
-        The name is is also saved in the case that the peer is subsequently bonded to and can be looked up that way
+        The name is also saved in the case that the peer is subsequently bonded to and can be looked up that way
         in the bond database
 
         .. note:: For central peers this name is unknown unless set by the setter.
@@ -218,7 +140,8 @@ class Peer(object):
         """
         **Read Only**
 
-        Gets if the peer has bonding information stored in the bond database (the peer was bonded to in a previous connection)
+        Gets if the peer has bonding information stored in the bond database
+        (the peer was bonded to in a previous connection)
         """
         return self.security.is_previously_bonded
 
@@ -263,7 +186,8 @@ class Peer(object):
     def preferred_mtu_size(self) -> int:
         """
         The user-set preferred MTU size. Defaults to the Bluetooth default MTU size (23).
-        This is the value that will be negotiated during an MTU Exchange but is not guaranteed in the case that the peer has a smaller MTU
+        This is the value that will be negotiated during an MTU Exchange
+        but is not guaranteed in the case that the peer has a smaller MTU
 
         :getter: Gets the preferred MTU size that was configured
         :setter: Sets the preferred MTU size to use for MTU exchanges
@@ -346,6 +270,13 @@ class Peer(object):
         return self._on_mtu_size_updated
 
     @property
+    def on_connection_parameters_updated(self) -> Event[Peer, ConnectionParametersUpdatedEventArgs]:
+        """
+        Event generated when the connection parameters with this peer is updated
+        """
+        return self._on_conn_params_updated
+
+    @property
     def on_data_length_updated(self) -> Event[Peer, DataLengthUpdatedEventArgs]:
         """
         Event generated when the link layer data length has been updated
@@ -388,29 +319,38 @@ class Peer(object):
                                   min_connection_interval_ms: float,
                                   max_connection_interval_ms: float,
                                   connection_timeout_ms: int,
-                                  slave_latency=0):
+                                  slave_latency=0) -> Optional[EventWaitable[Peer, ConnectionParametersUpdatedEventArgs]]:
         """
         Sets the connection parameters for the peer and starts the connection parameter update process (if connected)
 
-        .. note:: Connection interval values should be a multiple of 1.25ms since that is the granularity allowed in the Bluetooth specification.
-           Any non-multiples will be rounded down to the nearest 1.25ms.
+        .. note:: Connection interval values should be a multiple of 1.25ms since that is the granularity allowed
+           in the Bluetooth specification. Any non-multiples will be rounded down to the nearest 1.25ms.
            Additionally, the connection timeout has a granularity of 10 milliseconds and will also be rounded as such.
 
         :param min_connection_interval_ms: The minimum acceptable connection interval, in milliseconds
         :param max_connection_interval_ms: The maximum acceptable connection interval, in milliseconds
         :param connection_timeout_ms: The connection timeout, in milliseconds
-        :param slave_latency: The slave latency allowed, which regulates how many connection intervals the peripheral is allowed to skip before responding
+        :param slave_latency: The slave latency allowed, which regulates how many connection intervals
+                              the peripheral is allowed to skip before responding
+
+        :return: If the peer is connected, this will return a waitable that will trigger when the update completes
+                 with the new connection parameters. If disconnected, returns None
         """
         self._preferred_connection_params = ConnectionParameters(min_connection_interval_ms, max_connection_interval_ms,
                                                                  connection_timeout_ms, slave_latency)
         if self.connected:
-            self.update_connection_parameters()
+            return self.update_connection_parameters()
+        return None
 
-    def update_connection_parameters(self):
+    def update_connection_parameters(self) -> EventWaitable[Peer, ConnectionParametersUpdatedEventArgs]:
         """
-        Starts the process to re-negotiate the connection parameters using the previously-set connection parameters
+        Starts the process to re-negotiate the connection parameters
+        using the configured preferred connection parameters
+
+        :return: A waitable that will trigger when the connection parameters are updated
         """
         self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._preferred_connection_params)
+        return EventWaitable(self._on_conn_params_updated)
 
     def exchange_mtu(self, mtu_size=None) -> EventWaitable[Peer, MtuSizeUpdatedEventArgs]:
         """
@@ -499,7 +439,9 @@ class Peer(object):
         self._current_connection_params = ActiveConnectionParameters(connection_params)
 
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
-        self.driver_event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate, nrf_events.GapEvtConnParamUpdateRequest)
+        self.driver_event_subscribe(self._on_connection_param_update,
+                                    nrf_events.GapEvtConnParamUpdate,
+                                    nrf_events.GapEvtConnParamUpdateRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
         self.driver_event_subscribe(self._on_data_length_update_request, nrf_events.GapEvtDataLengthUpdateRequest)
@@ -546,10 +488,7 @@ class Peer(object):
     Private Methods
     """
 
-    def _on_disconnect_event(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtDisconnected
-        """
+    def _on_disconnect_event(self, driver, event: nrf_events.GapEvtDisconnected):
         if not self.connected or self.conn_handle != event.conn_handle:
             return
         self.conn_handle = BLE_CONN_HANDLE_INVALID
@@ -564,10 +503,7 @@ class Peer(object):
         self._ble_device.ble_driver.event_unsubscribe(self._on_disconnect_event)
         self._ble_device.ble_driver.event_unsubscribe(self._on_connection_param_update)
 
-    def _on_connection_param_update(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtConnParamUpdate
-        """
+    def _on_connection_param_update(self, driver, event: nrf_events.GapEvtConnParamUpdate):
         if not self.connected or self.conn_handle != event.conn_handle:
             return
         if isinstance(event, nrf_events.GapEvtConnParamUpdateRequest):
@@ -576,6 +512,7 @@ class Peer(object):
         else:
             logger.debug("[{}] Updated to {}".format(self.conn_handle, event.conn_params))
             self._current_connection_params = ActiveConnectionParameters(event.conn_params)
+            self._on_conn_params_updated.notify(self, ConnectionParametersUpdatedEventArgs(self._current_connection_params))
 
     def _validate_mtu_size(self, mtu_size):
         if mtu_size < MTU_SIZE_MINIMUM:
@@ -629,7 +566,8 @@ class Peer(object):
 
 class Peripheral(Peer):
     """
-    Object which represents a BLE-connected device that is acting as a peripheral/server (local device is client/central)
+    Object which represents a BLE-connected device that is acting as a peripheral/server
+    (local device is client/central)
     """
     def __init__(self, ble_device, peer_address,
                  connection_params=DEFAULT_CONNECTION_PARAMS,
@@ -644,7 +582,8 @@ class Peripheral(Peer):
 
 class Client(Peer):
     """
-    Object which represents a BLE-connected device that is acting as a client/central (local device is peripheral/server)
+    Object which represents a BLE-connected device that is acting as a client/central
+    (local device is peripheral/server)
     """
     def __init__(self, ble_device,
                  connection_params=DEFAULT_CONNECTION_PARAMS,
