@@ -215,7 +215,7 @@ class AdvertisingData(object):
 
         service_uuid16s = []
         if uuid16_data:
-            if (len(uuid16_data) & 1) != 0:
+            if len(uuid16_data) % 2 != 0:
                 logger.debug(f"Got odd number of bytes for UUID16 Data: {uuid16_data}. Stripping last byte")
                 uuid16_data = uuid16_data[:-1]
             for i in range(0, len(uuid16_data), 2):
@@ -231,7 +231,7 @@ class AdvertisingData(object):
 
         service_uuid128s = []
         if uuid128_data:
-            leftover_bytes = len(uuid128_data) & 0x0F
+            leftover_bytes = len(uuid128_data) % 16
             if leftover_bytes != 0:
                 logger.debug(f"Got invalid multiple for UUID128 data: {uuid128_data}. "
                              f"Stripping off {leftover_bytes} bytes")
