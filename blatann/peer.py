@@ -592,8 +592,9 @@ class Peripheral(Peer):
         """
         Sets the connection parameter request handler to a callback that accepts any connection parameter
         update requests received from the peripheral. This is the same as calling ``set_conn_param_request_handler``
-        with a callback that simply returns the connection parameters passed in
-        :return:
+        with a callback that simply returns the connection parameters passed in.
+
+        This is the default functionality.
         """
         self._conn_param_update_request_handler = self._accept_all_conn_param_requests
 
