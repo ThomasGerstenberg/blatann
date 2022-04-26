@@ -29,16 +29,21 @@ class Waitable(object):
         :return: The result of the asynchronous operation
         :raises: TimeoutError
         """
+        did_timeout = False
         try:
             results = self._queue.get(timeout=timeout)
             if len(results) == 1:
                 return results[0]
             return results
         except queue.Empty:
+            did_timeout = True
+
+        if did_timeout:
             self._on_timeout()
             if exception_on_timeout:
                 raise TimeoutError("Timed out waiting for event to occur. "
                                    "Waitable type: {}".format(self.__class__.__name__))
+
         if self._n_args == 1:
             return None
         return [None] * self._n_args
