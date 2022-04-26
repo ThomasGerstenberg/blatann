@@ -27,13 +27,12 @@ class ConnectionParameters(nrf_events.BLEGapConnParams):
         super(ConnectionParameters, self).__init__(min_conn_interval_ms, max_conn_interval_ms, timeout_ms, slave_latency)
         self.validate()
 
-    def validate(self):
-        nrf_types.conn_interval_range.validate(self.min_conn_interval_ms)
-        nrf_types.conn_interval_range.validate(self.max_conn_interval_ms)
-        nrf_types.conn_timeout_range.validate(self.conn_sup_timeout_ms)
-        if self.min_conn_interval_ms > self.max_conn_interval_ms:
-            raise ValueError(f"Minimum connection interval must be <= max connection interval "
-                             f"(Min: {self.min_conn_interval_ms} Max: {self.max_conn_interval_ms}")
+    def __str__(self):
+        return (f"ConnectionParams([{self.min_conn_interval_ms}-{self.max_conn_interval_ms}] ms, "
+                f"timeout: {self.conn_sup_timeout_ms} ms, latency: {self.slave_latency}")
+
+    def __repr__(self):
+        return str(self)
 
 
 class ActiveConnectionParameters(object):
@@ -52,6 +51,13 @@ class ActiveConnectionParameters(object):
 
     def __str__(self):
         return f"ConnectionParams({self._interval_ms}ms/{self._slave_latency}/{self._timeout_ms}ms)"
+
+    def __eq__(self, other):
+        if not isinstance(other, ActiveConnectionParameters):
+            return False
+        return (self._interval_ms == other._interval_ms and
+                self._slave_latency == other._slave_latency and
+                self._timeout_ms == other._timeout_ms)
 
     @property
     def interval_ms(self) -> float:

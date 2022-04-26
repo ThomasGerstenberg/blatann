@@ -87,11 +87,11 @@ class ConnectionParametersUpdatedEventArgs(EventArgs):
     """
     Event arguments for when connection parameters between peers are updated
     """
-    def __init__(self, active_connection_parameters: ActiveConnectionParameters):
+    def __init__(self, active_connection_params: ActiveConnectionParameters):
         """
-        :param active_connection_parameters: The newly configured connection parameters
+        :param active_connection_params: The newly configured connection parameters
         """
-        self.active_connection_parameters = active_connection_parameters
+        self.active_connection_params = active_connection_params
 
 
 # SMP Event Args

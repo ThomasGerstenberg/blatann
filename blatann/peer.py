@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import threading
 import enum
-from typing import Optional
+from typing import Optional, Type
 
 from blatann.event_type import EventSource, Event
 from blatann.gap import smp
@@ -10,7 +10,7 @@ from blatann.gap.gap_types import Phy, PeerAddress, ConnectionParameters, Active
 from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM, DLE_MAX, DLE_MIN, DLE_OVERHEAD
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
-from blatann.nrf.nrf_types import conn_interval_range, conn_timeout_range, BLEGapDataLengthParams
+from blatann.nrf.nrf_types import BLEGapDataLengthParams
 from blatann.waitables.waitable import EmptyWaitable
 from blatann.waitables.connection_waitable import DisconnectionWaitable
 from blatann.waitables.event_waitable import EventWaitable
@@ -439,9 +439,7 @@ class Peer(object):
         self._current_connection_params = ActiveConnectionParameters(connection_params)
 
         self._ble_device.ble_driver.event_subscribe(self._on_disconnect_event, nrf_events.GapEvtDisconnected)
-        self.driver_event_subscribe(self._on_connection_param_update,
-                                    nrf_events.GapEvtConnParamUpdate,
-                                    nrf_events.GapEvtConnParamUpdateRequest)
+        self.driver_event_subscribe(self._on_connection_param_update, nrf_events.GapEvtConnParamUpdate)
         self.driver_event_subscribe(self._on_mtu_exchange_request, nrf_events.GattsEvtExchangeMtuRequest)
         self.driver_event_subscribe(self._on_mtu_exchange_response, nrf_events.GattcEvtMtuExchangeResponse)
         self.driver_event_subscribe(self._on_data_length_update_request, nrf_events.GapEvtDataLengthUpdateRequest)
@@ -504,15 +502,11 @@ class Peer(object):
         self._ble_device.ble_driver.event_unsubscribe(self._on_connection_param_update)
 
     def _on_connection_param_update(self, driver, event: nrf_events.GapEvtConnParamUpdate):
-        if not self.connected or self.conn_handle != event.conn_handle:
+        if not self.connected:
             return
-        if isinstance(event, nrf_events.GapEvtConnParamUpdateRequest):
-            logger.debug("[{}] Conn Params updating to {}".format(self.conn_handle, self._preferred_connection_params))
-            self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, self._preferred_connection_params)
-        else:
-            logger.debug("[{}] Updated to {}".format(self.conn_handle, event.conn_params))
-            self._current_connection_params = ActiveConnectionParameters(event.conn_params)
-            self._on_conn_params_updated.notify(self, ConnectionParametersUpdatedEventArgs(self._current_connection_params))
+        logger.debug("[{}] Conn params updated: {}".format(self.conn_handle, event.conn_params))
+        self._current_connection_params = ActiveConnectionParameters(event.conn_params)
+        self._on_conn_params_updated.notify(self, ConnectionParametersUpdatedEventArgs(self._current_connection_params))
 
     def _validate_mtu_size(self, mtu_size):
         if mtu_size < MTU_SIZE_MINIMUM:
@@ -578,6 +572,56 @@ class Peripheral(Peer):
                                          security_params, name, write_no_resp_queue_size)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
+        self._conn_param_update_request_handler = self._accept_all_conn_param_requests
+
+    def set_conn_param_request_handler(self, handler: TConnectionParamUpdateRequestHandler):
+        """
+        Configures a function callback to handle when a connection parameter request is received from the peripheral
+        and allows the user to decide how to handle the peripheral's requested connection parameters.
+
+        The callback is passed in 2 positional parameters: this ``Peripheral`` object
+        and the desired ``ConnectionParameter``s received in the request.
+        The callback should return the desired connection parameters to use, or None to reject the request altogether.
+
+        :param handler: The callback to determine which connection parameters to negotiate when an update request
+                        is received from the peripheral
+        """
+        self._conn_param_update_request_handler = handler
+
+    def accept_all_conn_param_requests(self):
+        """
+        Sets the connection parameter request handler to a callback that accepts any connection parameter
+        update requests received from the peripheral. This is the same as calling ``set_conn_param_request_handler``
+        with a callback that simply returns the connection parameters passed in
+        :return:
+        """
+        self._conn_param_update_request_handler = self._accept_all_conn_param_requests
+
+    def reject_conn_param_requests(self):
+        """
+        Sets the connection parameter request handler to a callback that rejects all connection parameter
+        update requests received from the peripheral. This is same as calling ``set_conn_param_request_handler``
+        with a callback that simply returns ``None``
+        """
+        self._conn_param_update_request_handler = self._reject_all_conn_param_requests
+
+    def peer_connected(self, conn_handle, peer_address, connection_params):
+        self.driver_event_subscribe(self._on_connection_param_update_request, nrf_events.GapEvtConnParamUpdateRequest)
+        super(Peripheral, self).peer_connected(conn_handle, peer_address, connection_params)
+
+    def _accept_all_conn_param_requests(self, peer: Peripheral, conn_params: ConnectionParameters):
+        return conn_params
+
+    def _reject_all_conn_param_requests(self, peer: Peripheral, conn_params: ConnectionParameters):
+        return None
+
+    def _on_connection_param_update_request(self, driver, event: nrf_events.GapEvtConnParamUpdateRequest):
+        if not self.connected:
+            return
+        conn_params = self._conn_param_update_request_handler(self, event.conn_params)
+        logger.debug("[{}] Conn params update request to: {}. Return: {}".format(self.conn_handle, event.conn_params, conn_params))
+
+        self._ble_device.ble_driver.ble_gap_conn_param_update(self.conn_handle, conn_params)
 
 
 class Client(Peer):
@@ -602,3 +646,9 @@ class Client(Peer):
         self._first_connection = False
         self._name = ""
         super(Client, self).peer_connected(conn_handle, peer_address, connection_params)
+
+
+# Type alias for callback function which handles connection parameter update requests.
+# Function is passed in a Peripheral and ConnectionParameters object
+# and returns the negotiated ConnectionParameters, or None to reject
+TConnectionParamUpdateRequestHandler: Type = Callable[[Peripheral, ConnectionParameters], Optional[ConnectionParameters]]
