@@ -167,6 +167,7 @@ class BLEGapAddrTypes(IntEnum):
     random_static = int(driver.BLE_GAP_ADDR_TYPE_RANDOM_STATIC)
     random_private_resolvable = int(driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE)
     random_private_non_resolvable = int(driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE)
+    anonymous = 127  # This isn't defined in the headers for Softdevice v5 and was added in v6
 
 
 class BLEGapAddr(object):
@@ -217,6 +218,8 @@ class BLEGapAddr(object):
             return 'res'
         elif self.addr_type == BLEGapAddrTypes.random_static:
             return 'static'
+        elif self.addr_type == BLEGapAddrTypes.anonymous:
+            return 'anonymous'
         else:
             return 'err'
 
@@ -239,7 +242,8 @@ class BLEGapAddr(object):
             BLEGapAddrTypes.public: "p",
             BLEGapAddrTypes.random_static: "s",
             BLEGapAddrTypes.random_private_resolvable: "r",
-            BLEGapAddrTypes.random_private_non_resolvable: "n"
+            BLEGapAddrTypes.random_private_non_resolvable: "n",
+            BLEGapAddrTypes.anonymous: "a"
         }[self.addr_type]
 
     def __str__(self):
