@@ -1,7 +1,7 @@
 import typing
 
 if typing.TYPE_CHECKING:
-    from blatann.peer import PeerAddress
+    from blatann.gap.gap_types import PeerAddress
 
 
 class BondingData(object):

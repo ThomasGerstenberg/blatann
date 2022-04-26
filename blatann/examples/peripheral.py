@@ -236,6 +236,10 @@ class CountingCharacteristicThread(object):
         self._stopped.set()
 
 
+def on_conn_params_updated(peer, event_args):
+    print(f"Conn params updated to {event_args.active_connection_params}")
+
+
 def main(serial_port):
     # Create and open the device
     ble_device = BleDevice(serial_port)
@@ -253,6 +257,7 @@ def main(serial_port):
     ble_device.client.security.on_passkey_display_required.register(on_passkey_display)
     ble_device.client.security.on_passkey_required.register(on_passkey_entry)
     ble_device.client.security.on_security_level_changed.register(on_security_level_changed)
+    ble_device.client.on_connection_parameters_updated.register(on_conn_params_updated)
 
     # Create and add the math service
     service = ble_device.database.add_service(constants.MATH_SERVICE_UUID)
@@ -301,4 +306,4 @@ def main(serial_port):
     
 
 if __name__ == '__main__':
-    main("COM13")
+    main("COM4")

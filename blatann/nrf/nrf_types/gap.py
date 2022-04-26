@@ -121,6 +121,14 @@ class BLEGapConnParams(object):
         self.conn_sup_timeout_ms = conn_sup_timeout_ms
         self.slave_latency = slave_latency
 
+    def validate(self):
+        conn_interval_range.validate(self.min_conn_interval_ms)
+        conn_interval_range.validate(self.max_conn_interval_ms)
+        conn_timeout_range.validate(self.conn_sup_timeout_ms)
+        if self.min_conn_interval_ms > self.max_conn_interval_ms:
+            raise ValueError(f"Minimum connection interval must be <= max connection interval "
+                             f"(Min: {self.min_conn_interval_ms} Max: {self.max_conn_interval_ms}")
+
     @classmethod
     def from_c(cls, conn_params):
         return cls(min_conn_interval_ms=util.units_to_msec(conn_params.min_conn_interval,
@@ -142,6 +150,9 @@ class BLEGapConnParams(object):
         conn_params.slave_latency = self.slave_latency
 
         return conn_params
+
+    def __repr__(self):
+        return str(self)
 
     def __str__(self):
         return "{}(interval: [{!r}-{!r}] ms, timeout: {!r} ms, latency: {!r})".format(self.__class__.__name__,

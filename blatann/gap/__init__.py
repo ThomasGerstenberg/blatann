@@ -1,10 +1,12 @@
-from blatann.nrf.nrf_types import BLEHci as _BLEHci
+import enum
+from blatann.nrf import nrf_events, nrf_types
 from blatann.gap.smp import (SecurityStatus, IoCapabilities, AuthenticationKeyType,
                              SecurityParameters, PairingPolicy, SecurityLevel)
 from blatann.gap.scanning import ScanParameters
 from blatann.gap.advertising import AdvertisingData, AdvertisingFlags
 
-HciStatus = _BLEHci
+
+HciStatus = nrf_types.BLEHci
 
 """
 The default link-layer packet size used when a connection is established

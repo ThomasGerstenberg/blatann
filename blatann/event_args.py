@@ -1,6 +1,7 @@
 from typing import TypeVar, Generic, Callable, Union
 from enum import Enum, auto
 
+from blatann.gap.gap_types import ActiveConnectionParameters
 from blatann.utils import repr_format
 
 from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
@@ -80,6 +81,17 @@ class PhyUpdatedEventArgs(EventArgs):
     def __init__(self, status, phy_channel):
         self.status = status
         self.phy_channel = phy_channel
+
+
+class ConnectionParametersUpdatedEventArgs(EventArgs):
+    """
+    Event arguments for when connection parameters between peers are updated
+    """
+    def __init__(self, active_connection_params: ActiveConnectionParameters):
+        """
+        :param active_connection_params: The newly configured connection parameters
+        """
+        self.active_connection_params = active_connection_params
 
 
 # SMP Event Args

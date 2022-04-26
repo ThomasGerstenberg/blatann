@@ -274,9 +274,9 @@ class BleDevice(NrfDriverObserver):
         either times out or reports the newly connected peer
 
         :param peer_address: The address of the peer to connect to
-        :type peer_address: peer.PeerAddress
+        :type peer_address: blatann.gap.gap_types.PeerAddress
         :param connection_params: Optional connection parameters to use. If not specified, uses the set default
-        :type connection_params: peer.ConnectionParameters
+        :type connection_params: blatann.gap.gap_types.ConnectionParameters
         :return: A Waitable which can be used to wait until the connection is successful or times out. Waitable returns
                  a peer.Peripheral object
         """
