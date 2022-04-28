@@ -11,6 +11,7 @@ _event_classes = [
     GapEvtConnected,
     GapEvtDisconnected,
     GapEvtConnParamUpdate,
+    GapEvtRssiChanged,
     GapEvtAdvReport,
     GapEvtTimeout,
     GapEvtConnParamUpdateRequest,

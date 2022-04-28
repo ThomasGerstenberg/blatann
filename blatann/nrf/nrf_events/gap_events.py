@@ -10,6 +10,22 @@ class GapEvt(BLEEvent):
     pass
 
 
+class GapEvtRssiChanged(GapEvt):
+    evt_id = driver.BLE_GAP_EVT_RSSI_CHANGED
+
+    def __init__(self, conn_handle, rssi):
+        super(GapEvtRssiChanged, self).__init__(conn_handle)
+        self.rssi = rssi
+
+    @classmethod
+    def from_c(cls, event):
+        rssi = event.evt.gap_evt.params.rssi_changed.rssi
+        return cls(conn_handle=event.evt.gap_evt.conn_handle, rssi=rssi)
+
+    def __repr__(self):
+        return self._repr_format(rssi=self.rssi)
+
+
 class GapEvtAdvReport(GapEvt):
     evt_id = driver.BLE_GAP_EVT_ADV_REPORT
 

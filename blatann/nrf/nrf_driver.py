@@ -366,6 +366,29 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized
+    def ble_gap_rssi_start(self, conn_handle, threshold_dbm, skip_count):
+        if threshold_dbm is None:
+            threshold_dbm = driver.BLE_GAP_RSSI_THRESHOLD_INVALID
+        return driver.sd_ble_gap_rssi_start(self.rpc_adapter, conn_handle, threshold_dbm, skip_count)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized
+    def ble_gap_rssi_stop(self, conn_handle):
+        return driver.sd_ble_gap_rssi_stop(self.rpc_adapter, conn_handle)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized
+    def ble_gap_rssi_get(self, conn_handle):
+        rssi = driver.new_int8()
+        err = driver.sd_ble_gap_rssi_get(self.rpc_adapter, conn_handle, rssi)
+        if err == driver.NRF_SUCCESS:
+            rssi = driver.int8_value(rssi)
+        else:
+            rssi = None
+        return err, rssi
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized
     def ble_gap_connect(self, address, scan_params=None, conn_params=None, conn_cfg_tag=0):
         assert isinstance(address, BLEGapAddr), 'Invalid argument type'
 
