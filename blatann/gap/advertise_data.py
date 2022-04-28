@@ -1,7 +1,7 @@
 import time
 from typing import Iterable, List, Dict, Union, Optional, Tuple
 import logging
-from blatann.nrf import nrf_types
+from blatann.nrf import nrf_types, nrf_events
 from blatann import uuid, exceptions
 
 
@@ -374,11 +374,10 @@ class ScanReportCollection(object):
         self._all_scans = []
         self._scans_by_peer_address = {}
 
-    def update(self, adv_report) -> ScanReport:
+    def update(self, adv_report: nrf_events.GapEvtAdvReport) -> ScanReport:
         """
         Used internally to update the collection with a new advertising report received
 
-        :type adv_report: nrf_events.GapEvtAdvReport
         :return: The Scan Report created from the advertising report
         """
         scan_entry = ScanReport(adv_report)
@@ -387,6 +386,6 @@ class ScanReportCollection(object):
         self._all_scans.append(scan_entry)
         if adv_report.peer_addr in self._scans_by_peer_address.keys():
             self._scans_by_peer_address[adv_report.peer_addr].update(adv_report)
-        else:
+        elif adv_report.peer_addr.addr_type != nrf_types.BLEGapAddrTypes.anonymous:
             self._scans_by_peer_address[adv_report.peer_addr] = ScanReport(adv_report)
         return scan_entry
