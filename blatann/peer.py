@@ -52,6 +52,7 @@ class Peer(object):
         self._name = name
         self._preferred_connection_params = connection_params
         self._current_connection_params = ActiveConnectionParameters(connection_params)
+        self._rssi_report_started = False
         self.conn_handle = BLE_CONN_HANDLE_INVALID
         self.peer_address = "",
         self.connection_state = PeerState.DISCONNECTED
@@ -62,6 +63,7 @@ class Peer(object):
         self._on_conn_params_updated = EventSource("On Connection Parameters Updated", logger)
         self._on_data_length_updated = EventSource("On Data Length Updated", logger)
         self._on_phy_updated = EventSource("On Phy Updated", logger)
+        self._on_rssi_changed = EventSource("On RSSI Updated", logger)
         self._mtu_size = MTU_SIZE_DEFAULT
         self._preferred_mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
@@ -107,6 +109,19 @@ class Peer(object):
         Gets if this peer is currently connected
         """
         return self.connection_state == PeerState.CONNECTED
+
+    @property
+    def rssi(self) -> Optional[int]:
+        """
+        **Read Only**
+
+        Gets the RSSI from the latest connection interval, or None if RSSI reporting is not enabled.
+
+        .. note:: In order for RSSI information to be available, :meth:`start_rssi_reporting` must be called first.
+        """
+        if not self._rssi_report_started:
+            return None
+        return self._ble_device.ble_driver.ble_gap_rssi_get(self.conn_handle)
 
     @property
     def bytes_per_notification(self) -> int:
@@ -254,6 +269,13 @@ class Peer(object):
         Event generated when the peer disconnects from the local device
         """
         return self._on_disconnect
+
+    @property
+    def on_rssi_changed(self) -> Event[Peer, int]:
+        """
+        Event generated when the RSSI has changed for the connection
+        """
+        return self._on_rssi_changed
 
     @property
     def on_mtu_exchange_complete(self) -> Event[Peer, MtuSizeUpdatedEventArgs]:
@@ -420,6 +442,31 @@ class Peer(object):
         self._discoverer.start()
         return EventWaitable(self._discoverer.on_discovery_complete)
 
+    def start_rssi_reporting(self, threshold_dbm: int = None, skip_count=1) -> EventWaitable[Peer, int]:
+        """
+        Starts collecting RSSI readings for the connection
+
+        :param threshold_dbm: Minimum change in dBm before triggering an RSSI changed event.
+                              The default value ``None`` disables the RSSI event
+                              (RSSI polled via the :attr:`rssi` property)
+        :param skip_count: Number of RSSI samples with a change of threshold_dbm or more before
+                           sending a new RSSI update event. Parameter ignored if threshold_dbm is None
+        :return: a Waitable that triggers once the first RSSI value is received, if threshold_dbm is not None
+        """
+        if self._rssi_report_started:
+            self.stop_rssi_reporting()
+        waitable = EventWaitable(self.on_rssi_changed)
+        self._ble_device.ble_driver.ble_gap_rssi_start(self.conn_handle, threshold_dbm, skip_count)
+        self._rssi_report_started = True
+        return waitable
+
+    def stop_rssi_reporting(self):
+        """
+        Stops collecting RSSI readings. Once stopped, :attr:`rssi` will return ``None``
+        """
+        self._ble_device.ble_driver.ble_gap_rssi_stop(self.conn_handle)
+        self._rssi_report_started = False
+
     """
     Internal Library Methods
     """
@@ -434,6 +481,7 @@ class Peer(object):
         self.peer_address = peer_address
         self._mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
+        self._rssi_report_started = False
         self._disconnect_waitable = DisconnectionWaitable(self)
         self.connection_state = PeerState.CONNECTED
         self._current_connection_params = ActiveConnectionParameters(connection_params)
@@ -446,6 +494,7 @@ class Peer(object):
         self.driver_event_subscribe(self._on_data_length_update, nrf_events.GapEvtDataLengthUpdate)
         self.driver_event_subscribe(self._on_phy_update_request, nrf_events.GapEvtPhyUpdateRequest)
         self.driver_event_subscribe(self._on_phy_update, nrf_events.GapEvtPhyUpdate)
+        self.driver_event_subscribe(self._rssi_changed, nrf_events.GapEvtRssiChanged)
         self._on_connect.notify(self)
 
     def _check_driver_event_connection_handle_wrapper(self, func):
@@ -507,6 +556,9 @@ class Peer(object):
         logger.debug("[{}] Conn params updated: {}".format(self.conn_handle, event.conn_params))
         self._current_connection_params = ActiveConnectionParameters(event.conn_params)
         self._on_conn_params_updated.notify(self, ConnectionParametersUpdatedEventArgs(self._current_connection_params))
+
+    def _rssi_changed(self, driver, event: nrf_events.GapEvtRssiChanged):
+        self._on_rssi_changed.notify(self, event.rssi)
 
     def _validate_mtu_size(self, mtu_size):
         if mtu_size < MTU_SIZE_MINIMUM:
