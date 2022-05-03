@@ -1,2 +1,3 @@
 sphinx-autodoc-typehints
 pc-ble-driver-py
+sphinx-rtd-theme

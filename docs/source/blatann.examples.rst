@@ -27,5 +27,6 @@ Submodules
    blatann.examples.peripheral_descriptors
    blatann.examples.peripheral_device_info_service
    blatann.examples.peripheral_glucose_service
+   blatann.examples.peripheral_rssi
    blatann.examples.peripheral_uart_service
    blatann.examples.scanner

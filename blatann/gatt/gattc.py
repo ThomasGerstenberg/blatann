@@ -358,6 +358,7 @@ class GattcCharacteristic(gatt.Characteristic):
         """
         Internal factory method used to create a new characteristic from a discovered nRF Characteristic
 
+        :meta private:
         :type ble_device: blatann.BleDevice
         :type peer: blatann.peer.Peer
         :type read_write_manager: GattcOperationManager
@@ -423,6 +424,7 @@ class GattcService(gatt.Service):
         Internal factory method used to create a new service from a discovered nRF Service.
         Also takes care of creating and adding all characteristics within the service
 
+        :meta private:
         :type ble_device: blatann.device.BleDevice
         :type peer: blatann.peer.Peer
         :type read_write_manager: GattcOperationManager
@@ -496,6 +498,7 @@ class GattcDatabase(gatt.GattDatabase):
         Adds the discovered NRF services from the service_discovery module.
         Used for internal purposes.
 
+        :meta private:
         :param nrf_services: The discovered services with all the characteristics and descriptors
         :type nrf_services: List[nrf_types.BLEGattService]
         """

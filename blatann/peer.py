@@ -475,7 +475,7 @@ class Peer(object):
         """
         Internal method called when the peer connects to set up the object.
 
-        **Should not be called by the user**
+        :meta private:
         """
         self.conn_handle = conn_handle
         self.peer_address = peer_address
@@ -508,6 +508,7 @@ class Peer(object):
         Internal method that subscribes handlers to NRF Driver events directed at this peer.
         Handlers are automatically unsubscribed once the peer disconnects.
 
+        :meta private:
         :param handler: The handler to subscribe
         :param event_types: The NRF Driver event types to subscribe to
         """
@@ -521,6 +522,7 @@ class Peer(object):
         """
         Internal method that unsubscribes handlers from NRF Driver events.
 
+        :meta private:
         :param handler: The handler to unsubscribe
         :param event_types: The event types to unsubscribe from
         """
@@ -659,6 +661,9 @@ class Peripheral(Peer):
         self._conn_param_update_request_handler = self._reject_all_conn_param_requests
 
     def peer_connected(self, conn_handle, peer_address, connection_params):
+        """
+        :meta private:
+        """
         self.driver_event_subscribe(self._on_connection_param_update_request, nrf_events.GapEvtConnParamUpdateRequest)
         super(Peripheral, self).peer_connected(conn_handle, peer_address, connection_params)
 
@@ -692,6 +697,9 @@ class Client(Peer):
         self._first_connection = True
 
     def peer_connected(self, conn_handle, peer_address, connection_params):
+        """
+        :meta private:
+        """
         # Recreate the DB and discovery class since the client object persists across disconnects
         if not self._first_connection:
             self._db = gattc.GattcDatabase(self._ble_device, self)

@@ -91,6 +91,7 @@ class CharacteristicProperties(object):
     @classmethod
     def from_nrf_properties(cls, nrf_props):
         """
+        :meta private:
         :type nrf_props: blatann.nrf.nrf_types.BLEGattCharacteristicProperties
         """
         return CharacteristicProperties(nrf_props.read, nrf_props.write, nrf_props.notify, nrf_props.indicate,
