@@ -16,7 +16,8 @@ PYTHON_SOURCE = ../blatann
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-all: apidoc html
+all: apidoc
+	@$(MAKE) --no-print-directory html
 
 clean-apidoc:
 	@$(RM) -rf $(SOURCEDIR)/blatann.*.rst

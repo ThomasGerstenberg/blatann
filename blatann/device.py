@@ -340,7 +340,7 @@ class BleDevice(NrfDriverObserver):
 
     def on_driver_event(self, nrf_driver, event):
         """
-        For internal use only
+        :meta private:
         """
         if isinstance(event, nrf_events.GapEvtConnected):
             conn_params = peer.ConnectionParameters(event.conn_params.min_conn_interval_ms,
