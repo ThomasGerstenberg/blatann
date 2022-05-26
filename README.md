@@ -60,8 +60,7 @@ Below lists the supported BLE features and ones that are on the roadmap to imple
       - Coded PHY not supported, only 1 and 2 Mbps PHYs
     - [X] Scanning
     - [X] Documentation
-    - [ ] RSSI (#97)
-      - RSSI is currently only available during scanning, not during active connection
+    - [X] RSSI
     - [X] Transmit Power
     - [X] Advertising channel selection
 - [X] SMP
