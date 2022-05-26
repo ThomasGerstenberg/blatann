@@ -1,6 +1,32 @@
 Changelog
 =========
 
+v0.4.0
+------
+
+v0.4.0 introduces some new features and fixes a couple of issues.
+Full list of issues and PRs for this release can be found here: `0.4.0 Milestone`_
+
+**Highlights**
+
+- Adds support for reading RSSI of an active connection, plus example usage of API
+
+- Adds Event+Waitable for Connection Parameter Update procedures
+
+  - Additionally adds support for accepting/rejecting update requests as a central
+
+- Adds support for setting the device's transmit power
+
+- Adds support for setting advertising channel masks
+
+**Fixes**
+
+- Fixes issues seen when performing certain pairing routines on linux
+
+- Fixes for misc. advertising corner cases
+
+- Fixes an issue with ``BasicGlucoseDatabase`` introduced in the python 3 migration
+
 
 v0.3.6
 ------
@@ -247,6 +273,7 @@ public API should be mostly unchanged except for the noted changes below.
 
 - Added ``AdvertisingData.to_bytes()`` to retrieve the data packet that will be advertised over the air
 
+.. _0.4.0 Milestone: https://github.com/ThomasGerstenberg/blatann/milestone/7?closed=1
 .. _Event callback example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/tests/integrated/test_advertising_duration.py#L48
 .. _ScanFinishedWaitable example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/blatann/examples/scanner.py#L20
 .. _Peripheral Descriptor Example: https://github.com/ThomasGerstenberg/blatann/blob/master/blatann/examples/peripheral_descriptors.py
