@@ -28,7 +28,7 @@ def lesc_pubkey_to_raw(public_key, little_endian=True):
 
 def lesc_privkey_to_raw(private_key, little_endian=True):
     pk = private_key.private_numbers()
-    x = bytearray.fromhex("{:032x}".format(pk.private_value))
+    x = bytearray.fromhex("{:064x}".format(pk.private_value))
     if little_endian:
         x = x[::-1]
     return x
