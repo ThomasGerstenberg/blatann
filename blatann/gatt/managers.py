@@ -110,7 +110,7 @@ class _ReadWriteManager(QueuedTasksManagerBase[Union[_ReadTask, _WriteTask]]):
         self._clear_all(GattOperationCompleteReason.SERVER_DISCONNECTED)
 
     def _on_timeout(self, sender, event_args):
-        self._clear_all(GattOperationCompleteReason.TIMEOUT)
+        self._clear_all(GattOperationCompleteReason.TIMED_OUT)
 
     def _read_complete(self, sender, event_args):
         """
