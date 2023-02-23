@@ -220,7 +220,6 @@ class BleEnableConfig(object):
     def get_service_changed_cfg(self):
         config = driver.ble_cfg_t()
         cfg = config.gatts_cfg.service_changed
-        cfg = driver.ble_gatts_cfg_service_changed_t()
         cfg.service_changed = self.service_changed_char
 
         return driver.BLE_GATTS_CFG_SERVICE_CHANGED, config
