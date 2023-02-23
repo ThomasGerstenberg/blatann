@@ -93,7 +93,7 @@ class BleDevice(NrfDriverObserver):
     configuration, and bond database.
 
     :param comport: The port the nRF52 device lives on, e.g. ``"COM3"``, ``"/dev/ttyS0"``
-    :param baud: The baud rate to use. By default the connectivity firmware images for v0.3+ use 1M baud.
+    :param baud: The baud rate to use. By default, the connectivity firmware images for v0.3+ use 1M baud.
     :param log_driver_comms: debug flag which will enable extra-verbose logging of all communications to the nRF52 hardware
     :param notification_hw_queue_size: Hardware-based queue size to use for notifications.
                                        This queue lives within the nRF52 hardware itself and has memory usage implications based on MTU size, etc.
@@ -146,7 +146,8 @@ class BleDevice(NrfDriverObserver):
                   max_connected_clients=1,
                   max_secured_peripherals=1,
                   attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
-                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE):
+                  att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE,
+                  event_length=6):
         """
         Configures the BLE Device with the given settings.
 
@@ -163,14 +164,20 @@ class BleDevice(NrfDriverObserver):
                                      Increase this number if there's a lot of services/characteristics in your GATT database.
         :param att_mtu_max_size: The maximum ATT MTU size supported. The default supports an MTU which will fit into
                                  a single transmission if Data Length Extensions is set to its max (251)
+        :param event_length: The number of 1.25ms event cycles to dedicate for each connection.
+                             The default value (6, =7.5ms) will support the max DLE length of 251 bytes.
+                             Minimum value is 2, typical values are 3-8 depending on desired throughput
+                             and number of concurrent connections
         """
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
-
+        if event_length < nrf_types.driver.BLE_GAP_EVENT_LENGTH_MIN:
+            raise ValueError(f"Event length must be >= {nrf_types.driver.BLE_GAP_EVENT_LENGTH_MIN}")
         self._ble_configuration = nrf_types.BleEnableConfig(vendor_specific_uuid_count, max_connected_clients,
                                                             max_connected_peripherals, max_secured_peripherals,
                                                             service_changed, attribute_table_size)
         self._default_conn_config.max_att_mtu = att_mtu_max_size
+        self._default_conn_config.event_length = event_length
 
     def open(self, clear_bonding_data=False):
         """
