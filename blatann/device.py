@@ -330,6 +330,21 @@ class BleDevice(NrfDriverObserver):
         self._default_security_params = SecurityParameters(passcode_pairing, io_capabilities, bond, out_of_band,
                                                            reject_pairing_requests, lesc_pairing)
 
+    def set_privacy_settings(self, enabled: bool, resolvable_address: bool = True,
+                             update_rate_seconds: int = nrf_types.BLEGapPrivacyParams.DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S):
+        """
+        Sets the privacy parameters for advertising and connections to the device. When enabled, a random private address
+        will be advertised and updated at the provided interval.
+
+        :param enabled: True to enable device privacy. Note that only device privacy is supported, network privacy is not
+        :param resolvable_address: True to use a private random resolvable address.
+                                   If the address is resolvable, bonded peers can use the device's IRK to determine the
+                                    device's actual public/random address.
+        :param update_rate_seconds: How often the address should be changed/updated, in seconds. Default is 900 (15min)
+        """
+        params = nrf_types.BLEGapPrivacyParams(enabled, resolvable_address, update_rate_seconds)
+        self.ble_driver.ble_gap_privacy_set(params)
+
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
         self.ble_driver.ble_user_mem_reply(event.conn_handle)

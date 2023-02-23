@@ -3,7 +3,9 @@ import time
 import unittest
 
 from blatann import BleDevice
+from blatann.gap import AdvertisingData, ScanParameters
 from blatann.gap.gap_types import ConnectionParameters
+from blatann.nrf.nrf_types import BLEGapAddrTypes
 from blatann.waitables import EventWaitable
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
@@ -29,9 +31,12 @@ class TestGap(BlatannTestCase):
         self.dev2.set_tx_power(0)
 
     def tearDown(self) -> None:
-        if self.central_conn.peer.connected:
+        self.periph.set_privacy_settings(False)
+        if self.central_conn.peer and self.central_conn.peer.connected:
             self.central_conn.peer.disconnect().wait(10)
             time.sleep(0.05)
+            self.central_conn.peer = None
+            self.periph_conn.peer = None
 
     def _run_conn_param_test(self, central_initiated, central_reject=False):
         conn_event_queue = queue.Queue()
@@ -145,3 +150,37 @@ class TestGap(BlatannTestCase):
 
         self.assertGreater(medium_rssi, low_rssi)
         self.assertLess(medium_rssi, initial_rssi)
+
+    def _run_privacy_test(self, resolvable_address):
+        name = "BLATANN TEST"
+        expected_addr_type = (BLEGapAddrTypes.random_private_resolvable
+                              if resolvable_address else
+                              BLEGapAddrTypes.random_private_non_resolvable)
+
+        advertise_data = AdvertisingData(flags=0x06, local_name=name)
+        self.periph.set_privacy_settings(enabled=True, resolvable_address=resolvable_address, update_rate_seconds=5)
+        self.periph.advertiser.set_advertise_data(advertise_data)
+        self.periph.advertiser.start(auto_restart=False)
+
+        # Scan for devices, then filter out ones by the expected name.
+        # With privacy update rate 5s and timeout_s 10, should expect at least 2 unique private resolvable peer addresses
+        scan_params = ScanParameters(interval_ms=75, window_ms=50, timeout_s=10, active=False)
+        scan_reports = self.central.scanner.start_scan(scan_params).wait()
+        self.periph.advertiser.stop()
+
+        found_addresses = []
+        for report in scan_reports.advertising_peers_found:
+            if report.device_name == name:
+                found_addresses.append(report.peer_address)
+
+        self.assertGreater(len(found_addresses), 1)
+        for addr in found_addresses:
+            self.assertEqual(addr.addr_type, expected_addr_type)
+        # Ensure they're unique addresses
+        self.assertEqual(len(found_addresses), len(set([str(s) for s in found_addresses])))
+
+    def test_advertising_private_resolvable_address(self):
+        self._run_privacy_test(resolvable_address=True)
+
+    def test_advertising_private_nonresolvable_address(self):
+        self._run_privacy_test(resolvable_address=False)

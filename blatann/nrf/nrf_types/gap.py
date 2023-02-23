@@ -6,6 +6,7 @@ from pc_ble_driver_py.exceptions import NordicSemiException
 from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_types.enums import *
+from blatann.utils import repr_format
 
 
 logger = logging.getLogger(__name__)
@@ -380,3 +381,35 @@ class BLEGapPhys(object):
         params.tx_phys = self.tx_phys
         params.rx_phys = self.rx_phys
         return params
+
+
+class BLEGapPrivacyParams(object):
+    DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S = driver.BLE_GAP_DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S
+
+    def __init__(self, enabled=False, resolvable_addr=False,
+                 addr_update_rate_s=DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S):
+        self.enabled = enabled
+        self.resolvable_addr = resolvable_addr
+        self.addr_update_rate_s = addr_update_rate_s
+
+    def to_c(self):
+        params = driver.ble_gap_privacy_params_t()
+        params.privacy_mode = driver.BLE_GAP_PRIVACY_MODE_DEVICE_PRIVACY if self.enabled else driver.BLE_GAP_PRIVACY_MODE_OFF
+        params.private_addr_cycle_s = self.addr_update_rate_s
+        params.private_addr_type = driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE if self.resolvable_addr else driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE
+        return params
+
+    @classmethod
+    def from_c(cls, privacy):
+        enabled = privacy.privacy_mode != driver.BLE_GAP_PRIVACY_MODE_OFF
+        resolvable_addr = privacy.private_addr_type == driver.BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE
+        update_rate = privacy.private_addr_cycle_s
+        return cls(enabled, resolvable_addr, update_rate)
+
+    def __repr__(self):
+        return repr_format(self, enabled=self.enabled,
+                           resolvable_addr=self.resolvable_addr,
+                           addr_update_rate_s=self.addr_update_rate_s)
+
+    def __str__(self):
+        return self.__repr__()

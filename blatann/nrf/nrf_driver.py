@@ -332,6 +332,13 @@ class NrfDriver(object):
 
     @NordicSemiErrorCheck
     @wrapt.synchronized
+    def ble_gap_privacy_set(self, privacy):
+        assert isinstance(privacy, BLEGapPrivacyParams)
+        params = privacy.to_c()
+        return driver.sd_ble_gap_privacy_set(self.rpc_adapter, params)
+
+    @NordicSemiErrorCheck
+    @wrapt.synchronized
     def ble_gap_adv_start(self, adv_params=None, conn_cfg_tag=0):
         if not adv_params:
             adv_params = self.adv_params_setup()
