@@ -2,7 +2,7 @@ import queue
 import unittest
 
 from blatann import BleDevice, gatt
-from blatann.bt_sig.uuids import DescriptorUuid
+from blatann.bt_sig.uuids import DescriptorUuid, CharacteristicUuid
 from blatann.event_args import WriteEventArgs
 from blatann.gatt import PresentationFormat, SubscriptionState
 from blatann.gatt.gattc import GattcCharacteristic
@@ -66,6 +66,8 @@ class TestGatt(BlatannTestCase):
 
     sender_q = queue.Queue
     received_value_q: queue.Queue
+
+    dev1_config = {"service_changed": True}
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -157,6 +159,11 @@ class TestGatt(BlatannTestCase):
         check_char_props(self.central_conn.indicate_char, indicate=True)
         check_char_props(self.central_conn.write_no_resp_char, write_no_response=True)
         check_char_props(self.central_conn.large_char, read=True, write=True)
+
+    def test_service_changed_exists(self):
+        service_changed_char = self.central_conn.db.find_characteristic(CharacteristicUuid.service_changed)
+        self.assertIsNotNone(service_changed_char)
+        self.assertTrue(service_changed_char.subscribable_indications)
 
     def test_descriptor_discovery(self):
         # all_char should have CCCD, SCCD, User Description, Presentation Format attributes
