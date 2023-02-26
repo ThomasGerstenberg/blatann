@@ -64,8 +64,9 @@ class BondDbEntry(object):
         # Wrong role
         if peer_is_client != self.peer_is_client:
             return False
-        # Entry has own address and doesn't match
-        if self.own_addr is not None and self.own_addr != own_address:
+        # Entry has own address and doesn't match.
+        own_addr = getattr(self, "own_addr", None)
+        if own_addr is not None and own_addr != own_address:
             return False
 
         if self.peer_address_matches_or_resolves(peer_address):
@@ -99,9 +100,12 @@ class BondDbEntry(object):
         return False
 
     def to_dict(self):
+        # When loaded from older pickle formats, own_addr will not exist
+        own_addr = getattr(self, "own_addr", None)
+
         return {
             "id": self.id,
-            "own_addr": str(self.own_addr) if self.own_addr else None,
+            "own_addr": str(own_addr) if own_addr else None,
             "name": self.name,
             "peer_addr": str(self.peer_addr),
             "peer_is_client": self.peer_is_client,
