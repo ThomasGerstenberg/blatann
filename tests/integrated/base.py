@@ -16,7 +16,7 @@ HERE = os.path.dirname(__file__)
 
 BLATANN_QUICK_ENVKEY = "BLATANN_TEST_QUICK"
 BLATANN_DEV_ENVKEY_FORMAT = "BLATANN_DEV_{}"
-BOND_DB_FILE_FMT = os.path.join(HERE, "bond_db{}.pkl")
+BOND_DB_FILE_FMT = os.path.join(HERE, "bond_db{}.json")
 
 
 def _configure_device(dev_number, config, optional=False):

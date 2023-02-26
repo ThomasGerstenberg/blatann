@@ -167,6 +167,18 @@ class BLEGapMasterId(object):
         ediv = master_id.ediv
         return cls(ediv, bytearray(rand))
 
+    def to_dict(self):
+        return {
+            "ediv": self.ediv,
+            "rand": binascii.hexlify(self.rand).decode("ascii")
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        ediv = data["ediv"]
+        rand = binascii.unhexlify(data["rand"])
+        return cls(ediv, rand)
+
     def __eq__(self, other):
         if not isinstance(other, BLEGapMasterId):
             return False
@@ -200,6 +212,20 @@ class BLEGapEncryptInfo(object):
         auth = info.auth
         return cls(ltk, lesc, auth)
 
+    def to_dict(self):
+        return {
+            "ltk": binascii.hexlify(self.ltk).decode("ascii"),
+            "lesc": self.lesc,
+            "auth": self.auth
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        ltk = binascii.unhexlify(data["ltk"])
+        lesc = data["lesc"]
+        auth = data["auth"]
+        return cls(ltk, lesc, auth)
+
     def __repr__(self):
         if not self.ltk:
             return ""
@@ -222,6 +248,18 @@ class BLEGapEncryptKey(object):
     def from_c(cls, key):
         enc_info = BLEGapEncryptInfo.from_c(key.enc_info)
         master_id = BLEGapMasterId.from_c(key.master_id)
+        return cls(enc_info, master_id)
+
+    def to_dict(self):
+        return {
+            "enc_info": self.enc_info.to_dict(),
+            "master_id": self.master_id.to_dict()
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        enc_info = BLEGapEncryptInfo.from_dict(data["enc_info"])
+        master_id = BLEGapMasterId.from_dict(data["master_id"])
         return cls(enc_info, master_id)
 
     def __repr__(self):
@@ -255,6 +293,18 @@ class BLEGapIdKey(object):
         irk = bytearray(util.uint8_array_to_list(id_key.id_info.irk, cls.KEY_LENGTH))
         addr = BLEGapAddr.from_c(id_key.id_addr_info)
         return cls(irk, addr)
+
+    def to_dict(self):
+        return {
+            "irk": binascii.hexlify(self.irk).decode("ascii"),
+            "peer_addr": str(self.peer_addr) if self.peer_addr is not None else None
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        irk = binascii.unhexlify(data["irk"])
+        peer_addr = BLEGapAddr.from_string(data["peer_addr"])
+        return cls(irk, peer_addr)
 
     def __repr__(self):
         if not self.irk:
@@ -325,6 +375,15 @@ class BLEGapSignKey(object):
     def from_c(cls, key):
         key_data = bytearray(util.uint8_array_to_list(key.csrk, cls.KEY_LENGTH))
         return cls(key_data)
+
+    def to_dict(self):
+        return {
+            "key": binascii.hexlify(self.key).decode("ascii")
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(binascii.unhexlify(data["key"]))
 
     def __repr__(self):
         if not self.key:

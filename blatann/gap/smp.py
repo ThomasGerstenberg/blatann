@@ -6,6 +6,7 @@ import typing
 
 from blatann.gap import smp_crypto
 from blatann.gap.bond_db import BondingData
+from blatann.gap.gap_types import PeerAddress
 from blatann.nrf import nrf_types, nrf_events
 from blatann.exceptions import InvalidStateException, InvalidOperationException
 from blatann.event_type import EventSource, Event
@@ -110,6 +111,7 @@ class SecurityManager(object):
         :type security_parameters: SecurityParameters
         """
         self.ble_device = ble_device
+        self.address: PeerAddress = None
         self.peer = peer
         self._security_params = security_parameters
         self._pairing_in_process = False
@@ -293,7 +295,7 @@ class SecurityManager(object):
 
         # if in the client role and don't want to force a re-pair, check for bonding data first
         if self.peer.is_peripheral and not force_repairing:
-            bond_entry = self._find_db_entry(self.peer.peer_address)
+            bond_entry = self.ble_device.bond_db.find_entry(self.address, self.peer.peer_address, self.peer.is_client)
             if bond_entry:
                 logger.info("Re-establishing encryption with peer using LTKs")
                 # If bonding data was created using LESC use our own LTKs, otherwise use the peer's
@@ -350,6 +352,7 @@ class SecurityManager(object):
         self._pairing_in_process = False
         self._initiated_encryption = False
         self._security_level = SecurityLevel.OPEN
+        self.address = self.ble_device.address
         self.keyset = nrf_types.BLEGapSecKeyset()
         self.keyset.own_keys.public_key.key = smp_crypto.lesc_pubkey_to_raw(self._public_key)
 
@@ -363,51 +366,14 @@ class SecurityManager(object):
         self.peer.driver_event_subscribe(self._on_security_request, nrf_events.GapEvtSecRequest)
 
         # Search the bonding DB for this peer's info
-        self.bond_db_entry = self._find_db_entry(self.peer.peer_address)
+        self.bond_db_entry = self.ble_device.bond_db.find_entry(self.address,
+                                                                self.peer.peer_address,
+                                                                self.peer.is_client)
         if self.bond_db_entry:
             logger.info("Connected to previously bonded device {}".format(self.bond_db_entry.peer_addr))
             self._is_previously_bonded_device = True
         else:
             self._is_previously_bonded_device = False
-
-    def _find_db_entry(self, peer_address, master_id=None):
-        for r in self.ble_device.bond_db:
-            # Check that roles match
-            if self.peer.is_client != r.peer_is_client:
-                continue
-            # Check if peer address matches
-            if self._peer_address_matches_or_resolves(peer_address, r):
-                # If the bonding data is LESC, always return it.
-                # Otherwise if a master ID is provided to match against, it should be used
-                if r.bonding_data.own_ltk.enc_info.lesc or not master_id:
-                    logger.debug("Matched database entry on peer address")
-                    return r
-
-            # Check for master IDs
-            if master_id:
-                own_mid = r.bonding_data.own_ltk.master_id
-                peer_mid = r.bonding_data.peer_ltk.master_id
-                if own_mid == master_id:
-                    logger.debug("Found matching record with own master ID")
-                    return r
-                if peer_mid == master_id:
-                    logger.debug("Found matching record with peer master ID")
-                    return r
-
-        return None
-
-    def _peer_address_matches_or_resolves(self, peer_address, bond_record):
-        if peer_address.addr_type == nrf_types.BLEGapAddrTypes.random_private_non_resolvable:
-            return False
-
-        # If peer address is public or random static, check directly if they match (no IRK needed)
-        if peer_address.addr_type in [nrf_types.BLEGapAddrTypes.random_static, nrf_types.BLEGapAddrTypes.public]:
-            if bond_record.peer_addr == peer_address:
-                return True
-        elif smp_crypto.private_address_resolves(peer_address, bond_record.bonding_data.peer_id.irk):
-            logger.info("Resolved Peer address to {}".format(bond_record.peer_addr))
-            return True
-        return False
 
     def _get_security_params(self):
         keyset_own = nrf_types.BLEGapSecKeyDist(True, True, False, False)
@@ -495,7 +461,10 @@ class SecurityManager(object):
         """
         # If bond entry wasn't found on connect, try another time now just in case
         if not self.bond_db_entry:
-            self.bond_db_entry = self._find_db_entry(self.peer.peer_address, event.master_id)
+            self.bond_db_entry = self.ble_device.bond_db.find_entry(self.address,
+                                                                    self.peer.peer_address,
+                                                                    self.peer.is_client,
+                                                                    event.master_id)
 
         if self.bond_db_entry:
             self._initiated_encryption = True
@@ -548,20 +517,23 @@ class SecurityManager(object):
 
             # If there wasn't a bond record initially, try again a second time using the new public peer address
             if not self.bond_db_entry:
-                self.bond_db_entry = self._find_db_entry(self.keyset.peer_keys.id_key.peer_addr)
+                self.bond_db_entry = self.ble_device.bond_db.find_entry(self.address,
+                                                                        self.keyset.peer_keys.id_key.peer_addr,
+                                                                        self.peer.is_client)
 
             # Still no bond DB entry, create a new one
             if not self.bond_db_entry:
                 logger.info("New bonded device, creating a DB Entry")
                 self.bond_db_entry = self.ble_device.bond_db.create()
+                self.bond_db_entry.own_addr = self.address
                 self.bond_db_entry.peer_is_client = self.peer.is_client
                 self.bond_db_entry.peer_addr = self.keyset.peer_keys.id_key.peer_addr
-                self.bond_db_entry.bonding_data = BondingData(self.keyset)
+                self.bond_db_entry.bonding_data = BondingData.from_keyset(self.keyset)
                 self.bond_db_entry.name = self.peer.name
                 self.ble_device.bond_db.add(self.bond_db_entry)
             else:  # update the bonding info
                 logger.info("Updating bond key for peer {}".format(self.keyset.peer_keys.id_key.peer_addr))
-                self.bond_db_entry.bonding_data = BondingData(self.keyset)
+                self.bond_db_entry.bonding_data = BondingData.from_keyset(self.keyset)
 
             # TODO: This doesn't belong here..
             self.ble_device.bond_db_loader.save(self.ble_device.bond_db)
