@@ -59,6 +59,11 @@ class PickleDatabaseStrategy(DatabaseStrategy):
     def load(self, filename) -> DefaultBondDatabase:
         with open(filename, "rb") as f:
             db = pickle.load(f)
+            # Check if records are old entries missing own_db. If so, add it in
+            for record in db:
+                if not hasattr(record, "own_addr"):
+                    print("Adding own_addr")
+                    record.own_addr = None
             return db
 
     def save(self, filename, db: DefaultBondDatabase):
