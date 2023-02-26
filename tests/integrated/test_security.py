@@ -44,23 +44,47 @@ class TestSecurity(BlatannTestCase):
 
     def tearDown(self) -> None:
         self._disconnect()
+        time.sleep(0.5)
 
-    def _connect(self):
-        addr = self.periph_dev.address
+    def _connect(self, scan_for_address=False):
+        event = threading.Event()
+        def on_connect(*args):
+            event.set()
+
         self.periph_dev.advertiser.start()
-        self.peer_per = self.central_dev.connect(addr).wait(5)
+        if scan_for_address:
+            addr = self._scan_for_address()
+        else:
+            addr = self.periph_dev.address
+
+        with self.peer_cen.on_connect.register(on_connect):
+            self.peer_per = self.central_dev.connect(addr).wait(5)
+            event.wait(5)
+        self.assertTrue(event.is_set())
+
+    def _scan_for_address(self):
+        for scan_report in self.central_dev.scanner.start_scan(clear_scan_reports=True).scan_reports:
+            if scan_report.device_name == "BlatannTest":
+                return scan_report.peer_address
+        return None
 
     def _disconnect(self, clear_peer=True):
+        event = threading.Event()
+        def on_disconnect(*args):
+            event.set()
+
         if self.peer_per:
-            self.peer_per.disconnect().wait(5)
-            time.sleep(0.5)
+            with self.peer_cen.on_disconnect.register(on_disconnect):
+                self.peer_per.disconnect().wait(5)
+                event.wait(5)
+                time.sleep(0.5)
             if clear_peer:
                 self.peer_per = None
 
-    def _reconnect(self, should_be_bonded):
+    def _reconnect(self, should_be_bonded, scan_for_address=False):
         time.sleep(0.5)
         self._disconnect(clear_peer=False)
-        self._connect()
+        self._connect(scan_for_address)
         if should_be_bonded:
             self.assertTrue(self.peer_per.is_previously_bonded)
             self.assertTrue(self.peer_cen.is_previously_bonded)
@@ -271,5 +295,22 @@ class TestSecurity(BlatannTestCase):
 
         self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
+    def test_pairing_peripheral_private_resolvable_address(self):
+        self.periph_dev.set_privacy_settings(enabled=True, resolvable_address=True)
+
+        initiate_using_central = True
+        use_passcode = False
+        io_caps = IoCapabilities.NONE
+        bond = True
+        reject = False
+        lesc = True
+
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
+
+        # Reconnect and pair again,
+        # will need to scan for the address since it'll be advertising in private non-resolvable mode
+        self._reconnect(bond, scan_for_address=True)
+
+        self._perform_pairing(initiate_using_central, use_passcode, io_caps, bond, reject, lesc)
 
     # TODO: Add more tests

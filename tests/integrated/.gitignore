@@ -1,2 +1,3 @@
 # Bonding database used for integrated tests
 bond_db*.pkl
+bond_db*.json

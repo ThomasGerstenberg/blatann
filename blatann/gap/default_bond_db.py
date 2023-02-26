@@ -1,50 +1,155 @@
+from __future__ import annotations
 import os
 import logging
 import pickle
-from typing import List
+import json
+import typing
+from typing import List, Optional
 
 import blatann
 from blatann.gap.bond_db import BondDatabase, BondDbEntry, BondDatabaseLoader
-
+from blatann.gap.gap_types import PeerAddress
+from blatann.nrf.nrf_types import BLEGapMasterId
 
 logger = logging.getLogger(__name__)
 
 
-system_default_db_file = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db.pkl")
-user_default_db_file = os.path.join(os.path.expanduser("~"), ".blatann", "bonding_db.pkl")
+system_default_db_base_filename = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db")
+user_default_db_base_filename = os.path.join(os.path.expanduser("~"), ".blatann", "bonding_db")
+special_bond_db_filemap = {
+    "user": user_default_db_base_filename,
+    "system": system_default_db_base_filename
+}
+
+
+class DatabaseStrategy:
+    @property
+    def file_extension(self) -> str:
+        raise NotImplementedError
+
+    def load(self, filename) -> DefaultBondDatabase:
+        raise NotImplementedError
+
+    def save(self, filename: str, db: DefaultBondDatabase):
+        raise NotImplementedError
+
+
+class JsonDatabaseStrategy(DatabaseStrategy):
+    @property
+    def file_extension(self) -> str:
+        return ".json"
+
+    def load(self, filename) -> DefaultBondDatabase:
+        with open(filename, "r") as f:
+            data = json.load(f)
+        records = [BondDbEntry.from_dict(e) for e in data["records"]]
+        return DefaultBondDatabase(records)
+
+    def save(self, filename: str, db: DefaultBondDatabase):
+        data = {"records": [r.to_dict() for r in db]}
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=2)
+
+
+class PickleDatabaseStrategy(DatabaseStrategy):
+    @property
+    def file_extension(self) -> str:
+        return ".pkl"
+
+    def load(self, filename) -> DefaultBondDatabase:
+        with open(filename, "rb") as f:
+            db = pickle.load(f)
+            # Check if records are old entries missing own_db. If so, add it in
+            for record in db:
+                if not hasattr(record, "own_addr"):
+                    print("Adding own_addr")
+                    record.own_addr = None
+            return db
+
+    def save(self, filename, db: DefaultBondDatabase):
+        with open(filename, "wb") as f:
+            pickle.dump(db, f)
+
+
+database_strategies = [
+    PickleDatabaseStrategy(),
+    JsonDatabaseStrategy()
+]
+
+database_strategies_by_extension: typing.Dict[str, DatabaseStrategy] = {
+    s.file_extension: s for s in database_strategies
+}
 
 
 # TODO 04.16.2019: Replace pickling with something more secure
 class DefaultBondDatabaseLoader(BondDatabaseLoader):
-    def __init__(self, filename=user_default_db_file):
-        self.filename = filename
+    def __init__(self, filename=user_default_db_base_filename):
+        if filename in special_bond_db_filemap:
+            base_filename = special_bond_db_filemap[filename]
+            self.filename = self.migrate_to_json(base_filename)
+        else:
+            self.filename = filename
+        self.strategy = None
+
+    def _get_strategy(self):
+        if self.strategy is None:
+            file_ext = os.path.splitext(self.filename)[1]
+            if file_ext not in database_strategies_by_extension:
+                raise ValueError(f"Unsupported file type '{file_ext}'. "
+                                 f"Supported extensions: {', '.join(database_strategies_by_extension.keys())}")
+            self.strategy = database_strategies_by_extension[file_ext]
+        return self.strategy
+
+    def migrate_to_json(self, base_filename):
+        pkl_file = base_filename + ".pkl"
+        json_file = base_filename + ".json"
+        # If the pickle file doesn't exist, it's either already been migrated to JSON
+        # or never existed at all. Either way use JSON
+        if not os.path.exists(pkl_file):
+            return json_file
+
+        migration_required = False
+        if os.path.exists(json_file):
+            if os.path.getmtime(pkl_file) > os.path.getmtime(json_file):
+                logger.warning("Both pickle and json bond databases exist, pickle file is newer."
+                               "The existing json bond database will be overwritten")
+                migration_required = True
+        else:
+            migration_required = True
+        # Pickle file exists. If JSON file does not exist, load the db using the pickler,
+        # then save it out using the json
+        if migration_required:
+            migrate_bond_database(pkl_file, json_file)
+        os.remove(pkl_file)
+        return json_file
 
     def _create_dirs(self):
         dirname = os.path.dirname(self.filename)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-    def load(self):
+    def load(self) -> DefaultBondDatabase:
         if not os.path.exists(self.filename):
             return DefaultBondDatabase()
+
+        strategy = self._get_strategy()
         try:
-            with open(self.filename, "rb") as f:
-                db = pickle.load(f)
-                logger.info("Loaded Bond DB '{}'".format(self.filename))
-                return db
+            db = strategy.load(self.filename)
+            return db
         except Exception as e:
             logger.exception("Failed to load Bond DB '{}'".format(self.filename))
             return DefaultBondDatabase()
 
-    def save(self, db):
+    def save(self, db: DefaultBondDatabase):
+        strategy = self._get_strategy()
         self._create_dirs()
-        with open(self.filename, "wb") as f:
-            pickle.dump(db, f)
+        logger.info(f"Saving bond database to {self.filename}")
+        strategy.save(self.filename, db)
 
 
 class DefaultBondDatabase(BondDatabase):
-    def __init__(self):
-        self._records: List[BondDbEntry] = []
+    def __init__(self, records: List[BondDbEntry] = None):
+        self._records = records or []
         self.current_id = 0
 
     def __iter__(self):
@@ -81,3 +186,28 @@ class DefaultBondDatabase(BondDatabase):
 
     def delete_all(self):
         self._records = []
+
+    def find_entry(self, own_address: PeerAddress,
+                   peer_address: PeerAddress,
+                   peer_is_client: bool,
+                   master_id: BLEGapMasterId = None) -> Optional[BondDbEntry]:
+        for record in self._records:
+            if record.matches_peer(own_address, peer_address, peer_is_client, master_id):
+                return record
+
+        return None
+
+
+def migrate_bond_database(from_file: str, to_file: str):
+    from_ext = os.path.splitext(from_file)[1]
+    to_ext = os.path.splitext(to_file)[1]
+    supported_extensions = ", ".join(database_strategies_by_extension.keys())
+    if from_ext not in database_strategies_by_extension:
+        raise ValueError(f"Unsupported file extension '{from_ext}'. Supported extensions: {supported_extensions}")
+    if to_ext not in database_strategies_by_extension:
+        raise ValueError(f"Unsupported file_extension '{to_ext}'. Supported extensions: {supported_extensions}")
+    load_strategy = database_strategies_by_extension[from_ext]
+    save_strategy = database_strategies_by_extension[to_ext]
+    logger.info(f"Migrating Bond DB '{from_file}' to '{to_file}'")
+    db = load_strategy.load(from_file)
+    save_strategy.save(to_file, db)

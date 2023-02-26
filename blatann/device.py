@@ -100,9 +100,12 @@ class BleDevice(NrfDriverObserver):
                                        This probably won't need to be changed, and from current testing the queue isn't fully exercised
     :param write_command_hw_queue_size: Hardware-based queue size to use for write commands (write w/o response).
                                         Same comments about notification queue apply here.
-    :param bond_db_filename: Optional filename to use for loading/saving the bonding database. Two special values also exist:
+    :param bond_db_filename: Optional filename to use for loading/saving the bonding database.
+                             The supported file formats/extensions are: ".pkl" (legacy) and ".json". json is preferred.
 
-                             - ``"user"`` [default] - saves the database within the user's home directory  (``~/.blatann/bonding_db.pkl``).
+                             Two special values also exist:
+
+                             - ``"user"`` [default] - saves the database within the user's home directory  (``~/.blatann/bonding_db.json``).
                                This is useful for cases where you may not have write access to the python install location, want to
                                persist the bonding database across virtualenvs, or limit the access to just the logged-in user
                              - ``"system"`` - saves the database within this library's directory structure, wherever it is installed or imported from.
@@ -121,11 +124,7 @@ class BleDevice(NrfDriverObserver):
                                                             hvn_tx_queue_size=notification_hw_queue_size,         # Hardware queue of 16 notifications
                                                             write_cmd_tx_queue_size=write_command_hw_queue_size)  # Hardware queue of 16 write cmds (no response)
 
-        special_bond_db_filemap = {"user": default_bond_db.user_default_db_file, "system": default_bond_db.system_default_db_file}
-        bond_db_filename = special_bond_db_filemap.get(bond_db_filename.lower(), bond_db_filename)
-
-        self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader(bond_db_filename)
-        self.bond_db = default_bond_db.DefaultBondDatabase()
+        self._setup_bond_db(bond_db_filename)
 
         self.client = peer.Client(self)
         self.connected_peripherals = {}
@@ -139,6 +138,10 @@ class BleDevice(NrfDriverObserver):
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
         self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
         self._att_mtu_max = MTU_SIZE_MINIMUM
+
+    def _setup_bond_db(self, bond_db_filename):
+        self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader(bond_db_filename)
+        self.bond_db = default_bond_db.DefaultBondDatabase()
 
     def configure(self, vendor_specific_uuid_count=10,
                   service_changed=False,
@@ -156,7 +159,7 @@ class BleDevice(NrfDriverObserver):
         :param vendor_specific_uuid_count: The Nordic hardware limits number of 128-bit Base UUIDs
                                            that the device can know about. This normally equals the number of custom services
                                            that are to be supported, since characteristic UUIDs are usually derived from the service base UUID.
-        :param service_changed: Whether or not the Service Changed characteristic is exposed in the GAP service
+        :param service_changed: Whether the Service Changed characteristic is exposed in the GAP service
         :param max_connected_peripherals: The maximum number of concurrent connections with peripheral devices
         :param max_connected_clients: The maximum number of concurrent connections with client devices (NOTE: blatann currently only supports 1)
         :param max_secured_peripherals: The maximum number of concurrent peripheral connections that will need security (bonding/pairing) enabled
