@@ -349,7 +349,7 @@ class BleDevice(NrfDriverObserver):
         :param enabled: True to enable device privacy. Note that only device privacy is supported, network privacy is not
         :param resolvable_address: True to use a private random resolvable address.
                                    If the address is resolvable, bonded peers can use the device's IRK to determine the
-                                    device's actual public/random address.
+                                   device's actual public/random address.
         :param update_rate_seconds: How often the address should be changed/updated, in seconds. Default is 900 (15min)
         """
         params = nrf_types.BLEGapPrivacyParams(enabled, resolvable_address, update_rate_seconds)
