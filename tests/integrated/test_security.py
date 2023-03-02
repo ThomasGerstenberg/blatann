@@ -68,6 +68,7 @@ class TestSecurity(BlatannTestCase):
             if scan_report.device_name == "BlatannTest":
                 if should_be_bonded:
                     self.assertTrue(scan_report.is_bonded_device)
+                    self.assertIsNotNone(scan_report.resolved_address)
                 return scan_report.peer_address
         return None
 
