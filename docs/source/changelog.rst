@@ -1,6 +1,45 @@
 Changelog
 =========
 
+v0.5.0
+------
+
+v0.5.0 reworks bonding database to JSON, adds a few features, and fixes a few bugs.
+Full list of issues and PRs for this release can be found here: `0.5.0 Milestone`_
+
+**Highlights**
+
+- Adds support for the scanner to resolve peer addresses.
+
+  - :class:`~blatann.gap.advertise_data.ScanReport` has 2 new properties: ``is_bonded_device: bool`` and ``resolved_address: Optional[PeerAddress]``
+
+- Adds support for privacy settings to advertise with a private resolvable or non-resolvable address
+
+- Adds parameter to device configuration to set a different connection event length
+
+**Fixes**
+
+- Fixes incorrect variable name when a queued GATT operation times out (thanks @klow68)
+
+- Fixes incorrect key length when converting an LESC private key to a raw bytearray (thanks @klow68). Function is unused within blatann
+
+- Fixes issue where the service changed characteristic was not correctly getting added to the GATT server when configured
+
+**Changes**
+
+- Reworks the bond database to be saved using JSON instead of pickle.
+
+  - Existing ``"system"`` and ``"user"`` database files configured in the BLE device will automatically be migrated to JSON
+
+  - Other database files configured by filepath will continue to use pickle and can be updated manually using :meth:`~blatann.gap.default_bond_db.migrate_bond_database`
+
+- Bond DB entries will now save the local BLE address that was used to generate the bonding data.
+
+  - This will allow multiple nRF boards to use the same DB file and not resolve bond entries if it was not created with that board/address. This fixes potential issues where restoring a connection to a peer that was bonded to a different nRF board can cause the local device to think it has a bond, however the peer has bond info with a different, mismatched address.
+
+- Moves bond-related resolve logic out of the security manager and into the bond database
+
+
 v0.4.0
 ------
 
@@ -274,6 +313,7 @@ public API should be mostly unchanged except for the noted changes below.
 - Added ``AdvertisingData.to_bytes()`` to retrieve the data packet that will be advertised over the air
 
 .. _0.4.0 Milestone: https://github.com/ThomasGerstenberg/blatann/milestone/7?closed=1
+.. _0.5.0 Milestone: https://github.com/ThomasGerstenberg/blatann/milestone/8?closed=1
 .. _Event callback example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/tests/integrated/test_advertising_duration.py#L48
 .. _ScanFinishedWaitable example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/blatann/examples/scanner.py#L20
 .. _Peripheral Descriptor Example: https://github.com/ThomasGerstenberg/blatann/blob/master/blatann/examples/peripheral_descriptors.py
