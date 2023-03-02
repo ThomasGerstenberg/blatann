@@ -58,6 +58,7 @@ class Scanner(object):
         self.scan_report = ScanReportCollection()
         self._on_scan_received: EventSource[Scanner, ScanReport] = EventSource("On Scan Received", logger)
         self._on_scan_timeout: EventSource[Scanner, ScanReportCollection] = EventSource("On Scan Timeout")
+        self._own_address = None
 
     @property
     def on_scan_received(self) -> Event[Scanner, ScanReport]:
@@ -109,6 +110,8 @@ class Scanner(object):
                  Waitable returns a ScanReportCollection of the advertising packets found
         """
         self.stop()
+        # Cache the device's address on scan start
+        self._own_address = self.ble_device.address
         if clear_scan_reports:
             self.scan_report = ScanReportCollection()
         if not scan_parameters:
@@ -132,7 +135,12 @@ class Scanner(object):
             pass
 
     def _on_adv_report(self, driver, adv_report):
-        scan_report = self.scan_report.update(adv_report)
+        bond_entry = self.ble_device.bond_db.find_entry(self._own_address, adv_report.peer_addr, peer_is_client=False)
+        if bond_entry:
+            resolved_peer_address = bond_entry.resolved_peer_address()
+        else:
+            resolved_peer_address = None
+        scan_report = self.scan_report.update(adv_report, resolved_peer_address)
         self._on_scan_received.notify(self.ble_device, scan_report)
 
     def _on_timeout_event(self, driver, event):

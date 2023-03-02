@@ -28,9 +28,9 @@ class TestSecurity(BlatannTestCase):
         cls.periph_dev = cls.dev1
         cls.central_dev = cls.dev2
         cls.periph_dev.advertiser.set_advertise_data(AdvertisingData(flags=0x06, local_name="BlatannTest"))
-        cls.periph_dev.advertiser.set_default_advertise_params(30, 0)
-        cls.central_dev.scanner.set_default_scan_params(50, 50, 10, False)
-        cls.central_dev.set_default_peripheral_connection_params(10, 10, 4000)
+        cls.periph_dev.advertiser.set_default_advertise_params(100, 0)
+        cls.central_dev.scanner.set_default_scan_params(125, 75, 10, False)
+        cls.central_dev.set_default_peripheral_connection_params(50, 100, 4000)
         cls.peer_cen = cls.periph_dev.client
 
     def setUp(self) -> None:
@@ -46,15 +46,16 @@ class TestSecurity(BlatannTestCase):
         self._disconnect()
         time.sleep(0.5)
 
-    def _connect(self, scan_for_address=False):
+    def _connect(self, scan_for_address=False, should_be_bonded=False):
         event = threading.Event()
         def on_connect(*args):
             event.set()
 
         self.periph_dev.advertiser.start()
         if scan_for_address:
-            addr = self._scan_for_address()
+            addr = self._scan_for_address(should_be_bonded)
         else:
+            time.sleep(0.5)
             addr = self.periph_dev.address
 
         with self.peer_cen.on_connect.register(on_connect):
@@ -62,9 +63,11 @@ class TestSecurity(BlatannTestCase):
             event.wait(5)
         self.assertTrue(event.is_set())
 
-    def _scan_for_address(self):
+    def _scan_for_address(self, should_be_bonded):
         for scan_report in self.central_dev.scanner.start_scan(clear_scan_reports=True).scan_reports:
             if scan_report.device_name == "BlatannTest":
+                if should_be_bonded:
+                    self.assertTrue(scan_report.is_bonded_device)
                 return scan_report.peer_address
         return None
 
@@ -76,7 +79,7 @@ class TestSecurity(BlatannTestCase):
         if self.peer_per:
             with self.peer_cen.on_disconnect.register(on_disconnect):
                 self.peer_per.disconnect().wait(5)
-                event.wait(5)
+                event.wait(15)
                 time.sleep(0.5)
             if clear_peer:
                 self.peer_per = None
@@ -84,7 +87,7 @@ class TestSecurity(BlatannTestCase):
     def _reconnect(self, should_be_bonded, scan_for_address=False):
         time.sleep(0.5)
         self._disconnect(clear_peer=False)
-        self._connect(scan_for_address)
+        self._connect(scan_for_address, should_be_bonded)
         if should_be_bonded:
             self.assertTrue(self.peer_per.is_previously_bonded)
             self.assertTrue(self.peer_cen.is_previously_bonded)

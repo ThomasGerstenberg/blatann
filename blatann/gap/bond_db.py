@@ -57,6 +57,9 @@ class BondDbEntry(object):
         self.bonding_data: BondingData = None
         self.name = ""
 
+    def resolved_peer_address(self) -> PeerAddress:
+        return self.bonding_data.peer_id.peer_addr
+
     def matches_peer(self, own_address: PeerAddress,
                      peer_address: PeerAddress,
                      peer_is_client: bool,
@@ -65,7 +68,9 @@ class BondDbEntry(object):
         if peer_is_client != self.peer_is_client:
             return False
         # Entry has own address and doesn't match.
-        if self.own_addr is not None and self.own_addr != own_address:
+        if (self.own_addr is not None and
+                own_address is not None and
+                self.own_addr != own_address):
             return False
 
         if self.peer_address_matches_or_resolves(peer_address):
@@ -94,7 +99,7 @@ class BondDbEntry(object):
             if self.peer_addr == peer_address:
                 return True
         elif smp_crypto.private_address_resolves(peer_address, self.bonding_data.peer_id.irk):
-            logger.info("Resolved Peer address to {}".format(self.peer_addr))
+            logger.debug("Resolved Peer address to {}".format(self.peer_addr))
             return True
         return False
 

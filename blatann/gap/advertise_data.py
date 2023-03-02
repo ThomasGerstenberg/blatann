@@ -1,6 +1,8 @@
 import time
 from typing import Iterable, List, Dict, Union, Optional, Tuple
 import logging
+
+from blatann.gap.gap_types import PeerAddress
 from blatann.nrf import nrf_types, nrf_events
 from blatann import uuid, exceptions
 
@@ -283,7 +285,7 @@ class ScanReport(object):
     """
     Represents a payload and associated metadata that's received during scanning
     """
-    def __init__(self, adv_report):
+    def __init__(self, adv_report, resolved_address: Optional[PeerAddress]):
         """
         :type adv_report: blatann.nrf.nrf_events.GapEvtAdvReport
         """
@@ -295,6 +297,7 @@ class ScanReport(object):
         self.rssi = adv_report.rssi
         self.duplicate = False
         self.raw_bytes = adv_report.adv_data.raw_bytes
+        self._resolved_address = resolved_address
 
     @property
     def device_name(self) -> str:
@@ -304,6 +307,21 @@ class ScanReport(object):
         The name of the device, pulled from the advertising data (if advertised) or uses the Peer's MAC Address if not set
         """
         return self.advertise_data.local_name or str(self.peer_address)
+
+    @property
+    def is_bonded_device(self) -> bool:
+        """
+        If the scan report is from a BLE device that the local device has a matching bond database entry
+        """
+        return self._resolved_address is not None
+
+    @property
+    def resolved_address(self) -> Optional[PeerAddress]:
+        """
+        If the scan report is from a bonded device, this is the resolved public/static/random BLE address.
+        This may be the same as peer_addr if the device is not advertising as a private resolvable address
+        """
+        return self._resolved_address
 
     def update(self, adv_report):
         """
@@ -333,8 +351,8 @@ class ScanReportCollection(object):
     Collection of all the advertising data and scan reports found in a scanning session
     """
     def __init__(self):
-        self._all_scans = []
-        self._scans_by_peer_address = {}
+        self._all_scans: List[ScanReport] = []
+        self._scans_by_peer_address: Dict[PeerAddress, ScanReport] = {}
 
     @property
     def advertising_peers_found(self) -> Iterable[ScanReport]:
@@ -374,18 +392,22 @@ class ScanReportCollection(object):
         self._all_scans = []
         self._scans_by_peer_address = {}
 
-    def update(self, adv_report: nrf_events.GapEvtAdvReport) -> ScanReport:
+    def update(self, adv_report: nrf_events.GapEvtAdvReport, resolved_peer_addr: PeerAddress = None) -> ScanReport:
         """
         Used internally to update the collection with a new advertising report received
 
         :return: The Scan Report created from the advertising report
         """
-        scan_entry = ScanReport(adv_report)
+        scan_entry = ScanReport(adv_report, resolved_peer_addr)
         if scan_entry in self._all_scans:
             scan_entry.duplicate = True
+
         self._all_scans.append(scan_entry)
-        if adv_report.peer_addr in self._scans_by_peer_address.keys():
-            self._scans_by_peer_address[adv_report.peer_addr].update(adv_report)
-        elif adv_report.peer_addr.addr_type != nrf_types.BLEGapAddrTypes.anonymous:
-            self._scans_by_peer_address[adv_report.peer_addr] = ScanReport(adv_report)
+
+        addr_key = resolved_peer_addr if resolved_peer_addr is not None else adv_report.peer_addr
+
+        if addr_key in self._scans_by_peer_address.keys():
+            self._scans_by_peer_address[addr_key].update(adv_report)
+        elif addr_key.addr_type != nrf_types.BLEGapAddrTypes.anonymous:
+            self._scans_by_peer_address[addr_key] = ScanReport(adv_report, resolved_peer_addr)
         return scan_entry
