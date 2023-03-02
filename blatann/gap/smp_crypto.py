@@ -4,13 +4,14 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from blatann.gap.gap_types import PeerAddress
 
 # Elliptic Curve used for LE Secure connections
 _lesc_curve = ec.SECP256R1
 _backend = default_backend()
 
 
-def lesc_pubkey_to_raw(public_key, little_endian=True):
+def lesc_pubkey_to_raw(public_key: ec.EllipticCurvePublicKey, little_endian=True) -> bytearray:
     """
     Converts from a python public key to the raw (x, y) bytes for the nordic
     """
@@ -26,7 +27,7 @@ def lesc_pubkey_to_raw(public_key, little_endian=True):
     return pubkey_raw
 
 
-def lesc_privkey_to_raw(private_key, little_endian=True):
+def lesc_privkey_to_raw(private_key: ec.EllipticCurvePrivateKey, little_endian=True) -> bytearray:
     pk = private_key.private_numbers()
     x = bytearray.fromhex("{:064x}".format(pk.private_value))
     if little_endian:
@@ -34,7 +35,7 @@ def lesc_privkey_to_raw(private_key, little_endian=True):
     return x
 
 
-def lesc_pubkey_from_raw(raw_key, little_endian=True):
+def lesc_pubkey_from_raw(raw_key: bytes, little_endian=True) -> ec.EllipticCurvePublicKey:
     """
     Converts from raw (x, y) bytes to a public key that can be used for the DH request
     """
@@ -53,7 +54,7 @@ def lesc_pubkey_from_raw(raw_key, little_endian=True):
     return public_numbers.public_key(_backend)
 
 
-def lesc_privkey_from_raw(raw_priv_key, raw_pub_key, little_endian=True):
+def lesc_privkey_from_raw(raw_priv_key: bytes, raw_pub_key: bytes, little_endian=True) -> ec.EllipticCurvePrivateKey:
     key_len = len(raw_pub_key)
     x_raw = raw_pub_key[:key_len//2]
     y_raw = raw_pub_key[key_len//2:]
@@ -71,7 +72,7 @@ def lesc_privkey_from_raw(raw_priv_key, raw_pub_key, little_endian=True):
     return priv_numbers.private_key(_backend)
 
 
-def lesc_generate_private_key():
+def lesc_generate_private_key() -> ec.EllipticCurvePrivateKey:
     """
     Generates a new private key that can be used for LESC pairing
 
@@ -80,7 +81,9 @@ def lesc_generate_private_key():
     return ec.generate_private_key(_lesc_curve, _backend)
 
 
-def lesc_compute_dh_key(private_key, peer_public_key, little_endian=False):
+def lesc_compute_dh_key(private_key: ec.EllipticCurvePrivateKey,
+                        peer_public_key: ec.EllipticCurvePublicKey,
+                        little_endian=False) -> bytes:
     """
     Computes the DH key for LESC pairing given our private key and the peer's public key
 
@@ -95,7 +98,7 @@ def lesc_compute_dh_key(private_key, peer_public_key, little_endian=False):
     return dh_key
 
 
-def ble_ah(key, p_rand):
+def ble_ah(key: bytes, p_rand: bytes) -> bytes:
     """
     Function for calculating the ah() hash function described in Bluetooth core specification 4.2 section 3.H.2.2.2.
 
@@ -103,8 +106,8 @@ def ble_ah(key, p_rand):
     is prand[3] || aes-128(irk, prand[3]) % 2^24
 
     :param key: the IRK to use, in big endian format
-    :param p_rand:
-    :return:
+    :param p_rand: The random component, first 3 bytes of the address
+    :return: The last 3 bytes of the encrypted hash
     """
     if len(p_rand) != 3:
         raise ValueError("Prand must be a str or bytes of length 3")
@@ -120,7 +123,7 @@ def ble_ah(key, p_rand):
     return encrypted_hash[-3:]
 
 
-def private_address_resolves(peer_addr, irk):
+def private_address_resolves(peer_addr: PeerAddress, irk: bytes) -> bool:
     """
     Checks if the given peer address can be resolved with the IRK
 

@@ -23,18 +23,40 @@ special_bond_db_filemap = {
 
 
 class DatabaseStrategy:
+    """
+    Abstract base class defining the methods and properties for serializing/deserializing bond databases
+    into different formats
+    """
     @property
     def file_extension(self) -> str:
+        """
+        The file extension that this strategy can serialize/deserialize
+        """
         raise NotImplementedError
 
-    def load(self, filename) -> DefaultBondDatabase:
+    def load(self, filename: str) -> DefaultBondDatabase:
+        """
+        Loads/deserializes a database file
+
+        :param filename: Name of the file to deserialize
+        :return: The loaded bond database
+        """
         raise NotImplementedError
 
     def save(self, filename: str, db: DefaultBondDatabase):
+        """
+        Saves/serializes a database to a file
+
+        :param filename: Filename to save the database to
+        :param db: The database object serialize
+        """
         raise NotImplementedError
 
 
 class JsonDatabaseStrategy(DatabaseStrategy):
+    """
+    Strategy for serializing/deseriralizing bond databases in JSON format
+    """
     @property
     def file_extension(self) -> str:
         return ".json"
@@ -52,6 +74,9 @@ class JsonDatabaseStrategy(DatabaseStrategy):
 
 
 class PickleDatabaseStrategy(DatabaseStrategy):
+    """
+    Strategy for serializing/deserializing bond databases in pickle format
+    """
     @property
     def file_extension(self) -> str:
         return ".pkl"
@@ -75,15 +100,18 @@ database_strategies = [
     PickleDatabaseStrategy(),
     JsonDatabaseStrategy()
 ]
+"""List of supported database strategies"""
+
 
 database_strategies_by_extension: typing.Dict[str, DatabaseStrategy] = {
     s.file_extension: s for s in database_strategies
 }
+"""Mapping of database file extensions to their respective strategies"""
 
 
 # TODO 04.16.2019: Replace pickling with something more secure
 class DefaultBondDatabaseLoader(BondDatabaseLoader):
-    def __init__(self, filename=user_default_db_base_filename):
+    def __init__(self, filename="user"):
         if filename in special_bond_db_filemap:
             base_filename = special_bond_db_filemap[filename]
             self.filename = self.migrate_to_json(base_filename)
@@ -191,6 +219,16 @@ class DefaultBondDatabase(BondDatabase):
                    peer_address: PeerAddress,
                    peer_is_client: bool,
                    master_id: BLEGapMasterId = None) -> Optional[BondDbEntry]:
+        """
+        Attempts to find a bond entry which satisfies the parameters provided
+
+        :param own_address: The local device's BLE address
+        :param peer_address: The peer's BLE address
+        :param peer_is_client: Flag indicating the role of the peer.
+                               True if the peer is a client/central, False if the peer is a server/peripheral
+        :param master_id: If during a security info request, this is the Master ID provided by the peer to search for
+        :return: The first entry that satisfies the above parameters, or None if no entry was found
+        """
         for record in self._records:
             if record.matches_peer(own_address, peer_address, peer_is_client, master_id):
                 return record
@@ -199,6 +237,14 @@ class DefaultBondDatabase(BondDatabase):
 
 
 def migrate_bond_database(from_file: str, to_file: str):
+    """
+    Migrates a bond database file from one format to another.
+
+    For supported extensions/formats, check ``database_strategies_by_extension.keys()``
+
+    :param from_file: File to migrate from
+    :param to_file: File to migrate to
+    """
     from_ext = os.path.splitext(from_file)[1]
     to_ext = os.path.splitext(to_file)[1]
     supported_extensions = ", ".join(database_strategies_by_extension.keys())

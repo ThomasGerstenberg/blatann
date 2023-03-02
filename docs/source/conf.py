@@ -24,9 +24,9 @@ copyright = u'2019, Thomas Gerstenberg'
 author = u'Thomas Gerstenberg'
 
 # The short X.Y version
-version = u'v0.4.x'
+version = u'v0.5.x'
 # The full version, including alpha/beta/rc tags
-release = u'v0.4.0'
+release = u'v0.5.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -65,7 +65,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
