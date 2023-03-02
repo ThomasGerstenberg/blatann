@@ -64,10 +64,10 @@ Below lists the supported BLE features and ones that are on the roadmap to imple
     - [X] Transmit Power
     - [X] Advertising channel selection
 - [X] SMP
+    - [X] Private resolvable/non-resolvable advertising 
     - [X] Encryption/Authentication process
     - [X] MITM/Passcode pairing support
     - [X] Store bonding info
-      - Currently uses pickle which is not secure
     - [X] Identity resolve
     - [X] Bonding as Peripheral
     - [X] Bonding as Central
