@@ -15,6 +15,8 @@ class DeclarationUuid:
     """
     UUIDs used for declarations within the GATT Database
     """
+    # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
+    # Date: 2023/03/23
     primary_service = Uuid16("2800")
     secondary_service = Uuid16("2801")
     include = Uuid16("2802")
@@ -25,6 +27,8 @@ class DescriptorUuid:
     """
     UUIDs that are used for characteristic descriptors
     """
+    # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
+    # Date: 2023/03/23
     extended_properties       = Uuid16("2900")
     user_description          = Uuid16("2901")
     cccd                      = Uuid16("2902", "Client Characteristic Configuration Descriptor")
@@ -47,9 +51,12 @@ class ServiceUuid:
     """
     Bluetooth SIG defined service UUIDs
     """
+    # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
+    # Date: 2023/03/23
     alert_notification            = Uuid16("1811")
     audio_input_control           = Uuid16("1843")
     audio_stream_control          = Uuid16("184e")
+    authorization_control         = Uuid16("183d")
     automation_io                 = Uuid16("1815")
     basic_audio_announcement      = Uuid16("1851")
     battery_service               = Uuid16("180f")
@@ -95,6 +102,7 @@ class ServiceUuid:
     object_transfer               = Uuid16("1825")
     phone_alert_status            = Uuid16("180e")
     physical_activity_monitor     = Uuid16("183e")
+    public_broadcast_announcement = Uuid16("1856")
     published_audio_capabilities  = Uuid16("1850")
     pulse_oximeter                = Uuid16("1822")
     reconnection_configuration    = Uuid16("1829")
@@ -115,6 +123,13 @@ class CharacteristicUuid:
     """
     Bluetooth SIG defined characteristic UUIDs
     """
+    # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
+    # Date: 2023/03/23
+    acs_control_point               = Uuid16("2b33")
+    acs_data_in                     = Uuid16("2b30")
+    acs_data_out_indicate           = Uuid16("2b32")
+    acs_data_out_notify             = Uuid16("2b31")
+    acs_status                      = Uuid16("2b2f")
     active_preset_index             = Uuid16("2bdc")
     activity_current_session        = Uuid16("2b44")
     activity_goal                   = Uuid16("2b4e")
@@ -140,6 +155,8 @@ class CharacteristicUuid:
     anaerobic_threshold             = Uuid16("2a83")
     analog                          = Uuid16("2a58")
     analog_output                   = Uuid16("2a59")
+    apparent_energy_32              = Uuid16("2b89")
+    apparent_power                  = Uuid16("2b8a")
     apparent_wind_direction         = Uuid16("2a73")
     apparent_wind_speed             = Uuid16("2a72")
     appearance                      = Uuid16("2a01")
@@ -155,9 +172,16 @@ class CharacteristicUuid:
     average_current                 = Uuid16("2ae0")
     average_voltage                 = Uuid16("2ae1")
     barometric_pressure_trend       = Uuid16("2aa3")
+    battery_critical_status         = Uuid16("2be9")
+    battery_energy_status           = Uuid16("2bf0")
+    battery_health_information      = Uuid16("2beb")
+    battery_health_status           = Uuid16("2bea")
+    battery_information             = Uuid16("2bec")
     battery_level                   = Uuid16("2a19")
     battery_level_state             = Uuid16("2a1b")
     battery_power_state             = Uuid16("2a1a")
+    battery_level_status            = Uuid16("2bed")
+    battery_time_status             = Uuid16("2bee")
     bearer_list_current_calls       = Uuid16("2bb9")
     bearer_provider_name            = Uuid16("2bb3")
     bearer_signal_strength          = Uuid16("2bb7")
@@ -190,7 +214,7 @@ class CharacteristicUuid:
     caloric_intake                  = Uuid16("2b50")
     carbon_monoxide_concentration   = Uuid16("2bd0")
     cardiorespiratory_activity_instantaneous_data = Uuid16("2b3e")
-    cardiorespiratory_activity_summary_data = Uuid16("2b3f")
+    cardiorespiratory_activity_summary_data       = Uuid16("2b3f")
     central_address_resolution      = Uuid16("2aa6")
     cgm_feature                     = Uuid16("2aa8")
     cgm_measurement                 = Uuid16("2aa7")
@@ -205,11 +229,13 @@ class CharacteristicUuid:
     chromaticity_tolerance          = Uuid16("2ae6")
     cie_color_rendering_index       = Uuid16("2ae7")
     client_supported_features       = Uuid16("2b29")
+    co2_concentration               = Uuid16("2b8c")
     coefficient                     = Uuid16("2ae8")
     constant_tone_extension_enable  = Uuid16("2bad")
     content_control_id              = Uuid16("2bba")
     coordinated_set_size            = Uuid16("2b85")
     correlated_color_temperature    = Uuid16("2ae9")
+    cosine_of_the_angle             = Uuid16("2b8d")
     count_16                        = Uuid16("2aea")
     count_24                        = Uuid16("2aeb")
     country_code                    = Uuid16("2aec")
@@ -252,10 +278,13 @@ class CharacteristicUuid:
     email_address                   = Uuid16("2a87")
     emergency_id                    = Uuid16("2b2d")
     emergency_text                  = Uuid16("2b2e")
+    encrypted_data_key_material     = Uuid16("2b88")
     energy                          = Uuid16("2af2")
+    energy_32                       = Uuid16("2ba8")
     energy_in_a_period_of_day       = Uuid16("2af3")
     enhanced_blood_pressure_measurement = Uuid16("2b34")
     enhanced_intermediate_cuff_pressure = Uuid16("2b35")
+    estimated_service_date          = Uuid16("2bef")
     event_statistics                = Uuid16("2af4")
     exact_time_100                  = Uuid16("2a0b")
     exact_time_256                  = Uuid16("2a0c")
@@ -270,6 +299,7 @@ class CharacteristicUuid:
     fixed_string_16                 = Uuid16("2af5")
     fixed_string_24                 = Uuid16("2af6")
     fixed_string_36                 = Uuid16("2af7")
+    fixed_string_64                 = Uuid16("2bde")
     fixed_string_8                  = Uuid16("2af8")
     floor_number                    = Uuid16("2ab2")
     four_zone_heart_rate_limits     = Uuid16("2b4c")
@@ -297,6 +327,8 @@ class CharacteristicUuid:
     hid_information                 = Uuid16("2a4a")
     high_intensity_exercise_threshold = Uuid16("2b4d")
     high_resolution_height          = Uuid16("2b47")
+    high_temperature                = Uuid16("2bdf")
+    high_voltage                    = Uuid16("2be0")
     hip_circumference               = Uuid16("2a8f")
     http_control_point              = Uuid16("2aba")
     http_entity_body                = Uuid16("2ab9")
@@ -325,6 +357,10 @@ class CharacteristicUuid:
     language                        = Uuid16("2aa2")
     last_name                       = Uuid16("2a90")
     latitude                        = Uuid16("2aae")
+    le_gatt_security_levels         = Uuid16("2bf5")
+    light_distribution              = Uuid16("2be1")
+    light_output                    = Uuid16("2be2")
+    light_source_type               = Uuid16("2be3")
     ln_control_point                = Uuid16("2a6b")
     ln_feature                      = Uuid16("2a6a")
     local_east_coordinate           = Uuid16("2ab1")
@@ -366,6 +402,7 @@ class CharacteristicUuid:
     new_alert                       = Uuid16("2a46")
     next_track_object_id            = Uuid16("2b9e")
     nitrogen_dioxide_concentration  = Uuid16("2bd2")
+    noise                           = Uuid16("2be4")
     non_methane_volatile_organic_compounds_concentration = Uuid16("2bd3")
     object_action_control_point     = Uuid16("2ac5")
     object_changed                  = Uuid16("2ac8")
@@ -381,11 +418,11 @@ class CharacteristicUuid:
     ots_feature                     = Uuid16("2abd")
     ozone_concentration             = Uuid16("2bd4")
     parent_group_object_id          = Uuid16("2b9f")
-    particulate_matter_10_concentration  = Uuid16("2bd7")
     particulate_matter_1_concentration   = Uuid16("2bd5")
+    particulate_matter_10_concentration  = Uuid16("2bd7")
     particulate_matter_2_5_concentration = Uuid16("2bd6")
-    perceived_lightness               = Uuid16("2b03")
-    percentage_8                      = Uuid16("2b04")
+    perceived_lightness             = Uuid16("2b03")
+    percentage_8                    = Uuid16("2b04")
     peripheral_preferred_connection_parameters = Uuid16("2a04")
     peripheral_privacy_flag         = Uuid16("2a02")
     physical_activity_monitor_control_point = Uuid16("2b43")
@@ -415,7 +452,8 @@ class CharacteristicUuid:
     reconnection_configuration_control_point = Uuid16("2b1f")
     record_access_control_point     = Uuid16("2a52")
     reference_time_information      = Uuid16("2a14")
-    registered_user_characteristic  = Uuid16("2b37")
+    registered_user                 = Uuid16("2b37")
+    relative_runtime_correlated_color_temperature_range = Uuid16("2be5")
     relative_runtime_current_range       = Uuid16("2b07")
     relative_runtime_generic_level_range = Uuid16("2b08")
     relative_value_period_of_day         = Uuid16("2b0b")
@@ -497,6 +535,7 @@ class CharacteristicUuid:
     time_hour_24                    = Uuid16("2b14")
     time_millisecond_24             = Uuid16("2b15")
     time_second_16                  = Uuid16("2b16")
+    time_second_32                  = Uuid16("2be6")
     time_second_8                   = Uuid16("2b17")
     time_source                     = Uuid16("2a13")
     time_update_control_point       = Uuid16("2a16")
@@ -524,7 +563,9 @@ class CharacteristicUuid:
     user_index                      = Uuid16("2a9a")
     uv_index                        = Uuid16("2a76")
     vo2_max                         = Uuid16("2a96")
+    voc_concentration               = Uuid16("2be7")
     voltage                         = Uuid16("2b18")
+    voltage_frequency               = Uuid16("2be8")
     voltage_specification           = Uuid16("2b19")
     voltage_statistics              = Uuid16("2b1a")
     volume_control_point            = Uuid16("2b7e")
@@ -553,6 +594,42 @@ for t in [DeclarationUuid, DescriptorUuid, ServiceUuid, CharacteristicUuid]:
 
 
 company_assigned_uuid16s = {
+    # Source: https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors/
+    # Date: 2023/03/23
+    Uuid16("fcbf"): "ASSA ABLOY Opening Solutions Sweden AB",
+    Uuid16("fcc0"): "Xiaomi Inc.",
+    Uuid16("fcc1"): "TIMECODE SYSTEMS LIMITED",
+    Uuid16("fcc2"): "Qualcomm Technologies, Inc.",
+    Uuid16("fcc3"): "HP Inc.",
+    Uuid16("fcc4"): "OMRON(DALIAN) CO,.LTD.",
+    Uuid16("fcc5"): "OMRON(DALIAN) CO,.LTD.",
+    Uuid16("fcc6"): "Wiliot LTD.",
+    Uuid16("fcc7"): "PB INC.",
+    Uuid16("fcc8"): "Allthenticate, Inc.",
+    Uuid16("fcc9"): "SkyHawke Technologies",
+    Uuid16("fcca"): "Cosmed s.r.l.",
+    Uuid16("fccb"): "TOTO LTD.",
+    Uuid16("fccc"): "WiFi Alliance",
+    Uuid16("fccd"): "Zound Industries International AB",
+    Uuid16("fcce"): "Luna Health, Inc.",
+    Uuid16("fccf"): "Google LLC",
+    Uuid16("fcd0"): "Laerdal Medical AS",
+    Uuid16("fcd1"): "Shenzhen Benwei Media Co.,Ltd.",
+    Uuid16("fcd2"): "Allterco Robotics ltd",
+    Uuid16("fcd3"): "Fisher & Paykel Healthcare",
+    Uuid16("fcd4"): "OMRON HEALTHCARE",
+    Uuid16("fcd5"): "Nortek Security & Control",
+    Uuid16("fcd6"): "SWISSINNO SOLUTIONS AG",
+    Uuid16("fcd7"): "PowerPal Pty Ltd",
+    Uuid16("fcd8"): "Appex Factory S.L.",
+    Uuid16("fcd9"): "Huso, INC",
+    Uuid16("fcda"): "Draeger",
+    Uuid16("fcdb"): "aconno GmbH",
+    Uuid16("fcdc"): "Amazon.com Services, LLC",
+    Uuid16("fcdd"): "Mobilaris AB",
+    Uuid16("fcde"): "ARCTOP, INC.",
+    Uuid16("fcdf"): "NIO USA, Inc.",
+    Uuid16("fce0"): "Akciju sabiedriba ”SAF TEHNIKA”",
     Uuid16("fce1"): "Sony Group Corporation",
     Uuid16("fce2"): "Baracoda Daily Healthtech",
     Uuid16("fce3"): "Smith & Nephew Medical Limited",
@@ -1093,7 +1170,7 @@ company_assigned_uuid16s = {
     Uuid16("fefb"): "Telit Wireless Solutions (Formerly Stollmann E+V GmbH)",
     Uuid16("fefc"): "Gimbal, Inc.",
     Uuid16("fefd"): "Gimbal, Inc.",
-    Uuid16("fefe"): "GN ReSound A/S",
+    Uuid16("fefe"): "GN Hearing A/S",
     Uuid16("feff"): "GN Netcom",
 }
 """16-bit UUIDs assigned to companies by Bluetooth SIG"""
