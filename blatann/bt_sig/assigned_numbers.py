@@ -624,7 +624,7 @@ class Appearance(IntEnumWithDescription):
         return struct.pack("<H", self)
 
     def appearance_category(self) -> AppearanceCategory:
-        category_value = int(self) & 0xFFC0  # Lowest 6 bits are the type itself
+        category_value = (int(self) & 0xFFC0) >> 6  # Lowest 6 bits are the type itself
         return AppearanceCategory(category_value)
 
 
