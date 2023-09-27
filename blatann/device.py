@@ -103,13 +103,14 @@ class BleDevice(NrfDriverObserver):
     :param bond_db_filename: Optional filename to use for loading/saving the bonding database.
                              The supported file formats/extensions are: ".pkl" (legacy) and ".json". json is preferred.
 
-                             Two special values also exist:
+                             Three special values also exist:
 
                              - ``"user"`` [default] - saves the database within the user's home directory  (``~/.blatann/bonding_db.json``).
                                This is useful for cases where you may not have write access to the python install location, want to
                                persist the bonding database across virtualenvs, or limit the access to just the logged-in user
                              - ``"system"`` - saves the database within this library's directory structure, wherever it is installed or imported from.
                                Useful if you want the bonding database to be constrained to just that python/virtualenv installation
+                             - ``":memory:"`` - database exists only in memory and will not be written out to disk. Bond data is lost when device is closed/opened
     """
     def __init__(self, comport="COM1", baud=1000000, log_driver_comms=False,
                  notification_hw_queue_size=16, write_command_hw_queue_size=16,
