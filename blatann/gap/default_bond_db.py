@@ -14,14 +14,6 @@ from blatann.nrf.nrf_types import BLEGapMasterId
 logger = logging.getLogger(__name__)
 
 
-system_default_db_base_filename = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db")
-user_default_db_base_filename = os.path.join(os.path.expanduser("~"), ".blatann", "bonding_db")
-special_bond_db_filemap = {
-    "user": user_default_db_base_filename,
-    "system": system_default_db_base_filename
-}
-
-
 class DatabaseStrategy:
     """
     Abstract base class defining the methods and properties for serializing/deserializing bond databases
@@ -55,19 +47,21 @@ class DatabaseStrategy:
 
 class JsonDatabaseStrategy(DatabaseStrategy):
     """
-    Strategy for serializing/deseriralizing bond databases in JSON format
+    Strategy for serializing/deserializing bond databases in JSON format
     """
     @property
     def file_extension(self) -> str:
         return ".json"
 
-    def load(self, filename) -> DefaultBondDatabase:
+    def load(self, filename: str) -> DefaultBondDatabase:
+        logger.info(f"Loading bond database from {filename}")
         with open(filename, "r") as f:
             data = json.load(f)
         records = [BondDbEntry.from_dict(e) for e in data["records"]]
         return DefaultBondDatabase(records)
 
     def save(self, filename: str, db: DefaultBondDatabase):
+        logger.info(f"Saving bond database to {filename}")
         data = {"records": [r.to_dict() for r in db]}
         with open(filename, "w") as f:
             json.dump(data, f, indent=2)
@@ -81,7 +75,8 @@ class PickleDatabaseStrategy(DatabaseStrategy):
     def file_extension(self) -> str:
         return ".pkl"
 
-    def load(self, filename) -> DefaultBondDatabase:
+    def load(self, filename: str) -> DefaultBondDatabase:
+        logger.info(f"Loading bond database from {filename}")
         with open(filename, "rb") as f:
             db = pickle.load(f)
             # Check if records are old entries missing own_db. If so, add it in
@@ -91,14 +86,46 @@ class PickleDatabaseStrategy(DatabaseStrategy):
                     record.own_addr = None
             return db
 
-    def save(self, filename, db: DefaultBondDatabase):
+    def save(self, filename: str, db: DefaultBondDatabase):
+        logger.info(f"Saving bond database to {filename}")
         with open(filename, "wb") as f:
             pickle.dump(db, f)
 
 
+class InMemoryDatabaseStrategy(DatabaseStrategy):
+    """
+    No-op strategy for in-memory databases (nothing saved to disk so nothing to do)
+    """
+    IN_MEMORY_EXTENSION = ".memory"
+
+    @property
+    def file_extension(self) -> str:
+        return self.IN_MEMORY_EXTENSION
+
+    def load(self, filename: str) -> DefaultBondDatabase:
+        # Return empty database
+        return DefaultBondDatabase()
+
+    def save(self, filename: str, db: DefaultBondDatabase):
+        # Do nothing
+        pass
+
+
+system_default_db_base_filename = os.path.join(os.path.dirname(blatann.__file__), ".user", "bonding_db")
+user_default_db_base_filename = os.path.join(os.path.expanduser("~"), ".blatann", "bonding_db")
+special_bond_db_filemap = {
+    "user": user_default_db_base_filename,
+    "system": system_default_db_base_filename,
+
+    # name doesn't really matter as long as the extension matches so the correct strategy is used
+    ":memory:": "bonding_db" + InMemoryDatabaseStrategy.IN_MEMORY_EXTENSION
+}
+
+
 database_strategies = [
     PickleDatabaseStrategy(),
-    JsonDatabaseStrategy()
+    JsonDatabaseStrategy(),
+    InMemoryDatabaseStrategy(),
 ]
 """List of supported database strategies"""
 
@@ -128,7 +155,10 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
             self.strategy = database_strategies_by_extension[file_ext]
         return self.strategy
 
-    def migrate_to_json(self, base_filename):
+    def migrate_to_json(self, base_filename: str):
+        if base_filename.endswith(InMemoryDatabaseStrategy.IN_MEMORY_EXTENSION):
+            return base_filename
+
         pkl_file = base_filename + ".pkl"
         json_file = base_filename + ".json"
         # If the pickle file doesn't exist, it's either already been migrated to JSON
@@ -153,7 +183,7 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
 
     def _create_dirs(self):
         dirname = os.path.dirname(self.filename)
-        if not os.path.exists(dirname):
+        if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
 
     def load(self) -> DefaultBondDatabase:
@@ -171,7 +201,6 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
     def save(self, db: DefaultBondDatabase):
         strategy = self._get_strategy()
         self._create_dirs()
-        logger.info(f"Saving bond database to {self.filename}")
         strategy.save(self.filename, db)
 
 

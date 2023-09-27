@@ -26,7 +26,7 @@ def _configure_device(dev_number, config, optional=False):
         if optional:
             return None
         raise EnvironmentError(f"Environment variable {env_key} must be defined with the device's comport")
-    dev = BleDevice(comport, bond_db_filename=BOND_DB_FILE_FMT.format(dev_number))
+    dev = BleDevice(comport, bond_db_filename=":memory:")
     dev.configure(**config)
     dev.event_logger.suppress(nrf_events.GapEvtAdvReport)
     return dev
