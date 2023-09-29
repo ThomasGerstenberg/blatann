@@ -139,8 +139,8 @@ class BleDevice(NrfDriverObserver):
         self._db = gatts.GattsDatabase(self, self.client, self._default_conn_config.hvn_tx_queue_size)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
         self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
-        self._preferred_mtu_size = MTU_SIZE_DEFAULT
-        self._preferred_phy = Phy.auto
+        self._default_preferred_mtu_size = MTU_SIZE_DEFAULT
+        self._default_preferred_phy = Phy.auto
 
     def _setup_bond_db(self, bond_db_filename):
         self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader(bond_db_filename)
@@ -312,10 +312,14 @@ class BleDevice(NrfDriverObserver):
 
         if not connection_params:
             connection_params = self._default_conn_params
-        if not preferred_mtu_size:
-            preferred_mtu_size = self._preferred_mtu_size
+
+        if preferred_mtu_size:
+            self._verify_preferred_mtu_size(preferred_mtu_size)
+        else:
+            preferred_mtu_size = self._default_preferred_mtu_size
+
         if not preferred_phy:
-            preferred_phy = self._preferred_phy
+            preferred_phy = self._default_preferred_phy
 
         self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params,
                                                      self._default_security_params, name,
@@ -350,9 +354,10 @@ class BleDevice(NrfDriverObserver):
         :param phy: Default preferred PHY layer. Default is auto
         """
         if mtu_size:
-            self._preferred_mtu_size = mtu_size
+            self._verify_preferred_mtu_size(mtu_size)
+            self._default_preferred_mtu_size = mtu_size
         if phy:
-            self._preferred_phy = phy
+            self._default_preferred_phy = phy
 
     def set_default_security_params(self, passcode_pairing: bool, io_capabilities: IoCapabilities, bond: bool, out_of_band: bool,
                                     reject_pairing_requests: Union[bool, PairingPolicy] = False, lesc_pairing: bool = False):
@@ -383,6 +388,12 @@ class BleDevice(NrfDriverObserver):
         """
         params = nrf_types.BLEGapPrivacyParams(enabled, resolvable_address, update_rate_seconds)
         self.ble_driver.ble_gap_privacy_set(params)
+
+    def _verify_preferred_mtu_size(self, mtu_size):
+        if mtu_size < MTU_SIZE_MINIMUM:
+            raise ValueError(f"Preferred MTU size is less than the minimum ({MTU_SIZE_MINIMUM})")
+        if mtu_size > self.max_mtu_size:
+            raise ValueError(f"Preferred MTU size is greater than the max ({self.max_mtu_size})")
 
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
