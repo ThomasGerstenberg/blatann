@@ -92,6 +92,37 @@ class TestGap(BlatannTestCase):
     def test_connection_parameters_central_initiated(self):
         self._run_conn_param_test(central_initiated=True)
 
+    def test_preferred_mtu_size_set_before_connect(self):
+        expected_mtu_size = 128
+        self.periph_conn.dev.client.preferred_mtu_size = 247  # Set to max
+
+        # Connect and set the preferred MTU size of the central device
+        setup_connection(self.periph_conn, self.central_conn, discover_services=False, preferred_mtu=expected_mtu_size)
+
+        # At this point the central device's preferred MTU size should be set
+        self.assertEqual(self.central_conn.peer.preferred_mtu_size, expected_mtu_size)
+        # Initiate MTU exchange from the peripheral
+        self.periph_conn.peer.exchange_mtu().wait()
+
+        self.assertEqual(self.periph_conn.peer.mtu_size, expected_mtu_size)
+        self.assertEqual(self.central_conn.peer.mtu_size, expected_mtu_size)
+
+    def test_preferred_default_mtu_size_set_before_connect(self):
+        expected_mtu_size = 200
+        self.periph_conn.dev.client.preferred_mtu_size = 247  # Set to max
+
+        # Set the default and don't specify in the setup. Value should be used
+        self.central_conn.dev.set_default_peripheral_preferred_settings(expected_mtu_size)
+        setup_connection(self.periph_conn, self.central_conn, discover_services=False)
+
+        # At this point the central device's preferred MTU size should be set
+        self.assertEqual(self.central_conn.peer.preferred_mtu_size, expected_mtu_size)
+        # Initiate MTU exchange from the peripheral
+        self.periph_conn.peer.exchange_mtu().wait()
+
+        self.assertEqual(self.periph_conn.peer.mtu_size, expected_mtu_size)
+        self.assertEqual(self.central_conn.peer.mtu_size, expected_mtu_size)
+
     def test_get_rssi(self):
         setup_connection(self.periph_conn, self.central_conn, discover_services=False)
 

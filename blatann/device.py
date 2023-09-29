@@ -4,8 +4,9 @@ from typing import Union
 
 from blatann import peer, exceptions
 from blatann.gap import advertising, scanning, default_bond_db, IoCapabilities, SecurityParameters, PairingPolicy
+from blatann.gap.gap_types import Phy, ConnectionParameters, PeerAddress
 from blatann.gap.generic_access_service import GenericAccessService
-from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM
+from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM, MTU_SIZE_DEFAULT
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
@@ -138,7 +139,8 @@ class BleDevice(NrfDriverObserver):
         self._db = gatts.GattsDatabase(self, self.client, self._default_conn_config.hvn_tx_queue_size)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
         self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
-        self._att_mtu_max = MTU_SIZE_MINIMUM
+        self._default_preferred_mtu_size = MTU_SIZE_DEFAULT
+        self._default_preferred_phy = Phy.auto
 
     def _setup_bond_db(self, bond_db_filename):
         self.bond_db_loader = default_bond_db.DefaultBondDatabaseLoader(bond_db_filename)
@@ -278,16 +280,22 @@ class BleDevice(NrfDriverObserver):
             raise ValueError("Invalid transmit power value {}. Must be one of: {}".format(tx_power, valid_tx_power_values))
         self.ble_driver.ble_gap_tx_power_set(tx_power)
 
-    def connect(self, peer_address, connection_params=None) -> PeripheralConnectionWaitable:
+    def connect(self,
+                peer_address: PeerAddress,
+                connection_params: ConnectionParameters = None,
+                preferred_mtu_size: int = None,
+                preferred_phy: Phy = None) -> PeripheralConnectionWaitable:
         """
         Initiates a connection to a peripheral peer with the specified connection parameters, or uses the default
         connection parameters if not specified. The connection will not be complete until the returned waitable
         either times out or reports the newly connected peer
 
         :param peer_address: The address of the peer to connect to
-        :type peer_address: blatann.gap.gap_types.PeerAddress
         :param connection_params: Optional connection parameters to use. If not specified, uses the set default
-        :type connection_params: blatann.gap.gap_types.ConnectionParameters
+        :param preferred_mtu_size: The preferred MTU size that will be used if the peripheral initiates an MTU exchange.
+                                    If not provided, uses the values set in :meth:`set_default_peripheral_preferred_settings`
+        :param preferred_phy: The preferred PHY layer to use for the connection if the peripheral updates the PHY.
+                                If not provided, uses the value set in :meth:`set_default_peripheral_preferred_settings`
         :return: A Waitable which can be used to wait until the connection is successful or times out. Waitable returns
                  a peer.Peripheral object
         """
@@ -305,8 +313,19 @@ class BleDevice(NrfDriverObserver):
         if not connection_params:
             connection_params = self._default_conn_params
 
-        self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params, self._default_security_params, name,
-                                                     self._default_conn_config.write_cmd_tx_queue_size)
+        if preferred_mtu_size:
+            self._verify_preferred_mtu_size(preferred_mtu_size)
+        else:
+            preferred_mtu_size = self._default_preferred_mtu_size
+
+        if not preferred_phy:
+            preferred_phy = self._default_preferred_phy
+
+        self.connecting_peripheral = peer.Peripheral(self, peer_address, connection_params,
+                                                     self._default_security_params, name,
+                                                     self._default_conn_config.write_cmd_tx_queue_size,
+                                                     preferred_mtu_size, preferred_phy)
+
         periph_connection_waitable = PeripheralConnectionWaitable(self, self.connecting_peripheral)
         self.ble_driver.ble_gap_connect(peer_address, conn_params=connection_params,
                                         conn_cfg_tag=self._default_conn_config.conn_tag)
@@ -325,6 +344,20 @@ class BleDevice(NrfDriverObserver):
         """
         self._default_conn_params = peer.ConnectionParameters(min_interval_ms, max_interval_ms,
                                                               timeout_ms, slave_latency)
+
+    def set_default_peripheral_preferred_settings(self, mtu_size: int = None, phy: Phy = None):
+        """
+        Sets the default preferred settings when initiating connections if the value is not set
+        when calling :meth:`connect`.
+
+        :param mtu_size: Default preferred MTU size. Default is 23
+        :param phy: Default preferred PHY layer. Default is auto
+        """
+        if mtu_size:
+            self._verify_preferred_mtu_size(mtu_size)
+            self._default_preferred_mtu_size = mtu_size
+        if phy:
+            self._default_preferred_phy = phy
 
     def set_default_security_params(self, passcode_pairing: bool, io_capabilities: IoCapabilities, bond: bool, out_of_band: bool,
                                     reject_pairing_requests: Union[bool, PairingPolicy] = False, lesc_pairing: bool = False):
@@ -355,6 +388,12 @@ class BleDevice(NrfDriverObserver):
         """
         params = nrf_types.BLEGapPrivacyParams(enabled, resolvable_address, update_rate_seconds)
         self.ble_driver.ble_gap_privacy_set(params)
+
+    def _verify_preferred_mtu_size(self, mtu_size):
+        if mtu_size < MTU_SIZE_MINIMUM:
+            raise ValueError(f"Preferred MTU size is less than the minimum ({MTU_SIZE_MINIMUM})")
+        if mtu_size > self.max_mtu_size:
+            raise ValueError(f"Preferred MTU size is greater than the max ({self.max_mtu_size})")
 
     def _on_user_mem_request(self, nrf_driver, event):
         # Only action that can be taken
