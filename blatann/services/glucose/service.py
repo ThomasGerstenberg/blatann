@@ -75,7 +75,7 @@ class GlucoseServer(object):
                 record = self.database.first_record()
             else:
                 record = self.database.last_record()
-            records = [record]
+            records = [record] if record else []
         elif command.operator in [RacpOperator.all_records, RacpOperator.less_than_or_equal_to,
                                   RacpOperator.greater_than_or_equal_to, RacpOperator.within_range_inclusive]:
             min_seq, max_seq = command.get_filter_min_max()
