@@ -41,9 +41,15 @@ class Peer(object):
     """ Number of bytes that are header/overhead per MTU when sending a notification or indication """
     NOTIFICATION_INDICATION_OVERHEAD_BYTES = 3
 
-    def __init__(self, ble_device, role, connection_params=DEFAULT_CONNECTION_PARAMS,
+    def __init__(self,
+                 ble_device,
+                 role,
+                 connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS,
-                 name="", write_no_resp_queue_size=1):
+                 name="",
+                 write_no_resp_queue_size=1,
+                 preferred_mtu_size=MTU_SIZE_DEFAULT,
+                 preferred_phy=Phy.auto):
         """
         :type ble_device: blatann.device.BleDevice
         """
@@ -65,9 +71,9 @@ class Peer(object):
         self._on_phy_updated = EventSource("On Phy Updated", logger)
         self._on_rssi_changed = EventSource("On RSSI Updated", logger)
         self._mtu_size = MTU_SIZE_DEFAULT
-        self._preferred_mtu_size = MTU_SIZE_DEFAULT
+        self._preferred_mtu_size = preferred_mtu_size
         self._negotiated_mtu_size = None
-        self._preferred_phy = Phy.auto
+        self._preferred_phy = preferred_phy
         self._current_phy = Phy.one_mbps
         self._disconnection_reason = nrf_events.BLEHci.local_host_terminated_connection
 
@@ -621,9 +627,12 @@ class Peripheral(Peer):
                  connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS,
                  name="",
-                 write_no_resp_queue_size=1):
+                 write_no_resp_queue_size=1,
+                 preferred_mtu_size=MTU_SIZE_DEFAULT,
+                 preferred_phy=Phy.auto):
         super(Peripheral, self).__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params,
-                                         security_params, name, write_no_resp_queue_size)
+                                         security_params, name, write_no_resp_queue_size,
+                                         preferred_mtu_size, preferred_phy)
         self.peer_address = peer_address
         self.connection_state = PeerState.CONNECTING
         self._conn_param_update_request_handler = self._accept_all_conn_param_requests
@@ -691,9 +700,12 @@ class Client(Peer):
                  connection_params=DEFAULT_CONNECTION_PARAMS,
                  security_params=DEFAULT_SECURITY_PARAMS,
                  name="",
-                 write_no_resp_queue_size=1):
+                 write_no_resp_queue_size=1,
+                 preferred_mtu_size=MTU_SIZE_DEFAULT,
+                 preferred_phy=Phy.auto):
         super(Client, self).__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params,
-                                     security_params, name, write_no_resp_queue_size)
+                                     security_params, name, write_no_resp_queue_size,
+                                     preferred_mtu_size, preferred_phy)
         self._first_connection = True
 
     def peer_connected(self, conn_handle, peer_address, connection_params):

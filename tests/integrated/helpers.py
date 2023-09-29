@@ -25,7 +25,7 @@ class CentralConn(object):
 
 
 def setup_connection(periph_conn: PeriphConn, central_conn: CentralConn,
-                     conn_params=None, discover_services=True):
+                     conn_params=None, discover_services=True, preferred_mtu=None, preferred_phy=None):
     if conn_params is None:
         conn_params = ConnectionParameters(conn_interval_range.min, conn_interval_range.min, 4000)
     periph_conn.dev.set_default_peripheral_connection_params(conn_params.max_conn_interval_ms,
@@ -37,7 +37,7 @@ def setup_connection(periph_conn: PeriphConn, central_conn: CentralConn,
     # Start advertising, then initiate connection from central.
     # Once central reports its connected wait for the peripheral to be connected before continuing
     waitable = periph_conn.dev.advertiser.start(timeout_sec=30)
-    central_conn.peer = central_conn.dev.connect(adv_addr, conn_params).wait(10)
+    central_conn.peer = central_conn.dev.connect(adv_addr, conn_params, preferred_mtu, preferred_phy).wait(10)
 
     periph_conn.peer = waitable.wait(10)
 
