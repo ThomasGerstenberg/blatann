@@ -98,7 +98,7 @@ class GattsCharacteristic(gatt.Characteristic):
                  value=b"",
                  prefer_indications=True,
                  string_encoding="utf8"):
-        super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties, string_encoding)
+        super(GattsCharacteristic, self).__init__(ble_device, peer, uuid, properties, [], string_encoding)
         self._value = value
         self.prefer_indications = prefer_indications
         self._notification_manager = notification_manager
@@ -108,27 +108,27 @@ class GattsCharacteristic(gatt.Characteristic):
                                                     True, True)
         self._value_attr = GattsAttribute(self.ble_device, self.peer, self, uuid,
                                           value_handle, value_attr_props, value, string_encoding)
-        self._attrs: List[GattsAttribute] = [self._value_attr]
+        self._attributes: List[GattsAttribute] = [self._value_attr]
         self._presentation_format = properties.presentation
 
         if cccd_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
             cccd_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
             self._cccd_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.cccd,
                                              cccd_handle, cccd_props, b"\x00\x00")
-            self._attrs.append(self._cccd_attr)
+            self._attributes.append(self._cccd_attr)
         else:
             self._cccd_attr = None
         if user_desc_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
             self._user_desc_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.user_description, user_desc_handle,
                                                   properties.user_description, properties.user_description.value, string_encoding)
-            self._attrs.append(self._user_desc_attr)
+            self._attributes.append(self._user_desc_attr)
         else:
             self._user_desc_attr = None
         if sccd_handle != nrf_types.BLE_GATT_HANDLE_INVALID:
             sccd_props = GattsAttributeProperties(True, True, gatt.SecurityLevel.OPEN, 2, False, False, False)
             self._sccd_attr = GattsAttribute(self.ble_device, self.peer, self, DescriptorUuid.sccd,
                                              sccd_handle, sccd_props, b"\x00\x00")
-            self._attrs.append(self._sccd_attr)
+            self._attributes.append(self._sccd_attr)
 
         # Events
         self._on_write = EventSource("Write Event", logger)
@@ -227,7 +227,7 @@ class GattsCharacteristic(gatt.Characteristic):
 
         attr = GattsAttribute(self.ble_device, self.peer, self, uuid, attr.handle,
                               properties, initial_value, string_encoding)
-        self._attrs.append(attr)
+        self._attributes.append(attr)
         return attr
 
     def add_constant_value_descriptor(self, uuid: Uuid, value: bytes,
@@ -295,7 +295,7 @@ class GattsCharacteristic(gatt.Characteristic):
 
         Gets all of the attributes and descriptors associated with this characteristic
         """
-        return tuple(self._attrs)
+        return tuple(self._attributes)
 
     @property
     def user_description(self) -> Optional[GattsAttribute]:
