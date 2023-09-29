@@ -139,7 +139,6 @@ class BleDevice(NrfDriverObserver):
         self._db = gatts.GattsDatabase(self, self.client, self._default_conn_config.hvn_tx_queue_size)
         self._default_conn_params = peer.DEFAULT_CONNECTION_PARAMS
         self._default_security_params = peer.DEFAULT_SECURITY_PARAMS
-        self._att_mtu_max = MTU_SIZE_MINIMUM
         self._preferred_mtu_size = MTU_SIZE_DEFAULT
         self._preferred_phy = Phy.auto
 
