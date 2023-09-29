@@ -1,4 +1,6 @@
 import logging
+
+from blatann.event_args import WriteEventArgs
 from blatann.services.glucose.constants import *
 from blatann.services.glucose.data_types import *
 from blatann.services.glucose.racp import *
@@ -42,12 +44,11 @@ class GlucoseServer(object):
         self.service.peer.on_disconnect.register(self._on_disconnect)
         self.measurement_characteristic.on_notify_complete.register(self._on_notify_complete)
 
-    def set_features(self, features):
+    def set_features(self, features: GlucoseFeatures):
         """
         Sets the features for the Glucose Feature characteristic
 
         :param features: The supported features of the sensor
-        :type features: GlucoseFeatures
         """
         self.feature_characteristic.set_value(features.encode().value, False)
 
@@ -60,11 +61,7 @@ class GlucoseServer(object):
                     noti_id = self.context_characteristic.notify(record.context.encode().value).id
                     self._active_notifications.append(noti_id)
 
-    def _on_report_records_request(self, command):
-        """
-        :type command: RacpCommand
-        :return:
-        """
+    def _on_report_records_request(self, command: RacpCommand):
         if self._current_command is not None:
             return RacpResponseCode.procedure_not_completed
         if command.filter_type not in [None, FilterType.sequence_number]:
@@ -94,11 +91,11 @@ class GlucoseServer(object):
         # Do not send a response, will be sent once all records reported
         return None
 
-    def _on_report_num_records_request(self, command):
+    def _on_report_num_records_request(self, command: RacpCommand):
         min_seq, max_seq = command.get_filter_min_max()
         return self.database.record_count(min_seq, max_seq)
 
-    def _on_delete_records_request(self, command):
+    def _on_delete_records_request(self, command: RacpCommand):
         min_seq, max_seq = command.get_filter_min_max()
         return self.database.delete_records(min_seq, max_seq)
 
@@ -109,11 +106,7 @@ class GlucoseServer(object):
             return RacpResponseCode.success
         return RacpResponseCode.abort_not_successful
 
-    def _on_racp_write(self, characteristic, event_args):
-        """
-        :param characteristic:
-        :type event_args: blatann.event_args.WriteEventArgs
-        """
+    def _on_racp_write(self, characteristic, event_args: WriteEventArgs):
         stream = ble_data_types.BleDataStream(event_args.value)
         command = RacpCommand.decode(stream)
 
