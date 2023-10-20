@@ -48,6 +48,14 @@ Asynchronous paradigms are also supported through waitables where the user can r
        # Handle read complete
    characteristic.read().then(my_characteristic_read_handler)
 
+``async`` methods are also provided for use with asyncio:
+
+.. code-block:: python
+    sender, event_args = await characteristic.read().as_async(timeout=5)
+
+.. warning::
+    ``as_async()`` is currently experimental and not fully tested.
+
 
 BLE Device
 ----------

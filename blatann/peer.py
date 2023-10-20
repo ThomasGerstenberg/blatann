@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import threading
 import enum
-from typing import Optional, Type
+from typing import Optional, Type, Tuple
 
 from blatann.event_type import EventSource, Event
 from blatann.gap import smp
@@ -11,8 +11,7 @@ from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MI
 from blatann.nrf import nrf_events
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.nrf.nrf_types import BLEGapDataLengthParams
-from blatann.waitables.waitable import EmptyWaitable
-from blatann.waitables.connection_waitable import DisconnectionWaitable
+from blatann.waitables.waitable import EmptyWaitable, Waitable
 from blatann.waitables.event_waitable import EventWaitable
 from blatann.event_args import *
 
@@ -329,7 +328,7 @@ class Peer(object):
     Public Methods
     """
 
-    def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection) -> DisconnectionWaitable:
+    def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection) -> Waitable[Tuple[Peer, DisconnectionEventArgs]]:
         """
         Disconnects from the peer, giving the optional status code.
         Returns a waitable that will trigger when the disconnection is complete.
@@ -488,7 +487,7 @@ class Peer(object):
         self._mtu_size = MTU_SIZE_DEFAULT
         self._negotiated_mtu_size = None
         self._rssi_report_started = False
-        self._disconnect_waitable = DisconnectionWaitable(self)
+        self._disconnect_waitable = EventWaitable(self.on_disconnect)
         self.connection_state = PeerState.CONNECTED
         self._current_connection_params = ActiveConnectionParameters(connection_params)
 
