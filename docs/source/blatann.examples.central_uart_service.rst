@@ -1,7 +1,7 @@
-blatann.examples.centeral\_uart\_service module
+blatann.examples.central\_uart\_service module
 ===============================================
 
-.. automodule:: blatann.examples.centeral_uart_service
+.. automodule:: blatann.examples.central_uart_service
    :members:
    :undoc-members:
    :show-inheritance:

@@ -13,12 +13,12 @@ Submodules
    :maxdepth: 4
 
    blatann.examples.broadcaster
-   blatann.examples.centeral_uart_service
    blatann.examples.central
    blatann.examples.central_battery_service
    blatann.examples.central_descriptors
    blatann.examples.central_device_info_service
    blatann.examples.central_event_driven
+   blatann.examples.central_uart_service
    blatann.examples.constants
    blatann.examples.example_utils
    blatann.examples.peripheral
