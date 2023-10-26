@@ -469,5 +469,3 @@ class Bitfield(BleCompoundDataType):
             if getattr(self, attr_name):
                 set_bit_strs.append("{}({})".format(attr_name, bit))
         return "{}({})".format(self.__class__.__name__, ", ".join(set_bit_strs))
-
-
