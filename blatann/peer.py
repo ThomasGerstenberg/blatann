@@ -643,7 +643,7 @@ class Peripheral(Peer):
         and allows the user to decide how to handle the peripheral's requested connection parameters.
 
         The callback is passed in 2 positional parameters: this ``Peripheral`` object
-        and the desired ``ConnectionParameter``s received in the request.
+        and the desired ``ConnectionParameters`` received in the request.
         The callback should return the desired connection parameters to use, or None to reject the request altogether.
 
         :param handler: The callback to determine which connection parameters to negotiate when an update request
