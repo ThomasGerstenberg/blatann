@@ -29,7 +29,14 @@ An example shell script to do so can be found [here](./tools/macos_retarget_pc_b
 
 #### Supported Devices/Software
 
-This library has been tested using both the nRF52 Dev Kits, the nRF52840 USB Dongle and the [ABSniffer 528](https://blog.aprbrother.com/product/absniffer-usb-dongle-528) flashed with Connectivity Firmware
+This library has been tested with the following hardware:
+
+- the [nRF52-DK](https://www.nordicsemi.com/Products/Development-hardware/nrf52-dk): a Dev Kit for the nRF52832
+- the [nRF52840-DK](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK): a Dev Kit for the nRF52840
+- the [nRF52840-Dongle](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dongle): a nRF52840 USB Dongle
+- the [ABSniffer-528](https://wiki.aprbrother.com/en/ABSniffer_USB_Dongle_528.html): a nRF52832 USB Dongle
+
+Flashed with specific Connectivity firmware released by Nordic Semiconductor.
 
 **Supported Versions:**
 
