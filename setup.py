@@ -24,7 +24,7 @@ setup(
     keywords="ble bluetooth nrf52 nordic",
     packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=install_requires,
-    python_requires=">=3.7.*",
+    python_requires=">=3.7",
     long_description_content_type="text/markdown",
     long_description=long_description,
     classifiers=[
