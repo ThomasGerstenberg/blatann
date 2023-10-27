@@ -10,7 +10,7 @@ Documentation is available on [ReadTheDocs](https://blatann.readthedocs.io)
 
 **NOTE**
 
-As of v0.3.0, the public-facing API is stable. There is not likely to be any major changes in method/property naming or functionality
+As of v0.3.0, the public-facing API is stable. There will not likely be any major changes in method/property naming or functionality
 and all features added will aim to maintain backwards compatibility.
 
 ### Install
@@ -38,26 +38,15 @@ This library has been tested with the following hardware:
 
 Flashed with specific Connectivity firmware released by Nordic Semiconductor.
 
-**Supported Versions:**
+When using the nRF52840, it should be flashed using the S132/SoftDevice v5 connectivity images. Both the hex files and DFU packages are distributed
+with v4.1.4 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.4) and is also provided in the `pc-ble-driver-py` install.
 
-| Blatann Version | Python Version | SoftDevice Version | pc-ble-driver-py Version | Supported Devices                                                                                    |
-|-----------------|----------------|--------------------|--------------------------|------------------------------------------------------------------------------------------------------|
-| v0.2.x          | 2.7 Only       | v3                 | <=0.11.4                 | nRF52832 Dev Kit<br>ABSniffer BLE Dongle<br>nRF52840 Dev Kit/Dongle (using S132 connectivity image)* |
-| v0.3+           | 3.7+           | v5                 | \>=0.12.0                | Same as above                                                                                        |
-
-\* I have not personally tested the nRF52840 compatibility for v0.2.x, only heard second-hand accounts of it working. v0.3+ has been tested with the nRF52840 USB Dongle
-
-When using the nRF52840, it should be flashed using the S132/SoftDevice v5 connectivity images. Both hex files and DFU packages are distributed by default
-with v4.1.1 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-driver/releases/tag/v4.1.1) and is also bundled with `pc-ble-driver-py` install,
-allowing the Dev Kit and USB Dongle to be flashed. The devices can be updated using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop)
+The Nordic devices can be flashed using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop) or the `nrfutil` CLI tool.
 
 ### Roadmap/Supported BLE Features
 
 Below lists the supported BLE features and ones that are on the roadmap to implement (eventually)
 
-- [ ] Documentation (majority covered, still needs some updates)
-    - [X] ReadTheDocs integration
-    - [X] Better type hinting
 - [X] GAP
     - [X] BLE Enable parameters
     - [X] BLE Connection parameters (functional, needs some work)
