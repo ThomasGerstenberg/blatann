@@ -2,9 +2,10 @@
 
 blåtann: Norwegian word for "blue tooth"
 
-The goal of this library is to provide a high-level, object-oriented interface
-for performing bluetooth operations using the Nordic nRF52 through Nordic's `pc-ble-driver-py` library
-and the associated Connectivity firmware.
+Blatann aims to provide a high-level, object-oriented interface for interacting
+with Bluetooth Low Energy (BLE) devices through Python. It operates using
+the Nordic Semiconductor nRF52 through Nordic's ``pc-ble-driver-py`` library
+and the associated Connectivity firmware for the device.
 
 Documentation is available on [ReadTheDocs](https://blatann.readthedocs.io)
 
