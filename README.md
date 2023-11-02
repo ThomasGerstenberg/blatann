@@ -31,9 +31,9 @@ An example shell script to do so can be found [here](./tools/macos_retarget_pc_b
 
 This library has been tested with the following hardware:
 
-- the [nRF52-DK](https://www.nordicsemi.com/Products/Development-hardware/nrf52-dk): a Dev Kit for the nRF52832
-- the [nRF52840-DK](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK): a Dev Kit for the nRF52840
-- the [nRF52840-Dongle](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dongle): a nRF52840 USB Dongle
+- the [nRF52-DK](https://www.nordicsemi.com/Products/Development-hardware/nrf52-dk): a Dev Kit for the nRF52832 (PCA10040)
+- the [nRF52840-DK](https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK): a Dev Kit for the nRF52840 (PCA10056)
+- the [nRF52840-Dongle](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dongle): a nRF52840 USB Dongle (PCA10059)
 - the [ABSniffer-528](https://wiki.aprbrother.com/en/ABSniffer_USB_Dongle_528.html): a nRF52832 USB Dongle
 
 Flashed with specific Connectivity firmware released by Nordic Semiconductor.
