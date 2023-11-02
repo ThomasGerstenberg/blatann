@@ -12,14 +12,17 @@ Nordic Connectivity firmware in order to operate.
 
 .. note::
    This library will not work as a driver for any generic Bluetooth HCI USB device nor built-in Bluetooth radios.
-   The driver is very specific to Nordic and their provided connectivity firmware,
-   thus other Bluetooth vendors will not work. (BLE communications with non-Nordic devices is not affected.)
+   The driver is very specific to Nordic nRF52 and the associated Connectivity firmware,
+   thus other Bluetooth vendors will not work.
 
-Below are the known supported devices:
+   Using the library with an nRF52 device to communicate over BLE with other non-Nordic devices is supported.
 
-* nRF52832 Development Kit (PCA10040)
-* nRF52840 Development Kit (PCA10056)
-* nRF52840 USB Dongle (PCA10059)
+This library has been tested with the following hardware:
+
+* the `nRF52-DK`_: a Dev Kit for the nRF52832 (PCA10040)
+* the `nRF52840-DK`_: a Dev Kit for the nRF52840 (PCA10056)
+* the `nRF52840-Dongle`_: a nRF52840 USB Dongle (PCA10059)
+* the `ABSniffer-528`_: a nRF52832 USB Dongle
 
 Install
 ^^^^^^^
@@ -68,3 +71,7 @@ If things do not seem to be working, check out the :doc:`./troubleshooting` page
 
 .. _nRF Connect: https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Connect-for-desktop
 .. _macos script: https://github.com/ThomasGerstenberg/blatann/blob/master/tools/macos_retarget_pc_ble_driver_py.sh
+.. _nRF52-DK: https://www.nordicsemi.com/Products/Development-hardware/nrf52-dk
+.. _nRF52840-DK: https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK
+.. _nRF52840-Dongle: https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dongle
+.. _ABSniffer-528: https://wiki.aprbrother.com/en/ABSniffer_USB_Dongle_528.html
