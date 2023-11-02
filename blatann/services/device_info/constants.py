@@ -45,4 +45,3 @@ CHARACTERISTICS = [
     RegulatoryCertificateCharacteristic,
     PnpIdCharacteristic
 ]
-
