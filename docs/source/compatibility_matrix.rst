@@ -6,7 +6,7 @@ Compatibility Matrix
 
    * - | Blatann
        | Version
-     - | Python Version
+     - | Python
        | Version
      - | Connectivity Firmware
        | Version
@@ -35,9 +35,9 @@ For Blatann v0.3+, firmware images are under subdir ``sd_api_v5``.
 
    * - Hardware
      - Firmware Image
-   * - nRF52832 Devkit
+   * - nRF52832 Dev Kit
      - connectivity_x.y.z_<baud>_with_s132_x.y.hex (note the baud rate in use!)
-   * - nRF52840 Devkit
+   * - nRF52840 Dev Kit
      - | connectivity_x.y.z_<baud>_with_s132_x.y.hex (note the baud rate in use!) **or**
        | connectivity_x.y.z_usb_with_s132_x.y.hex if using the USB port on the side
    * - nRF52840 USB Dongle
@@ -45,6 +45,6 @@ For Blatann v0.3+, firmware images are under subdir ``sd_api_v5``.
 
 .. note::
    Blatann provides a default setting for the baud rate to use with the device.
-   For 0.2.x, the default baud is 115200 whereas 0.3+ the default is 1M (and USB doesn't care).
+   For v0.2.x, the default baud is 115200 whereas for v0.3+ the default is 1M (and USB doesn't care).
    This is only an issue when running examples through the command line as it
    doesn't expose a setting for the baud rate. When writing your own script, it can be configured however it's needed.
