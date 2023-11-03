@@ -39,8 +39,8 @@ class EventArgs(object):
         attrs = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return repr_format(self, **attrs)
 
-# Gap Event Args
 
+# Gap Event Args
 
 class DisconnectionEventArgs(EventArgs):
     """
