@@ -3,32 +3,35 @@ This example demonstrates implementing a central BLE connection using async/asyn
 performed is done sequentially in a linear fashion, but the event loop is unblocked during the bluetooth operations
 (such as connecting, reading characteristics, etc.).
 
-This is designed to run alongside the peripheral example running on a separate nordic device
+This is designed to run alongside the peripheral example running on a separate Nordic nRF52 device
 """
 import asyncio
 import struct
 from blatann import BleDevice
 from blatann.gap import smp, PairingPolicy
 from blatann.examples import example_utils, constants
+from blatann.gatt.gattc import GattcCharacteristic
 from blatann.nrf import nrf_events
 
 logger = example_utils.setup_logger(level="DEBUG")
 
 
-def on_counting_char_notification(characteristic, event_args):
+async def handle_counting_char(characteristic: GattcCharacteristic):
     """
-    Callback for when a notification is received from the peripheral's counting characteristic.
-    The peripheral will periodically notify a monotonically increasing, 4-byte integer. This callback unpacks
-    the value and logs it out
+    Example of a coroutine that subscribes to characteristic notifications
+    and uses the AsyncEventQueue to create an iterable that returns each notification
+    received by the server
 
-    :param characteristic: The characteristic the notification was on (counting characteristic)
-    :type characteristic: blatann.gatt.gattc.GattcCharacteristic
-    :param event_args: The event arguments
-    :type event_args: blatann.event_args.NotificationReceivedEventArgs
+    :param characteristic:
     """
-    # Unpack as a little-endian, 4-byte integer
-    current_count = struct.unpack("<I", event_args.value)[0]
-    logger.info("Counting char notification. Curent count: {}".format(current_count))
+    logger.info("Subscribing to the counting characteristic")
+    await characteristic.subscribe().as_async()
+
+    # iterator does not exit until peer disconnects
+    async for _, event_args in characteristic.notification_queue_async():
+        current_count = struct.unpack("<I", event_args.value)[0]
+        logger.info("Counting char notification. Current count: {}".format(current_count))
+    logger.info("Peer disconnected, coroutine is exiting")
 
 
 def on_passkey_entry(peer, passkey_event_args):
@@ -95,8 +98,10 @@ async def _main(serial_port):
     # Find the counting characteristic
     counting_char = peer.database.find_characteristic(constants.COUNTING_CHAR_UUID)
     if counting_char:
-        logger.info("Subscribing to the counting characteristic")
-        await counting_char.subscribe(on_counting_char_notification).as_async(timeout=5)
+        # Create the task that will handle all notifications from this characteristic
+        asyncio.create_task(
+            handle_counting_char(counting_char)
+        )
     else:
         logger.warning("Failed to find counting characteristic")
 

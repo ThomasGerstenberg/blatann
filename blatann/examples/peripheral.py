@@ -89,8 +89,9 @@ def on_time_char_read(characteristic, event_args):
     :param event_args: None
     """
     t = time.time()
+    timestamp = time.strftime("%H:%M:%S", time.localtime(t))
     ms = int((t * 1000) % 1000)
-    msg = "Time: {}.{:03}".format(time.strftime("%H:%M:%S", time.localtime(t)), ms)
+    msg = f"Time: {timestamp}.{ms:03}"
     characteristic.set_value(msg)
 
 

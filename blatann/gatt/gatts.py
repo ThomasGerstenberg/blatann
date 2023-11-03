@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import asyncio
 import typing
 from typing import Optional, List, Iterable
 from collections import namedtuple
@@ -11,6 +13,7 @@ from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.bt_sig.uuids import DescriptorUuid
 from blatann.uuid import Uuid
+from blatann.waitables.event_queue import AsyncEventQueue, EventQueue
 from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.event_type import EventSource, Event
@@ -388,6 +391,57 @@ class GattsCharacteristic(gatt.Characteristic):
         :return: an event which can have handlers registered to and deregistered from
         """
         return self._on_notify_complete
+
+    """
+    Queues
+    """
+
+    def write_queue_async(self, event_loop: asyncio.AbstractEventLoop = None) -> AsyncEventQueue[GattsCharacteristic, WriteEventArgs]:
+        """
+        .. warning:: This API is experimental!
+
+        Provides a queue that can be asynchronously iterated over
+        to receive write requests rather than a callback
+        running in the event handler thread.
+
+        The iterator will continue until the peripheral is disconnected.
+
+        Example:
+
+        .. code-block:: python
+
+            await client.wait_for_connection_async()
+            async for _, event_args in characteristic.write_queue_async():
+                print(f"Got write event: {event_args}")
+            print("Peer disconnected")
+
+        :param event_loop: Optional event loop the async queue will be consumed on
+        :return: The async event queue object
+        """
+        return AsyncEventQueue(self.on_write, self.peer.on_disconnect, event_loop)
+
+    def write_queue(self) -> EventQueue[GattsCharacteristic, WriteEventArgs]:
+        """
+        .. warning:: This API is experimental!
+
+        Provides a queue that can be synchronously iterated over
+        to receive write requests rather than a callback
+        running in the event handler thread.
+
+        The iterator will continue until the peripheral is disconnected.
+
+        Example:
+
+        .. code-block:: python
+
+            client.wait_for_connection()
+            for _, event_args in characteristic.write_queue():
+                print(f"Got write event: {event_args}")
+            print("Peer disconnected")
+
+        :return: The event queue object
+        """
+        return EventQueue(self.on_write, self.peer.on_disconnect)
 
     """
     Event Handling
