@@ -72,7 +72,7 @@ device. For a nRF52840-Dongle out-of-the-box it may for example show
 as "1915:521f" with "Open DFU Bootloader".
 
 Even with the nRF52840-Dongle properly flashed and seen with ``lsusb``,
-the above error message that it cannot be openend may show. On the Linux
+the above error message that it cannot be opened may show. On the Linux
 operating system, this often indicates that you as a user may not have
 the proper rights to utilize the USB device. The following will add the
 current user to the ``plugdev`` group that can use USB plug-in devices,
@@ -94,7 +94,7 @@ Error: Failed to ble_enable. Error code: NrfError.no_mem
 
 The nRF52 devices have limited Random Access Memory (RAM) and the firmware
 pre-allocates all required memory based on the configuration settings.
-When exceeding certain limits, this may result in an ``no_mem`` error message
+When exceeding certain limits, this may result in a ``no_mem`` error message
 indicating an out-of-memory situation.
 
 .. code-block:: none
