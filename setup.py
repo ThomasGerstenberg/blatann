@@ -16,7 +16,7 @@ with open("requirements.txt") as f:
 setup(
     name="blatann",
     version=VERSION.lstrip("v"),  # Remove the leading v, pip doesn't like that
-    description="API for controlling nRF52 connectivity devices through pc-ble-driver-py",
+    description="Python BLE library for using Nordic nRF52 with Connectivity firmware",
     url="https://github.com/ThomasGerstenberg/blatann",
     author="Thomas Gerstenberg",
     author_email="tgerst6@gmail.com",
