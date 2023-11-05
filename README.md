@@ -9,11 +9,6 @@ and the associated Connectivity firmware for the device.
 
 Documentation is available on [ReadTheDocs](https://blatann.readthedocs.io)
 
-**NOTE**
-
-As of v0.3.0, the public-facing API is stable. There will not likely be any major changes in method/property naming or functionality
-and all features added will aim to maintain backwards compatibility.
-
 ### Install
 
 `pip install blatann`
@@ -45,6 +40,10 @@ with v4.1.4 of [pc-ble-driver](https://github.com/NordicSemiconductor/pc-ble-dri
 The Nordic devices can be flashed using [nRF Connect Desktop App](https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop) or the `nrfutil` CLI tool.
 
 ### Roadmap/Supported BLE Features
+
+As of v0.3.0, the public-facing API of Blatann is stable. There will not
+likely be any major changes in method/property naming or functionality
+and all features added will aim to maintain backwards compatibility.
 
 Below lists the supported BLE features and ones that are on the roadmap to implement (eventually)
 
