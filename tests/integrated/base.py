@@ -1,22 +1,42 @@
-import os
 import logging
+import os
 import queue
+import serial.tools.list_ports as slp
 import time
+from functools import wraps
 from typing import Optional
 from unittest import TestCase, SkipTest
 from unittest.util import safe_repr
-from functools import wraps
+from pathlib import Path
 
 from blatann import BleDevice
 from blatann.gap.default_bond_db import DefaultBondDatabaseLoader
 from blatann.nrf import nrf_events
 from blatann.utils import setup_logger
 
+
 HERE = os.path.dirname(__file__)
 
 BLATANN_QUICK_ENVKEY = "BLATANN_TEST_QUICK"
 BLATANN_DEV_ENVKEY_FORMAT = "BLATANN_DEV_{}"
 BOND_DB_FILE_FMT = os.path.join(HERE, "bond_db{}.json")
+
+
+def _wait_for_serial_port(serial_port, retries=10, delay=0.5):
+    logging.debug("Wait for serial port {} to be ready...".format(serial_port))
+    for retry in range(retries):
+        logging.debug("run/retry = {}".format(retry))
+        for port in slp.comports():
+            if port.device == serial_port:
+                logging.debug("Found with usb_info={}".format(port.usb_info()))
+                # add just a little more time...
+                # as sometimes it is found while path device is not yet ready
+                time.sleep(delay)
+                if Path(serial_port).exists():
+                    return True
+                logging.debug("... but path didn't exist (yet)")
+        time.sleep(delay)
+    return False
 
 
 def _configure_device(dev_number, config, optional=False):
@@ -26,6 +46,12 @@ def _configure_device(dev_number, config, optional=False):
         if optional:
             return None
         raise EnvironmentError(f"Environment variable {env_key} must be defined with the device's comport")
+    if not _wait_for_serial_port(comport, retries=10, delay=0.5):
+        if optional:
+            return None
+        logging.warning("Couldn't obtain serial port for use with Blatann")
+        # TODO: check for proper exception to raise
+        return None
     dev = BleDevice(comport, bond_db_filename=":memory:")
     dev.configure(**config)
     dev.event_logger.suppress(nrf_events.GapEvtAdvReport)
