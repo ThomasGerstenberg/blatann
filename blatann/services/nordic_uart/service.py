@@ -71,8 +71,8 @@ class NordicUartServer(object):
         return cls(service, max_characteristic_size)
 
 
-class NordicUartClient(object, max_characteristic_size=None):
-    def __init__(self, service):
+class NordicUartClient(object):
+    def __init__(self, service, max_characteristic_size=None):
         """
         :type service: blatann.gatt.gattc.GattcService
         """
