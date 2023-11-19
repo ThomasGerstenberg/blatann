@@ -40,13 +40,26 @@ to block the current thread until the operation completes.
    Take care to not call ``wait()`` within an event handler as the system will deadlock
    (see Threading section under :doc:`./architecture` for more info).
 
-Asynchronous paradigms are also supported through waitables where the user can register a handler to be called when the operation completes:
+Asynchronous paradigms are also supported through waitables where
+the user can register a handler to be called when the operation completes:
 
 .. code-block:: python
 
    def my_characteristic_read_handler(sender, event_args):
        # Handle read complete
    characteristic.read().then(my_characteristic_read_handler)
+
+``async`` methods are also provided for use with asyncio:
+
+.. code-block:: python
+    # BLE operations support async/await
+    sender, event_args = await characteristic.read().as_async(timeout=5)
+    # Characteristic operations can be iterated as an async queue
+    async for _, event in characteristic.notification_queue_async():
+        print(f"Got event {event}")
+
+.. warning::
+    async methods are currently experimental and not extensively tested.
 
 
 BLE Device

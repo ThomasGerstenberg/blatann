@@ -1,6 +1,9 @@
 from __future__ import annotations
+
+import types
 from typing import TypeVar, Generic, Callable
 from threading import Lock
+import weakref
 
 
 TSender = TypeVar("TSender")
@@ -19,8 +22,9 @@ class Event(Generic[TSender, TEvent]):
         self.name = name
         self._handler_lock = Lock()
         self._handlers = []
+        self._handlers_set = weakref.WeakSet()
 
-    def register(self, handler: Callable[[TSender, TEvent], None]) -> EventSubscriptionContext[TSender, TEvent]:
+    def register(self, handler: Callable[[TSender, TEvent], None], weak=False) -> EventSubscriptionContext[TSender, TEvent]:
         """
         Registers a handler to be called whenever the event is emitted.
         If the given handler is already registered, function does not register the handler a second time.
@@ -34,12 +38,21 @@ class Event(Generic[TSender, TEvent]):
         >>>    # Do something, my_connected_handler will be deregistered upon leaving this context
 
         :param handler: The handler to register
+        :param weak: True to register the handler as a weakref
 
         :return: a context block that can be used to automatically unsubscribe the handler
         """
+        if weak:
+            if isinstance(handler, types.MethodType):
+                entry = weakref.WeakMethod(handler)
+            else:
+                entry = weakref.ref(handler)
+        else:
+            entry = handler
         with self._handler_lock:
-            if handler not in self._handlers:
+            if handler not in self._handlers_set:
                 self._handlers.append(handler)
+                self._handlers_set.add(handler)
         return EventSubscriptionContext(self, handler)
 
     def deregister(self, handler: Callable[[TSender, TEvent], None]):
@@ -50,8 +63,23 @@ class Event(Generic[TSender, TEvent]):
         :param handler: The handler to deregister
         """
         with self._handler_lock:
-            if handler in self._handlers:
-                self._handlers.remove(handler)
+            if handler in self._handlers_set:
+                self._handlers_set.remove(handler)
+                # In the case of weakrefs, the caller must have a strong reference to the handler
+                # in order to pass it into this function. Thus, it must exist in both the handler set and handler list
+                if handler in self._handlers:
+                    self._handlers.remove(handler)
+                else:
+                    # weakref, need to iterate to find the handler
+                    item_to_remove = None
+                    for entry in self._handlers:
+                        if isinstance(entry, weakref.ref):
+                            item = entry()
+                            if item == handler:
+                                item_to_remove = entry
+                                break
+                    if item_to_remove:
+                        self._handlers.remove(item_to_remove)
 
 
 class EventSource(Event):
@@ -69,7 +97,7 @@ class EventSource(Event):
         Gets if the event has any handlers subscribed to the event
         """
         with self._handler_lock:
-            return bool(self._handlers)
+            return bool(self._handlers_set)
 
     def clear_handlers(self):
         """
@@ -77,6 +105,7 @@ class EventSource(Event):
         """
         with self._handler_lock:
             self._handlers = []
+            self._handlers_set = weakref.WeakSet()
 
     def notify(self, sender: TSender, event_args: TEvent = None):
         """
@@ -85,13 +114,30 @@ class EventSource(Event):
         with self._handler_lock:
             handlers = self._handlers[:]
 
+        dead_weakrefs = []
         for h in handlers:
+            if isinstance(h, weakref.ref):
+                h_ref = h
+                h = h_ref()
+                if h is None:
+                    dead_weakrefs.append(h_ref)
+
             try:
                 h(sender, event_args)
             except Exception as e:
                 if self._logger:
                     self._logger.error(f"Error occurred while handling event '{self.name}'. Sender: {sender}, Event Args: {event_args}")
                     self._logger.exception(e)
+
+        if dead_weakrefs:
+            self._prune_dead_weakrefs(dead_weakrefs)
+
+    def _prune_dead_weakrefs(self, dead_weakrefs):
+        with self._handler_lock:
+            for dead_weakref in dead_weakrefs:
+                # Double-check now that we're locked that the weakref still is in the handler list
+                if dead_weakref in self._handlers:
+                    self._handlers.remove(dead_weakref)
 
 
 class EventSubscriptionContext(Generic[TSender, TEvent]):

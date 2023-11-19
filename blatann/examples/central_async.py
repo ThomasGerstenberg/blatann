@@ -1,33 +1,37 @@
 """
-This example demonstrates implementing a central BLE connection in a procedural manner. Each bluetooth operation
-performed is done sequentially in a linear fashion, and the main context blocks until each operation completes
-before moving on to the rest of the program
+This example demonstrates implementing a central BLE connection using async/asyncio event loop. Each bluetooth operation
+performed is done sequentially in a linear fashion, but the event loop is unblocked during the bluetooth operations
+(such as connecting, reading characteristics, etc.).
 
-This is designed to work alongside the peripheral example running on a separate nordic chip
+This is designed to run alongside the peripheral example running on a separate Nordic nRF52 device
 """
+import asyncio
 import struct
 from blatann import BleDevice
-from blatann.gap import smp
+from blatann.gap import smp, PairingPolicy
 from blatann.examples import example_utils, constants
+from blatann.gatt.gattc import GattcCharacteristic
 from blatann.nrf import nrf_events
 
 logger = example_utils.setup_logger(level="DEBUG")
 
 
-def on_counting_char_notification(characteristic, event_args):
+async def handle_counting_char(characteristic: GattcCharacteristic):
     """
-    Callback for when a notification is received from the peripheral's counting characteristic.
-    The peripheral will periodically notify a monotonically increasing, 4-byte integer. This callback unpacks
-    the value and logs it out
+    Example of a coroutine that subscribes to characteristic notifications
+    and uses the AsyncEventQueue to create an iterable that returns each notification
+    received by the server
 
-    :param characteristic: The characteristic the notification was on (counting characteristic)
-    :type characteristic: blatann.gatt.gattc.GattcCharacteristic
-    :param event_args: The event arguments
-    :type event_args: blatann.event_args.NotificationReceivedEventArgs
+    :param characteristic:
     """
-    # Unpack as a little-endian, 4-byte integer
-    current_count = struct.unpack("<I", event_args.value)[0]
-    logger.info("Counting char notification. Curent count: {}".format(current_count))
+    logger.info("Subscribing to the counting characteristic")
+    await characteristic.subscribe().as_async()
+
+    # iterator does not exit until peer disconnects
+    async for _, event_args in characteristic.notification_queue_async():
+        current_count = struct.unpack("<I", event_args.value)[0]
+        logger.info("Counting char notification. Current count: {}".format(current_count))
+    logger.info("Peer disconnected, coroutine is exiting")
 
 
 def on_passkey_entry(peer, passkey_event_args):
@@ -43,39 +47,7 @@ def on_passkey_entry(peer, passkey_event_args):
     passkey_event_args.resolve(passkey)
 
 
-def on_peripheral_security_request(peer, event_args):
-    """
-    Handler for peripheral-initiated security requests. This is useful in the case that the
-    application wants to override the default response to peripheral-initiated security requests
-    based on parameters, the peer, etc.
-
-    For example, to reject new pairing requests but allow already-bonded
-    devices to enable encryption, one could use the event_args.is_bonded_device flag to accept or reject the request.
-
-    This handler is optional. If not provided the SecurityParameters.reject_pairing_requests parameter will
-    determine the action to take.
-
-    :param peer: The peer that requested security
-    :type peer: blatann.peer.Peer
-    :param event_args: The event arguments
-    :type event_args: blatann.event_args.PeripheralSecurityRequestEventArgs
-    """
-    logger.info("{} Peripheral requested security -- bond: {}, mitm: {}, lesc: {}, keypress: {}".format(
-        "Already-Bonded" if event_args.is_bonded_device else "Non-bonded",
-        event_args.bond, event_args.mitm, event_args.lesc, event_args.keypress
-    ))
-    # At this point check the security parameters and accept, reject, or force re-pair depending on your security needs
-    # For this demo, match the requested parameters (not required) and accept
-    peer.security.security_params.bond = event_args.bond
-    peer.security.security_params.passcode_pairing = event_args.mitm
-    peer.security.security_params.lesc_pairing = event_args.lesc
-    event_args.accept()
-    # Other options include
-    #   event_args.reject()
-    #   event_args.force_repair()
-
-
-def main(serial_port):
+async def _main(serial_port):
     # Set the target to the peripheral's advertised name
     target_device_name = constants.PERIPHERAL_NAME
 
@@ -88,7 +60,7 @@ def main(serial_port):
     ble_device.scanner.set_default_scan_params(timeout_seconds=4)
 
     logger.info("Scanning for '{}'".format(target_device_name))
-    target_address = example_utils.find_target_device(ble_device, target_device_name)
+    target_address = await example_utils.find_target_device_async(ble_device, target_device_name)
 
     if not target_address:
         logger.info("Did not find target peripheral")
@@ -96,7 +68,7 @@ def main(serial_port):
 
     # Initiate the connection and wait for it to finish
     logger.info("Found match: connecting to address {}".format(target_address))
-    peer = ble_device.connect(target_address).wait()
+    peer = await ble_device.connect(target_address).as_async()
     if not peer:
         logger.warning("Timed out connecting to device")
         return
@@ -105,14 +77,12 @@ def main(serial_port):
     # Setup the security parameters and register a handler for when passkey entry is needed.
     # Should be done right after connection in case the peripheral initiates a security request
     peer.security.set_security_params(passcode_pairing=True, io_capabilities=smp.IoCapabilities.KEYBOARD_DISPLAY,
-                                      bond=False, out_of_band=False)
+                                      bond=False, out_of_band=False, reject_pairing_requests=PairingPolicy.allow_all)
     # Register the callback for when a passkey needs to be entered by the user
     peer.security.on_passkey_required.register(on_passkey_entry)
-    # Register the callback for if a peripheral requests security
-    peer.security.on_peripheral_security_request.register(on_peripheral_security_request)
 
     # Wait up to 10 seconds for service discovery to complete
-    _, event_args = peer.discover_services().wait(10, exception_on_timeout=False)
+    _, event_args = await peer.discover_services().as_async(timeout=10, exception_on_timeout=False)
     logger.info("Service discovery complete! status: {}".format(event_args.status))
 
     # Log each service found
@@ -123,13 +93,15 @@ def main(serial_port):
 
     # Wait up to 60 seconds for the pairing process, if the link is not secured yet
     if peer.security.security_level == smp.SecurityLevel.OPEN:
-        peer.security.pair().wait(60)
+        await peer.security.pair().as_async(timeout=60)
 
     # Find the counting characteristic
     counting_char = peer.database.find_characteristic(constants.COUNTING_CHAR_UUID)
     if counting_char:
-        logger.info("Subscribing to the counting characteristic")
-        counting_char.subscribe(on_counting_char_notification).wait(5)
+        # Create the task that will handle all notifications from this characteristic
+        asyncio.create_task(
+            handle_counting_char(counting_char)
+        )
     else:
         logger.warning("Failed to find counting characteristic")
 
@@ -145,22 +117,26 @@ def main(serial_port):
             logger.info("Converting to hex data: '{}'".format(data_to_send))
 
             # Write the data, waiting up to 5 seconds for then write to complete
-            if not hex_convert_char.write(data_to_send).wait(5, False):
+            if not await hex_convert_char.write(data_to_send).as_async(timeout=5, exception_on_timeout=False):
                 logger.error("Failed to write data, i={}".format(i))
                 break
 
             # Write was successful, when we read the characteristic the peripheral should have converted the string
             # Once again, initiate a read and wait up to 5 seconds for the read to complete
-            char, event_args = hex_convert_char.read().wait(5, False)
+            char, event_args = await hex_convert_char.read().as_async(5, False)
             logger.info("Hex: '{}'".format(event_args.value.decode("ascii")))
     else:
         logger.warning("Failed to find hex convert char")
 
     # Clean up
     logger.info("Disconnecting from peripheral")
-    peer.disconnect().wait()
+    await peer.disconnect().as_async()
     ble_device.close()
 
 
+def main(serial_port):
+    asyncio.run(_main(serial_port), debug=True)
+
+
 if __name__ == '__main__':
-    main("COM11")
+    main("COM4")

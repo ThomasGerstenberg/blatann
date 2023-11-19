@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import asyncio
 import logging
 from typing import List, Optional, Iterable
 
@@ -10,6 +12,7 @@ from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter
 from blatann.nrf import nrf_types, nrf_events
+from blatann.waitables.event_queue import AsyncEventQueue, EventQueue
 from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
 from blatann.exceptions import InvalidOperationException
 from blatann.event_args import *
@@ -194,17 +197,68 @@ class GattcCharacteristic(gatt.Characteristic):
         return self._on_notification_event
 
     """
+    Queues
+    """
+
+    def notification_queue_async(self, event_loop: asyncio.AbstractEventLoop = None) -> AsyncEventQueue[GattcCharacteristic, NotificationReceivedEventArgs]:
+        """
+        .. warning:: This API is experimental!
+
+        Provides a queue that can be asynchronously iterated over
+        to receive notifications rather than a callback
+        running in the event handler thread.
+
+        The iterator will continue until the peripheral is disconnected.
+
+        Example:
+
+        .. code-block:: python
+
+            await characteristic.subscribe().as_async()
+            async for _, event_args in characteristic.notification_queue_async():
+                print(f"Got notification: {event_args}")
+            print("Peer disconnected")
+
+        :param event_loop: Optional event loop the async queue will be consumed on
+        :return: The async event queue object
+        """
+        return AsyncEventQueue(self._on_notification_event, self.peer.on_disconnect, event_loop)
+
+    def notification_queue(self) -> EventQueue[GattcCharacteristic, NotificationReceivedEventArgs]:
+        """
+        .. warning:: This API is experimental!
+
+        Provides a queue that can be synchronously iterated over
+        to receive notifications in the current thread rather than a callback
+        running in the event handler thread.
+
+        The iterator will continue until the peer is disconnected.
+
+        Example:
+
+        .. code-block:: python
+
+            characteristic.subscribe().wait()
+            for _, event_args in characteristic.notification_queue():
+                print(f"Got notification: {event_args}")
+            print("Peer disconnected")
+
+        :return: The event queue object
+        """
+        return EventQueue(self._on_notification_event, self.peer.on_disconnect)
+
+    """
     Public Methods
     """
 
-    def subscribe(self, on_notification_handler: Callable[[GattcCharacteristic, NotificationReceivedEventArgs], None],
+    def subscribe(self, on_notification_handler: Callable[[GattcCharacteristic, NotificationReceivedEventArgs], None] = None,
                   prefer_indications=False) -> EventWaitable[GattcCharacteristic, SubscriptionWriteCompleteEventArgs]:
         """
         Subscribes to the characteristic's indications or notifications, depending on what's available and the
         prefer_indications setting. Returns a Waitable that triggers when the subscription on the peripheral finishes.
 
-        :param on_notification_handler: The handler to be called when an indication or notification is received from
-            the peripheral. Must take two parameters: (GattcCharacteristic this, NotificationReceivedEventArgs event args)
+        :param on_notification_handler: Optional handler to be called when an indication or notification is received from
+            the peripheral. Must take two parameters: (GattcCharacteristic this, NotificationReceivedEventArgs event args).
         :param prefer_indications: If the peripheral supports both indications and notifications,
             will subscribe to indications instead of notifications
         :return: A Waitable that will trigger when the subscription finishes
@@ -217,7 +271,10 @@ class GattcCharacteristic(gatt.Characteristic):
             value = gatt.SubscriptionState.INDICATION
         else:
             value = gatt.SubscriptionState.NOTIFY
-        self._on_notification_event.register(on_notification_handler)
+
+        if on_notification_handler:
+            self._on_notification_event.register(on_notification_handler)
+
         waitable = self._cccd_attr.write(gatt.SubscriptionState.to_buffer(value))
         return IdBasedEventWaitable(self._on_cccd_write_complete_event, waitable.id)
 

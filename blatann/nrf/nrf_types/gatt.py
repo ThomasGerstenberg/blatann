@@ -454,6 +454,9 @@ class BLEGattsValue(object):
         value = bytearray(util.uint8_array_to_list(params.p_value, params.len))
         return cls(value, offset)
 
+    def __repr__(self):
+        return repr_format(self, offset=self.offset, value=self.value)
+
 
 class BLEGattsHvx(object):
     def __init__(self, char_handle, hvx_type, data, offset=0):

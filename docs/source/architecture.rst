@@ -54,7 +54,10 @@ communicate events back to the main thread so asynchronous functionality (such a
 can be made synchronous. The result of this is the :class:`~blatann.waitables.waitable.Waitable` class.
 
 Asynchronous method calls in the library will return a ``Waitable`` object which can either then have callbacks registered (to keep things asynchronous)
-or waited on (with or without timeout) from the main thread to make it synchronous. This is a very similar concept to
+or waited on (with or without timeout) from the main thread to make it synchronous.
+Additionally, it can be awaited on for use with ``asyncio``.
+
+This is a very similar concept to
 :class:`concurrent.futures.Future <python:concurrent.futures.Future>`, just a different implementation.
 
 Since there is only a single thread which handles all events,
