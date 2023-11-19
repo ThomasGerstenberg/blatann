@@ -72,12 +72,15 @@ class NordicUartServer(object):
 
 
 class NordicUartClient(object):
-    def __init__(self, service):
+    def __init__(self, service, max_characteristic_size=None):
         """
         :type service: blatann.gatt.gattc.GattcService
         """
         self._service = service
-        self._server_characteristic_size = MTU_SIZE_DEFAULT
+        if max_characteristic_size is None:
+            self._server_characteristic_size = self._service.peer.max_mtu_size - WRITE_BYTE_OVERHEAD
+        else:
+            self._server_characteristic_size = max_characteristic_size
         self._tx_char = self._service.find_characteristic(NORDIC_UART_TX_CHARACTERISTIC_UUID)
         self._rx_char = self._service.find_characteristic(NORDIC_UART_RX_CHARACTERISTIC_UUID)
         self._feature_char = self._service.find_characteristic(NORDIC_UART_FEATURE_CHARACTERISTIC_UUID)
