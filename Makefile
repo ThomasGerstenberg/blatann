@@ -6,13 +6,10 @@ NO_ECHO := @
 endif
 
 # Set up project-relative source paths
-BUILD_PATH        := $(abspath ./build_tools)
-BUILD_OUTPUTS     := $(abspath ./dist) $(abspath ./build)
-SETUP_SCRIPT      := $(abspath ./setup.py)
+BUILD_OUTPUTS     := $(abspath ./dist) $(abspath ./build) $(abspath ./blatann.egg-info)
 
 TEST_ROOT := $(abspath ./tests)
 TEST_VERBOSE := -v
-REQUIREMENTS = requirements.txt
 
 # Utility commands
 RM       := $(NO_ECHO)rm -rf
@@ -36,13 +33,13 @@ COVERAGE := $(PYTHON) -m coverage
 all: binaries
 
 binaries:
-	$(PYTHON) setup.py bdist_wheel sdist
+	$(PYTHON) -m build
 
 clean:
 	$(RM) $(BUILD_OUTPUTS)
 
 setup-dev:
-	$(PIP) install -r $(REQUIREMENTS)
+	$(PIP) install -e .[dev]
 
 run-tests:
 	$(PYTHON) -m unittest discover $(TEST_VERBOSE) -s $(TEST_ROOT) -t $(TEST_ROOT)

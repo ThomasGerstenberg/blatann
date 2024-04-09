@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blatann"
+requires-python = ">=3.7"
+version = "0.5.0"
+authors = [
+    {name = "Thomas Gerstenberg", email = "tgerst6@gmail.com"}
+]
+description = "Python BLE library for using Nordic nRF52 with Connectivity firmware"
+keywords = ["ble", "bluetooth", "nrf52", "nordic"]
+readme = "README.md"
+license = {text = "BSD 3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "pc-ble-driver-py>=0.13",
+    "cryptography",
+    "pytz"
+]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+]
+
+[project.urls]
+Documentation = "https://blatann.readthedocs.io/en/latest/"
+Repository = "https://github.com/ThomasGerstenberg/blatann"
+Changelog = "https://blatann.readthedocs.io/en/latest/changelog.html"
+
