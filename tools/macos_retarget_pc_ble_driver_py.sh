@@ -6,6 +6,8 @@
 #
 # This script should be run within the python environment you want to use,
 # and blatann + pc-ble-driver-py should already be pip-installed into the environment.
+# This script also need the "Command Line Tools for Xcode" to use xcrun command
+# You can find it here: https://developer.apple.com/download/all/?q=command%20line%20tools
 #
 # NOTE: This will need to be run any time pc-ble-driver-py is installed or updated, even virtual environments.
 #       Easy test to see if it needs to be run: `import blatann` will fail
@@ -27,7 +29,7 @@ echo
 
 # Ensure blatann and pc-ble-driver-py are already installed
 BLATANN=`$PYTHON -m pip list | grep blatann`
-PC_BLE_DRIVER_PY=`$PYTHON -m pip list | grep pc-ble-driver-py`
+PC_BLE_DRIVER_PY=`$PYTHON -m pip list | grep "pc_ble_driver_py\|pc-ble-driver-py"
 
 if [[ -z $BLATANN ]]
 then
