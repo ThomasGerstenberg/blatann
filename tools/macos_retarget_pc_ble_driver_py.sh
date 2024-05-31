@@ -29,7 +29,7 @@ echo
 
 # Ensure blatann and pc-ble-driver-py are already installed
 BLATANN=`$PYTHON -m pip list | grep blatann`
-PC_BLE_DRIVER_PY=`$PYTHON -m pip list | grep pc_ble_driver_py`
+PC_BLE_DRIVER_PY=`$PYTHON -m pip list | grep "pc_ble_driver_py\|pc-ble-driver-py"
 
 if [[ -z $BLATANN ]]
 then
