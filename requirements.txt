@@ -1,3 +1,4 @@
-pc-ble-driver-py>=0.13
 cryptography
+pc-ble-driver-py>=0.17
+pyserial>=3.5
 pytz
