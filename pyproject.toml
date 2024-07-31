@@ -5,7 +5,6 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "blatann"
 requires-python = ">=3.7"
-version = "0.5.0"
 authors = [
     {name = "Thomas Gerstenberg", email = "tgerst6@gmail.com"}
 ]
@@ -19,11 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-dependencies = [
-    "pc-ble-driver-py>=0.13",
-    "cryptography",
-    "pytz"
-]
+dynamic = ["version", "dependencies"]
 
 [project.optional-dependencies]
 dev = [
@@ -35,3 +30,6 @@ Documentation = "https://blatann.readthedocs.io/en/latest/"
 Repository = "https://github.com/ThomasGerstenberg/blatann"
 Changelog = "https://blatann.readthedocs.io/en/latest/changelog.html"
 
+[tool.setuptools.dynamic]
+version = {attr = "blatann.__version__"}
+dependencies = {file = "requirements.txt"}
