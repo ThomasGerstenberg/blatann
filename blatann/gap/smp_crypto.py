@@ -78,7 +78,7 @@ def lesc_generate_private_key() -> ec.EllipticCurvePrivateKey:
 
     :return: The generated private key
     """
-    return ec.generate_private_key(_lesc_curve, _backend)
+    return ec.generate_private_key(_lesc_curve(), _backend)
 
 
 def lesc_compute_dh_key(private_key: ec.EllipticCurvePrivateKey,
