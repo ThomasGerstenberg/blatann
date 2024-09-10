@@ -23,6 +23,8 @@ dynamic = ["version", "dependencies"]
 [project.optional-dependencies]
 dev = [
     "build",
+    "ruff",
+    "isort",
 ]
 
 [project.urls]
@@ -33,3 +35,26 @@ Changelog = "https://blatann.readthedocs.io/en/latest/changelog.html"
 [tool.setuptools.dynamic]
 version = {attr = "blatann.__version__"}
 dependencies = {file = "requirements.txt"}
+
+[tool.ruff]
+line-length = 120
+target-version = "py37"
+
+[tool.ruff.lint]
+# TODO: Remove these and fix instances once others are cleaned up
+ignore = ["F401", "F403", "F405"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.isort]
+py_version = 37
+src_paths = ["blatann", "tests"]
+
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER', 'TEST']
+known_test = ['tests']
+
+line_length = 120
+multi_line_output = 5  # Hanging Grid Grouped
+use_parentheses = true
