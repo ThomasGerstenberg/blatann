@@ -1,8 +1,10 @@
 # Suspend command echo for non-verbose builds
 ifeq ("$(VERBOSE)","1")
 NO_ECHO :=
+TEST_VERBOSE := -v
 else
 NO_ECHO := @
+TEST_VERBOSE :=
 endif
 
 # Set up project-relative source paths
@@ -12,34 +14,49 @@ TEST_ROOT := $(abspath ./tests)
 TEST_VERBOSE := -v
 
 # Utility commands
-RM       := $(NO_ECHO)rm -rf
-CD       := $(NO_ECHO)cd
-CP       := $(NO_ECHO)cp
-TOUCH    := $(NO_ECHO)touch
-AWK      := $(NO_ECHO)gawk
-MKDIR    := $(NO_ECHO)mkdir
-CAT      := $(NO_ECHO)cat
+RM    := rm -rf
+CD    := cd
+CP    := cp
+TOUCH := touch
+MKDIR := mkdir
+CAT   := cat
+
+ifeq ($(OS),Windows_NT)
+PYTHON   ?= python
+else
+PYTHON   ?= python3
+endif
 
 # Python-based commands
-PYTHON   := $(NO_ECHO)python3
 PIP      := $(PYTHON) -m pip
-VENV     := $(PYTHON) -m virtualenv
+VENV     := $(PYTHON) -m venv
 COVERAGE := $(PYTHON) -m coverage
+RUFF     := $(PYTHON) -m ruff
+ISORT    := $(PYTHON) -m isort
 
 # Target Definitions
 
-.PHONY: all binaries clean run-tests setup-dev
+.PHONY: default binaries clean run-tests setup-dev lint-check format
 
-all: binaries
+# First target, default to building the wheel
+default: binaries
 
 binaries:
-	$(PYTHON) -m build
+	$(NO_ECHO)$(PYTHON) -m build
 
 clean:
-	$(RM) $(BUILD_OUTPUTS)
+	$(NO_ECHO)$(RM) $(BUILD_OUTPUTS)
 
 setup-dev:
-	$(PIP) install -e .[dev]
+	$(NO_ECHO)$(PIP) install -e .[dev]
 
 run-tests:
-	$(PYTHON) -m unittest discover $(TEST_VERBOSE) -s $(TEST_ROOT) -t $(TEST_ROOT)
+	$(NO_ECHO)$(PYTHON) -m unittest discover $(TEST_VERBOSE) -s $(TEST_ROOT) -t $(TEST_ROOT)
+
+lint-check:
+	$(NO_ECHO)$(RUFF) check .
+	$(NO_ECHO)$(ISORT) --check .
+
+format:
+	$(NO_ECHO)$(RUFF) check --fix .
+	$(NO_ECHO)$(ISORT) .
