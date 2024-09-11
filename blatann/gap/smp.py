@@ -311,10 +311,7 @@ class SecurityManager(object):
                                                self._security_params.out_of_band, 7, 16, keyset_own, keyset_peer)
         return sec_params
 
-    def _on_security_params_request(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtSecParamsRequest
-        """
+    def _on_security_params_request(self, driver, event: nrf_events.GapEvtSecParamsRequest):
         # Security parameters are only provided for clients
         sec_params = self._get_security_params() if self.peer.is_client else None
         rejection_reason = None
@@ -327,17 +324,13 @@ class SecurityManager(object):
                 rejection_reason = PairingRejectedReason.non_bonded_central_request
 
         if not rejection_reason:
-            status = nrf_types.BLEGapSecStatus.success
             self.ble_device.ble_driver.ble_gap_sec_params_reply(event.conn_handle, nrf_types.BLEGapSecStatus.success, sec_params, self.keyset)
             self._pairing_in_process = True
         else:
             self.ble_device.ble_driver.ble_gap_sec_params_reply(event.conn_handle, nrf_types.BLEGapSecStatus.pairing_not_supp, sec_params, self.keyset)
             self._on_pairing_request_rejected_event.notify(self.peer, PairingRejectedEventArgs(rejection_reason))
 
-    def _on_security_request(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtSecRequest
-        """
+    def _on_security_request(self, driver, event: nrf_events.GapEvtSecRequest):
         if self._on_peripheral_security_request_event.has_handlers:
             request_handled = threading.Event()
 
@@ -382,10 +375,7 @@ class SecurityManager(object):
             self.pair()
         return
 
-    def _on_security_info_request(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtSecInfoRequest
-        """
+    def _on_security_info_request(self, driver, event: nrf_events.GapEvtSecInfoRequest):
         # If bond entry wasn't found on connect, try another time now just in case
         if not self.bond_db_entry:
             self.bond_db_entry = self.ble_device.bond_db.find_entry(self.address,
@@ -402,18 +392,12 @@ class SecurityManager(object):
             logger.info("Unable to find Bonding record for peer master id {}".format(event.master_id))
             self.ble_device.ble_driver.ble_gap_sec_info_reply(event.conn_handle)
 
-    def _on_lesc_dhkey_request(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtLescDhKeyRequest
-        """
+    def _on_lesc_dhkey_request(self, driver, event: nrf_events.GapEvtLescDhKeyRequest):
         peer_public_key = smp_crypto.lesc_pubkey_from_raw(event.remote_public_key.key)
         dh_key = smp_crypto.lesc_compute_dh_key(self._private_key, peer_public_key, little_endian=True)
         self.ble_device.ble_driver.ble_gap_lesc_dhkey_reply(event.conn_handle, nrf_types.BLEGapDhKey(dh_key))
 
-    def _on_conn_sec_status(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtConnSecUpdate
-        """
+    def _on_conn_sec_status(self, driver, event: nrf_events.GapEvtConnSecUpdate):
         self._security_level = SecurityLevel(event.sec_level)
         self._on_security_level_changed_event.notify(self.peer, SecurityLevelChangedEventArgs(self._security_level))
         if self._initiated_encryption:
@@ -428,10 +412,7 @@ class SecurityManager(object):
                 status = SecurityStatus.unspecified
             self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(status, self.security_level, SecurityProcess.ENCRYPTION))
 
-    def _on_authentication_status(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtAuthStatus
-        """
+    def _on_authentication_status(self, driver, event: nrf_events.GapEvtAuthStatus):
         self._pairing_in_process = False
         security_process = SecurityProcess.BONDING if event.bonded else SecurityProcess.PAIRING
         self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(event.auth_status,
@@ -465,10 +446,7 @@ class SecurityManager(object):
             # TODO: This doesn't belong here..
             self.ble_device.bond_db_loader.save(self.ble_device.bond_db)
 
-    def _on_passkey_display(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtPasskeyDisplay
-        """
+    def _on_passkey_display(self, driver, event: nrf_events.GapEvtPasskeyDisplay):
         match_confirmed = threading.Event()
 
         def match_confirm(keys_match):
@@ -493,10 +471,7 @@ class SecurityManager(object):
         else:
             self._on_passkey_display_event.notify(self.peer, event_args)
 
-    def _on_auth_key_request(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtAuthKeyRequest
-        """
+    def _on_auth_key_request(self, driver, event: nrf_events.GapEvtAuthKeyRequest):
         passkey_entered = threading.Event()
 
         def resolve(passkey):
@@ -515,11 +490,9 @@ class SecurityManager(object):
                                                          daemon=True)
         self._auth_key_resolve_thread.start()
 
-    def _on_timeout(self, driver, event):
-        """
-        :type event: nrf_events.GapEvtTimeout
-        """
+    def _on_timeout(self, driver, event: nrf_events.GapEvtTimeout):
         if event.src != nrf_types.BLEGapTimeoutSrc.security_req:
             return
-        self._on_authentication_complete_event.notify(self.peer, PairingCompleteEventArgs(SecurityStatus.timeout,
-                                                                                          self.security_level))
+        self._on_authentication_complete_event.notify(
+            self.peer, PairingCompleteEventArgs(SecurityStatus.timeout, self.security_level, SecurityProcess.PAIRING)
+        )

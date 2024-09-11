@@ -41,7 +41,6 @@ class TestGap(BlatannTestCase):
             self.periph_conn.peer = None
 
     def _run_conn_param_test(self, central_initiated, central_reject=False):
-        conn_event_queue = queue.Queue()
         default_conn_params = (10, 30, 4000)
         update_conn_params = (50, 70, 6000)
         # Setup connection with default conn parameters

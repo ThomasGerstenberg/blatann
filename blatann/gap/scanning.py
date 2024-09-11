@@ -133,7 +133,8 @@ class Scanner(object):
 
         try:
             self.ble_device.ble_driver.ble_gap_scan_stop()
-        except:
+        except Exception:  # noqa: E722
+            # Ignore errors in case scanning wasn't active
             pass
 
     def _on_adv_report(self, driver, adv_report):

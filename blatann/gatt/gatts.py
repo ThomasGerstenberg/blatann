@@ -187,8 +187,11 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         if isinstance(data, BleDataStream):
             value = data.value
-        if isinstance(data, str):
+        elif isinstance(data, str):
             value = data.encode(self.string_encoding)
+        else:
+            # Assumed bytes, send the data as-is
+            value = data
         if not self.notifiable:
             raise InvalidOperationException("Cannot notify client. "
                                             "{} not set up for notifications or indications".format(self.uuid))
@@ -196,7 +199,7 @@ class GattsCharacteristic(gatt.Characteristic):
             raise InvalidStateException("Client is not subscribed, cannot notify client")
 
         notification_id = self._notification_manager.notify(self, self._value_attr.handle,
-                                                            self._on_notify_complete, data)
+                                                            self._on_notify_complete, value)
         return IdBasedEventWaitable(self._on_notify_complete, notification_id)
 
     def add_descriptor(self, uuid: Uuid, properties: GattsAttributeProperties,

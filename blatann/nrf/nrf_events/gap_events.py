@@ -219,7 +219,8 @@ class GapEvtPhyUpdate(GapEvt):
         params = event.evt.gap_evt.params.phy_update
         try:
             status = BLEHci(params.status)
-        except:
+        except ValueError:
+            # Don't convert to an enum
             status = params.status
         return cls(conn_handle, status, BLEGapPhy(params.tx_phy), BLEGapPhy(params.rx_phy))
 

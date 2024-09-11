@@ -159,19 +159,13 @@ class GattsAttribute(Attribute):
     Event Handlers
     """
 
-    def _on_gatts_write(self, driver, event):
-        """
-        :type event: nrf_events.GattsEvtWrite
-        """
+    def _on_gatts_write(self, driver, event: nrf_events.GattsEvtWrite):
         if event.attribute_handle != self._handle:
             return
         self._value = bytes(bytearray(event.data))
         self._on_write.notify(self, WriteEventArgs(self._value))
 
-    def _on_write_auth_request(self, write_event):
-        """
-        :type write_event: nrf_events.GattsEvtWrite
-        """
+    def _on_write_auth_request(self, write_event: nrf_events.GattsEvtWrite):
         if write_event.write_op in [nrf_events.BLEGattsWriteOperation.exec_write_req_cancel,
                                     nrf_events.BLEGattsWriteOperation.exec_write_req_now]:
             self._execute_queued_write(write_event.write_op)
@@ -195,7 +189,7 @@ class GattsAttribute(Attribute):
             # Send reply before processing write, in case user sets data in gatts_write handler
             try:
                 self._ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
-            except Exception as e:
+            except Exception:  # noqa: E722
                 pass
             if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
                 self._write_queued = True
@@ -206,10 +200,7 @@ class GattsAttribute(Attribute):
 
         # TODO More logic
 
-    def _on_read_auth_request(self, read_event):
-        """
-        :type read_event: nrf_events.GattsEvtRead
-        """
+    def _on_read_auth_request(self, read_event: nrf_events.GattsEvtRead):
         if read_event.attribute_handle != self._handle:
             # Don't care about handles outside of this attribute
             return
@@ -227,7 +218,7 @@ class GattsAttribute(Attribute):
 
         self._ble_device.ble_driver.ble_gatts_rw_authorize_reply(read_event.conn_handle, reply)
 
-    def _on_rw_auth_request(self, driver, event):
+    def _on_rw_auth_request(self, driver, event: nrf_events.GattsEvtReadWriteAuthorizeRequest):
         if not self._peer:
             logger.warning("Got RW request when peer not connected: {}".format(event.conn_handle))
             return

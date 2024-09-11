@@ -733,7 +733,7 @@ class NrfDriver(object):
             for obs in observers:
                 try:
                     obs.on_driver_event(self, event)
-                except:
+                except Exception:  # noqa: E722
                     traceback.print_exc()
 
             # Call all the handlers for the event type provided
@@ -742,7 +742,7 @@ class NrfDriver(object):
                     for handler in handlers:
                         try:
                             handler(self, event)
-                        except:
+                        except Exception:  # noqa: E722
                             traceback.print_exc()
 
         self._event_stopped.set()

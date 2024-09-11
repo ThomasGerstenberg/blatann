@@ -195,7 +195,7 @@ class DefaultBondDatabaseLoader(BondDatabaseLoader):
         try:
             db = strategy.load(self.filename)
             return db
-        except Exception as e:
+        except Exception:  # noqa: E722
             logger.exception("Failed to load Bond DB '{}'".format(self.filename))
             return DefaultBondDatabase()
 
