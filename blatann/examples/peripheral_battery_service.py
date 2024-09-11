@@ -4,6 +4,8 @@ The peripheral adds the service, then updates the battery level percentage perio
 
 This can be used in conjunction with the nRF Connect apps to explore the functionality demonstrated
 """
+from __future__ import annotations
+
 import time
 
 from blatann import BleDevice

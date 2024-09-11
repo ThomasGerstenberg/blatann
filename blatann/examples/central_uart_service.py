@@ -5,6 +5,8 @@ This is compatible with the peripheral_uart_service example.
 
 This is a simple example which just echos back any data that the client sends to it.
 """
+from __future__ import annotations
+
 from builtins import input
 
 from blatann import BleDevice

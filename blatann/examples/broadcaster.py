@@ -2,6 +2,8 @@
 This is an example of a broadcaster role BLE device. It advertises as a non-connectable device
 and emits the device's current time as a part of the advertising data.
 """
+from __future__ import annotations
+
 import threading
 import time
 

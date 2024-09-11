@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.bt_sig.uuids import CharacteristicUuid, ServiceUuid
 
 GLUCOSE_SERVICE_UUID = ServiceUuid.glucose

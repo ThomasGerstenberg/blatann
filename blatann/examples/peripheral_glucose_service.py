@@ -4,6 +4,8 @@ The peripheral creates a range of fake glucose readings that can be queried from
 
 This can be used in conjunction with the nRF Connect apps to explore the peripheral's functionality
 """
+from __future__ import annotations
+
 import datetime
 import logging
 

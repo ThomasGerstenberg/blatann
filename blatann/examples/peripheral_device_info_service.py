@@ -4,6 +4,8 @@ This example shows how to implement a Device Info Service on a peripheral.
 This example can be used alongside the central_device_info_service example running on another nordic device,
 or using the Nordic nRF Connect app to connect and browse the peripheral's service data
 """
+from __future__ import annotations
+
 from blatann import BleDevice
 from blatann.examples import example_utils
 from blatann.gap import advertising

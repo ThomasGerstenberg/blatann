@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.nrf.nrf_events.gap_events import *
 from blatann.nrf.nrf_events.gatt_events import *
 from blatann.nrf.nrf_events.generic_events import *

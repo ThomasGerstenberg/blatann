@@ -15,6 +15,8 @@ A good rule of thumb when using blatann is just to not mix blocking and non-bloc
 
 This is designed to work alongside the peripheral example running on a separate nordic chip
 """
+from __future__ import annotations
+
 import struct
 
 from blatann import BleDevice

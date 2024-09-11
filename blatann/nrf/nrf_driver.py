@@ -35,6 +35,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import annotations
+
 import atexit
 import functools
 import queue

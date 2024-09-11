@@ -5,6 +5,8 @@ performed is done sequentially in a linear fashion, but the event loop is unbloc
 
 This is designed to run alongside the peripheral example running on a separate Nordic nRF52 device
 """
+from __future__ import annotations
+
 import asyncio
 import struct
 

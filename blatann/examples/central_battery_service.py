@@ -7,6 +7,8 @@ This can be used alongside any peripheral which implements the Battery Service a
 advertises the 16-bit Battery Service UUID.
 The peripheral_battery_service example can be used with this.
 """
+from __future__ import annotations
+
 import time
 
 from blatann import BleDevice

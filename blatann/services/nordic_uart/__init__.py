@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.services.nordic_uart.constants import (
     NORDIC_UART_FEATURE_CHARACTERISTIC_UUID, NORDIC_UART_RX_CHARACTERISTIC_UUID, NORDIC_UART_SERVICE_UUID,
     NORDIC_UART_TX_CHARACTERISTIC_UUID

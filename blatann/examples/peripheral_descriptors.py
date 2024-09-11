@@ -4,6 +4,8 @@ This example shows how to add descriptors to a characteristic in a GATT Database
 This can be used with the central_descriptor example running on a separate nordic device or
 can be run with the nRF Connect app
 """
+from __future__ import annotations
+
 import time
 
 from blatann import BleDevice

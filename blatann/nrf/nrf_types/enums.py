@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum, IntEnum, IntFlag
 
 from blatann.nrf.nrf_dll_load import driver

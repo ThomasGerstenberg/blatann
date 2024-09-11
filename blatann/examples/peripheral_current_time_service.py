@@ -1,6 +1,8 @@
 """
 This example demonstrates using Bluetooth SIG's defined Current Time service as a peripheral.
 """
+from __future__ import annotations
+
 import binascii
 import datetime
 

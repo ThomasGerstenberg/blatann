@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.services.battery.constants import BATTERY_LEVEL_CHARACTERISTIC_UUID, BATTERY_SERVICE_UUID
 from blatann.services.battery.service import BatteryClient as _BatteryClient
 from blatann.services.battery.service import BatteryServer as _BatteryServer

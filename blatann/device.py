@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from threading import Lock
 from typing import Union

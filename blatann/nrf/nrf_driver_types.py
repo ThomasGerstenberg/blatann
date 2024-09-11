@@ -35,6 +35,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import annotations
+
 import importlib
 
 from blatann.nrf.nrf_dll_load import driver

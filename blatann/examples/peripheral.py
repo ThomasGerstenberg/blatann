@@ -5,6 +5,8 @@ such as reading, writing and notifying characteristics.
 This peripheral can be used with one of the central examples running on a separate nordic device,
 or can be run with the nRF Connect app to explore the contents of the service
 """
+from __future__ import annotations
+
 import atexit
 import binascii
 import struct

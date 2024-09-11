@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import queue
 from typing import Generic, Optional, Tuple, Union

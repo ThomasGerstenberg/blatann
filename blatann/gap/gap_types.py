@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 
 from blatann.nrf import nrf_events, nrf_types

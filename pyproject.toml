@@ -52,6 +52,7 @@ indent-style = "space"
 py_version = 37
 src_paths = ["blatann", "tests"]
 
+add_imports = ["from __future__ import annotations"]
 forced_separate = ["tests"]
 
 line_length = 120

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.services.device_info.constants import (
     CHARACTERISTICS, DIS_SERVICE_UUID, FirmwareRevisionCharacteristic, HardwareRevisionCharacteristic,
     ManufacturerNameCharacteristic, ModelNumberCharacteristic, PnpIdCharacteristic, RegulatoryCertificateCharacteristic,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.gatt import SecurityLevel
 from blatann.services.glucose.constants import GLUCOSE_SERVICE_UUID
 from blatann.services.glucose.data_types import *

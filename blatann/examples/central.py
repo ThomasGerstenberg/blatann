@@ -5,6 +5,8 @@ before moving on to the rest of the program
 
 This is designed to work alongside the peripheral example running on a separate nordic chip
 """
+from __future__ import annotations
+
 import struct
 
 from blatann import BleDevice

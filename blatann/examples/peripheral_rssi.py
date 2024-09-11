@@ -1,6 +1,8 @@
 """
 This is a simple example which demonstrates enabling RSSI updates for active connections.
 """
+from __future__ import annotations
+
 import blatann.peer
 from blatann import BleDevice
 from blatann.examples import constants, example_utils

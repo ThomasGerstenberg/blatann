@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.gap_events import GapEvt

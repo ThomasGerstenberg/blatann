@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.bt_sig.uuids import CharacteristicUuid, ServiceUuid
 
 CURRENT_TIME_SERVICE_UUID = ServiceUuid.current_time

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.services import ble_data_types
 
 # See https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.battery_service.xml

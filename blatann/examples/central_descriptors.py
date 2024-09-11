@@ -3,6 +3,8 @@ This example shows how to read descriptors of a peripheral's characteristic.
 
 This can be used with the peripheral_descriptor example running on a separate nordic device.
 """
+from __future__ import annotations
+
 import binascii
 
 from blatann import BleDevice

@@ -5,6 +5,8 @@ Bluetooth SIG defined UUIDs, populated from their website.
 
 Definitions last scraped on 2022/05/02
 """
+from __future__ import annotations
+
 from typing import Dict
 
 from blatann.utils import snake_case_to_capitalized_words

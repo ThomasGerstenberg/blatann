@@ -8,6 +8,8 @@ though some logging callbacks and database discovery on the central is not perfo
 This example can be used with one of the central examples running on a separate nordic device,
 or can be run with the nRF Connect app to explore the contents of the GATT database.
 """
+from __future__ import annotations
+
 import asyncio
 import binascii
 import struct

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.gatt import gatts
 from blatann.uuid import Uuid128
 

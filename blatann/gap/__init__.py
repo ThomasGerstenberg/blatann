@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.gap.advertising import AdvertisingData, AdvertisingFlags
 from blatann.gap.scanning import ScanParameters
 from blatann.gap.smp_types import (

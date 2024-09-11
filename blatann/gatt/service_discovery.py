@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 from blatann.event_args import DatabaseDiscoveryCompleteEventArgs, EventArgs

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import IntEnum
 
 import blatann.nrf.nrf_driver_types

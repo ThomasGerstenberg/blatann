@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann.nrf.nrf_types.config import *
 from blatann.nrf.nrf_types.enums import *
 from blatann.nrf.nrf_types.gap import *
