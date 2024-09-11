@@ -52,8 +52,7 @@ indent-style = "space"
 py_version = 37
 src_paths = ["blatann", "tests"]
 
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER', 'TEST']
-known_test = ['tests']
+forced_separate = ["tests"]
 
 line_length = 120
 multi_line_output = 5  # Hanging Grid Grouped
