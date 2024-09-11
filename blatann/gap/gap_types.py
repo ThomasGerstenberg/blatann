@@ -1,4 +1,5 @@
 import enum
+
 from blatann.nrf import nrf_events, nrf_types
 
 

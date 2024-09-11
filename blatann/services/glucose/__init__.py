@@ -1,8 +1,7 @@
 from blatann.gatt import SecurityLevel
 from blatann.services.glucose.constants import GLUCOSE_SERVICE_UUID
 from blatann.services.glucose.data_types import *
-from blatann.services.glucose.database import IGlucoseDatabase, BasicGlucoseDatabase
-
+from blatann.services.glucose.database import BasicGlucoseDatabase, IGlucoseDatabase
 from blatann.services.glucose.service import GlucoseServer as _GlucoseServer
 
 

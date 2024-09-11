@@ -1,8 +1,7 @@
-from blatann.nrf.nrf_events.generic_events import *
 from blatann.nrf.nrf_events.gap_events import *
-from blatann.nrf.nrf_events.smp_events import *
 from blatann.nrf.nrf_events.gatt_events import *
-
+from blatann.nrf.nrf_events.generic_events import *
+from blatann.nrf.nrf_events.smp_events import *
 
 _event_classes = [
     EvtUserMemoryRequest,

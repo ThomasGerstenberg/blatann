@@ -5,7 +5,6 @@ from typing import Optional
 from blatann.services.glucose.data_types import GlucoseMeasurement
 from blatann.services.glucose.racp import RacpResponseCode
 
-
 logger = logging.getLogger(__name__)
 
 

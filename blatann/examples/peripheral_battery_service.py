@@ -5,11 +5,11 @@ The peripheral adds the service, then updates the battery level percentage perio
 This can be used in conjunction with the nRF Connect apps to explore the functionality demonstrated
 """
 import time
+
 from blatann import BleDevice
 from blatann.gap import advertising
-from blatann.utils import setup_logger
 from blatann.services import battery
-
+from blatann.utils import setup_logger
 
 logger = setup_logger(level="INFO")
 

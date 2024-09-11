@@ -3,11 +3,10 @@ import unittest
 
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags
 from blatann.gap.advertising import AdvertisingMode
-from blatann.gap.scanning import ScanReport, Scanner
+from blatann.gap.scanning import Scanner, ScanReport
 from blatann.utils import Stopwatch
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
-
 
 # TODO: The acceptable duration deltas are generous because the nRF52 dev kits (being UART) are slower
 #       than the nRF52840 dongles by roughly an order of magnitude (1M baud UART vs. USB-CDC)

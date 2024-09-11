@@ -4,16 +4,15 @@ The peripheral creates a range of fake glucose readings that can be queried from
 
 This can be used in conjunction with the nRF Connect apps to explore the peripheral's functionality
 """
-import logging
 import datetime
+import logging
 
 from blatann import BleDevice
-from blatann.gap import advertising, IoCapabilities
-from blatann.utils import setup_logger
+from blatann.gap import IoCapabilities, advertising
 from blatann.services import glucose
 from blatann.services.glucose import GlucoseFeatureType
+from blatann.utils import setup_logger
 from blatann.waitables import GenericWaitable
-
 
 logger = setup_logger(level="INFO")
 

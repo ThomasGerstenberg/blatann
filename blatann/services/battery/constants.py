@@ -1,4 +1,4 @@
-from blatann.bt_sig.uuids import ServiceUuid, CharacteristicUuid
+from blatann.bt_sig.uuids import CharacteristicUuid, ServiceUuid
 
 BATTERY_SERVICE_UUID = ServiceUuid.battery_service
 

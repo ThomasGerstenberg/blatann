@@ -1,8 +1,8 @@
-from typing import Callable, Generic, TypeVar, Optional
 import asyncio
 import queue
-from blatann.exceptions import TimeoutError
+from typing import Callable, Generic, Optional, TypeVar
 
+from blatann.exceptions import TimeoutError
 
 T = TypeVar("T")
 

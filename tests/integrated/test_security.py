@@ -4,13 +4,11 @@ import time
 import unittest
 from typing import Union
 
-from blatann.event_args import PasskeyDisplayEventArgs, PasskeyEntryEventArgs, SecurityProcess
-
-from blatann.gap import SecurityStatus, SecurityLevel, IoCapabilities, PairingPolicy, SecurityParameters
-from blatann.peer import Client, Peripheral, PairingRejectedReason, DEFAULT_SECURITY_PARAMS
-
 from blatann import BleDevice
+from blatann.event_args import PasskeyDisplayEventArgs, PasskeyEntryEventArgs, SecurityProcess
+from blatann.gap import IoCapabilities, PairingPolicy, SecurityLevel, SecurityParameters, SecurityStatus
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags, AdvertisingPacketType
+from blatann.peer import DEFAULT_SECURITY_PARAMS, Client, PairingRejectedReason, Peripheral
 from blatann.waitables import EventWaitable
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running

@@ -6,9 +6,9 @@ This can be used with the peripheral_descriptor example running on a separate no
 import binascii
 
 from blatann import BleDevice
-from blatann.gatt import PresentationFormat, GattStatusCode
-from blatann.examples import example_utils, constants
 from blatann.bt_sig.uuids import DescriptorUuid
+from blatann.examples import constants, example_utils
+from blatann.gatt import GattStatusCode, PresentationFormat
 
 logger = example_utils.setup_logger(level="INFO")
 

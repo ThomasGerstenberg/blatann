@@ -2,12 +2,12 @@
 This is an example of a broadcaster role BLE device. It advertises as a non-connectable device
 and emits the device's current time as a part of the advertising data.
 """
-import time
 import threading
-from blatann import BleDevice
-from blatann.gap.advertising import AdvertisingMode, AdvertisingData, AdvertisingFlags
-from blatann.examples import example_utils
+import time
 
+from blatann import BleDevice
+from blatann.examples import example_utils
+from blatann.gap.advertising import AdvertisingData, AdvertisingFlags, AdvertisingMode
 
 logger = example_utils.setup_logger(level="DEBUG")
 

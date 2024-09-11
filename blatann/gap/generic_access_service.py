@@ -2,8 +2,8 @@ import logging
 from typing import Optional
 
 from blatann.bt_sig.assigned_numbers import Appearance
-from blatann.peer import ConnectionParameters, Union
 from blatann.nrf import nrf_types
+from blatann.peer import ConnectionParameters, Union
 
 logger = logging.getLogger(__name__)
 

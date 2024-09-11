@@ -1,7 +1,7 @@
-from enum import IntEnum
+import datetime
 import math
 import struct
-import datetime
+from enum import IntEnum
 
 
 class BleDataStream(object):

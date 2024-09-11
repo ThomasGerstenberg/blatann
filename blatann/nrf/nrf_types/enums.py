@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum, IntFlag
+
 from blatann.nrf.nrf_dll_load import driver
 
 """
@@ -152,6 +153,7 @@ class BLEGapTimeoutSrc(IntEnum):
     advertising = driver.BLE_GAP_TIMEOUT_SRC_ADVERTISING
     scan = driver.BLE_GAP_TIMEOUT_SRC_SCAN
     conn = driver.BLE_GAP_TIMEOUT_SRC_CONN
+    security_req = driver.BLE_GAP_TIMEOUT_SRC_AUTH_PAYLOAD
 
 
 class BLEGapPhy(IntFlag):

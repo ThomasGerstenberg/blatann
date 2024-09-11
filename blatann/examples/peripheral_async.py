@@ -13,14 +13,13 @@ import binascii
 import struct
 import time
 
-from blatann.event_args import DisconnectionEventArgs, PasskeyDisplayEventArgs, PasskeyEntryEventArgs
-from blatann.gatt.gatts import GattsCharacteristic
-from blatann.peer import Client
-
 from blatann import BleDevice
 from blatann.bt_sig.assigned_numbers import Appearance
-from blatann.examples import example_utils, constants
-from blatann.gap import advertising, IoCapabilities
+from blatann.event_args import DisconnectionEventArgs, PasskeyDisplayEventArgs, PasskeyEntryEventArgs
+from blatann.examples import constants, example_utils
+from blatann.gap import IoCapabilities, advertising
+from blatann.gatt.gatts import GattsCharacteristic
+from blatann.peer import Client
 from blatann.waitables import EventWaitable
 
 logger = example_utils.setup_logger(level="DEBUG")

@@ -1,23 +1,23 @@
 from __future__ import annotations
 
-import typing
 import binascii
 import logging
+import typing
 from collections import namedtuple
 
+from blatann import gatt
+from blatann.event_args import WriteEventArgs
+from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException
 from blatann.gatt import Attribute
-from blatann.services.ble_data_types import BleDataStream
-from blatann.event_args import WriteEventArgs
 from blatann.nrf import nrf_events, nrf_types
-from blatann.event_type import EventSource, Event
-from blatann import gatt
+from blatann.services.ble_data_types import BleDataStream
 from blatann.uuid import Uuid
 
 if typing.TYPE_CHECKING:
-    from blatann.peer import Peer
     from blatann.device import BleDevice
     from blatann.gatt.gatts import GattsCharacteristic
+    from blatann.peer import Peer
 
 logger = logging.getLogger(__name__)
 

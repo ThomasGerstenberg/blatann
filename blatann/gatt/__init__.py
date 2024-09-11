@@ -2,13 +2,12 @@ import enum
 import logging
 import struct
 
-from blatann.services.ble_data_types import BleCompoundDataType, Uint8, Int8, Uint16
-from blatann.uuid import Uuid
-from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
-from blatann.nrf import nrf_types
+from blatann.bt_sig.assigned_numbers import Format, Namespace, NamespaceDescriptor, Units
 from blatann.gap.smp import SecurityLevel
-from blatann.bt_sig.assigned_numbers import Format, Units, Namespace, NamespaceDescriptor
-
+from blatann.nrf import nrf_types
+from blatann.nrf.nrf_types.gatt import BLE_GATT_HANDLE_INVALID
+from blatann.services.ble_data_types import BleCompoundDataType, Int8, Uint8, Uint16
+from blatann.uuid import Uuid
 
 logger = logging.getLogger(__name__)
 

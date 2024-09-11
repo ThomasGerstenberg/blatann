@@ -1,11 +1,9 @@
-from typing import TypeVar, Generic, Callable, Union
 from enum import Enum, auto
+from typing import Callable, Generic, TypeVar, Union
 
 from blatann.gap.gap_types import ActiveConnectionParameters
-from blatann.utils import repr_format
-
 from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
-
+from blatann.utils import repr_format
 
 TDecodedValue = TypeVar("TDecodedValue")
 

@@ -7,8 +7,8 @@ Definitions last scraped on 2022/05/02
 """
 from typing import Dict
 
-from blatann.uuid import Uuid, Uuid16, Uuid128
 from blatann.utils import snake_case_to_capitalized_words
+from blatann.uuid import Uuid, Uuid16, Uuid128
 
 
 class DeclarationUuid:

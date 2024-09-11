@@ -3,12 +3,12 @@ This example demonstrates using Bluetooth SIG's defined Current Time service as 
 """
 import binascii
 import datetime
+
 from blatann import BleDevice
 from blatann.gap import advertising
-from blatann.utils import setup_logger
 from blatann.services import current_time
+from blatann.utils import setup_logger
 from blatann.waitables import GenericWaitable
-
 
 logger = setup_logger(level="INFO")
 

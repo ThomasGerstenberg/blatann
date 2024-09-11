@@ -1,4 +1,5 @@
 import struct
+
 from blatann.utils import IntEnumWithDescription
 
 

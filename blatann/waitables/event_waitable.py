@@ -1,7 +1,8 @@
 import asyncio
-from typing import Generic, Tuple, Callable
+from typing import Callable, Generic, Tuple
+
+from blatann.event_type import Event, TEvent, TSender
 from blatann.waitables.waitable import Waitable
-from blatann.event_type import Event, TSender, TEvent
 
 
 class EventWaitable(Waitable[Tuple[TSender, TEvent]]):

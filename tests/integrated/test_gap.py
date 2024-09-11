@@ -9,7 +9,7 @@ from blatann.nrf.nrf_types import BLEGapAddrTypes
 from blatann.waitables import EventWaitable
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
-from tests.integrated.helpers import PeriphConn, CentralConn, setup_connection
+from tests.integrated.helpers import CentralConn, PeriphConn, setup_connection
 
 
 class TestGap(BlatannTestCase):

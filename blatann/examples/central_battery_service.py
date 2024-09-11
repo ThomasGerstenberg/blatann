@@ -8,11 +8,11 @@ advertises the 16-bit Battery Service UUID.
 The peripheral_battery_service example can be used with this.
 """
 import time
-from blatann import BleDevice
-from blatann.utils import setup_logger
-from blatann.services import battery
-from blatann.nrf import nrf_events
 
+from blatann import BleDevice
+from blatann.nrf import nrf_events
+from blatann.services import battery
+from blatann.utils import setup_logger
 
 logger = setup_logger(level="INFO")
 

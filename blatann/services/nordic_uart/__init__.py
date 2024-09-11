@@ -1,10 +1,9 @@
-from blatann.services.nordic_uart.service import NordicUartServer as _Server, NordicUartClient as _Client
 from blatann.services.nordic_uart.constants import (
-    NORDIC_UART_SERVICE_UUID,
-    NORDIC_UART_RX_CHARACTERISTIC_UUID,
-    NORDIC_UART_TX_CHARACTERISTIC_UUID,
-    NORDIC_UART_FEATURE_CHARACTERISTIC_UUID
+    NORDIC_UART_FEATURE_CHARACTERISTIC_UUID, NORDIC_UART_RX_CHARACTERISTIC_UUID, NORDIC_UART_SERVICE_UUID,
+    NORDIC_UART_TX_CHARACTERISTIC_UUID
 )
+from blatann.services.nordic_uart.service import NordicUartClient as _Client
+from blatann.services.nordic_uart.service import NordicUartServer as _Server
 
 
 def add_nordic_uart_service(gatts_database, max_characteristic_size=None):

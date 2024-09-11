@@ -1,14 +1,15 @@
 from __future__ import annotations
+
 import binascii
 import logging
+
+from blatann.event_args import DecodedReadCompleteEventArgs, GattOperationCompleteReason, ReadCompleteEventArgs
+from blatann.event_type import Event, EventSource
+from blatann.gatt import GattStatusCode, SecurityLevel
+from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
 from blatann.services.battery.constants import *
 from blatann.services.battery.data_types import *
-from blatann.event_type import EventSource, Event
-from blatann.event_args import DecodedReadCompleteEventArgs, ReadCompleteEventArgs, GattOperationCompleteReason
 from blatann.waitables import EventWaitable
-from blatann.gatt import SecurityLevel, GattStatusCode
-from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
-
 
 logger = logging.getLogger(__name__)
 

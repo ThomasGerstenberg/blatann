@@ -1,10 +1,11 @@
 import random
+
 from blatann import BleDevice
 from blatann.gap import AdvertisingData
 from blatann.gatt.gattc import GattcCharacteristic
 from blatann.gatt.gatts import GattsCharacteristic
 from blatann.nrf.nrf_types import conn_interval_range
-from blatann.peer import Peripheral, Client, ConnectionParameters
+from blatann.peer import Client, ConnectionParameters, Peripheral
 from blatann.uuid import generate_random_uuid128
 
 

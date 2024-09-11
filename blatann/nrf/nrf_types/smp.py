@@ -1,11 +1,11 @@
-from enum import Enum
-import logging
 import binascii
-from blatann.nrf.nrf_dll_load import driver
+import logging
+from enum import Enum
+
 import blatann.nrf.nrf_driver_types as util
+from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_types.enums import *
 from blatann.nrf.nrf_types.gap import BLEGapAddr
-
 
 logger = logging.getLogger(__name__)
 

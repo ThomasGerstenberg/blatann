@@ -1,13 +1,12 @@
 import logging
 
 from blatann.event_args import WriteEventArgs
+from blatann.gatt import SecurityLevel
+from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
 from blatann.services.glucose.constants import *
 from blatann.services.glucose.data_types import *
-from blatann.services.glucose.racp import *
 from blatann.services.glucose.database import IGlucoseDatabase
-from blatann.gatt import SecurityLevel
-from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
-
+from blatann.services.glucose.racp import *
 
 logger = logging.getLogger(__name__)
 

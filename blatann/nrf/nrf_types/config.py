@@ -1,5 +1,5 @@
-from enum import Enum, IntEnum
 import logging
+from enum import Enum, IntEnum
 
 from pc_ble_driver_py.lib import nrf_ble_driver_sd_api_v5
 

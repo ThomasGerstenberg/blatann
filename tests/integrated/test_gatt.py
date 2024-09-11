@@ -2,15 +2,15 @@ import queue
 import unittest
 
 from blatann import BleDevice, gatt
-from blatann.bt_sig.uuids import DescriptorUuid, CharacteristicUuid
+from blatann.bt_sig.uuids import CharacteristicUuid, DescriptorUuid
 from blatann.event_args import WriteEventArgs
 from blatann.gatt import PresentationFormat, SubscriptionState
 from blatann.gatt.gattc import GattcCharacteristic
-from blatann.gatt.gatts import GattsCharacteristicProperties, GattsCharacteristic, GattsUserDescriptionProperties
+from blatann.gatt.gatts import GattsCharacteristic, GattsCharacteristicProperties, GattsUserDescriptionProperties
 from blatann.uuid import Uuid128, generate_random_uuid128
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
-from tests.integrated.helpers import PeriphConn, CentralConn, setup_connection, rand_bytes
+from tests.integrated.helpers import CentralConn, PeriphConn, rand_bytes, setup_connection
 
 
 def _generate_char(svc, uuid, *prop_names, init_value=b"", max_length=20):

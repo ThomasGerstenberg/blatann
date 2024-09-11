@@ -1,10 +1,11 @@
 import binascii
 
-from blatann.event_args import (ReadCompleteEventArgs, DecodedReadCompleteEventArgs,
-                                WriteEventArgs, DecodedWriteEventArgs,
-                                NotificationReceivedEventArgs)
-from blatann.services import ble_data_types
+from blatann.event_args import (
+    DecodedReadCompleteEventArgs, DecodedWriteEventArgs, NotificationReceivedEventArgs, ReadCompleteEventArgs,
+    WriteEventArgs
+)
 from blatann.gatt import GattStatusCode
+from blatann.services import ble_data_types
 
 
 class DecodedReadWriteEventDispatcher(object):

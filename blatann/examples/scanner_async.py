@@ -2,6 +2,7 @@
 This example simply demonstrates scanning for peripheral devices using async methods
 """
 import asyncio
+
 from blatann import BleDevice
 from blatann.examples import example_utils
 

@@ -7,9 +7,8 @@ The peripheral_device_info_service example can be used with this.
 """
 from blatann import BleDevice
 from blatann.examples import example_utils
-from blatann.services import device_info
 from blatann.nrf import nrf_events
-
+from blatann.services import device_info
 
 logger = example_utils.setup_logger(level="INFO")
 

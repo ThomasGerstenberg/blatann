@@ -1,8 +1,8 @@
 import asyncio
 import queue
-from typing import Generic, Tuple, Union, Optional
-from blatann.event_type import Event, TSender, TEvent
+from typing import Generic, Optional, Tuple, Union
 
+from blatann.event_type import Event, TEvent, TSender
 
 _disconnect_sentinel = object()
 

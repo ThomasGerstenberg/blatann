@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import logging
+
+from blatann.event_type import Event, EventSource
 from blatann.gap.advertise_data import ScanReport, ScanReportCollection
 from blatann.nrf import nrf_events, nrf_types
 from blatann.waitables import scan_waitable
-from blatann.event_type import Event, EventSource
 
 logger = logging.getLogger(__name__)
 

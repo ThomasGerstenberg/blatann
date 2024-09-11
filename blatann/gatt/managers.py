@@ -1,15 +1,15 @@
 import logging
 from typing import Union
 
-from blatann.gatt.writer import GattcWriter
-from blatann.gatt.reader import GattcReader
-from blatann.exceptions import InvalidStateException, InvalidOperationException
-from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
 from blatann import gatt
-from blatann.utils import SynchronousMonotonicCounter
-from blatann.nrf import nrf_events, nrf_types, nrf_driver
-from blatann.event_type import EventSource
 from blatann.event_args import GattOperationCompleteReason, NotificationCompleteEventArgs
+from blatann.event_type import EventSource
+from blatann.exceptions import InvalidOperationException, InvalidStateException
+from blatann.gatt.reader import GattcReader
+from blatann.gatt.writer import GattcWriter
+from blatann.nrf import nrf_driver, nrf_events, nrf_types
+from blatann.utils import SynchronousMonotonicCounter
+from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
 
 logger = logging.getLogger(__name__)
 

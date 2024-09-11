@@ -1,9 +1,10 @@
 import logging
-from blatann.event_type import EventSource, Event
-from blatann.nrf import nrf_types, nrf_events
-from blatann.waitables.event_waitable import EventWaitable
-from blatann.exceptions import InvalidStateException
+
 from blatann.event_args import EventArgs
+from blatann.event_type import Event, EventSource
+from blatann.exceptions import InvalidStateException
+from blatann.nrf import nrf_events, nrf_types
+from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)
 

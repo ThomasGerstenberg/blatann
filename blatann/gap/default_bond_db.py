@@ -1,13 +1,14 @@
 from __future__ import annotations
-import os
-import logging
-import pickle
+
 import json
+import logging
+import os
+import pickle
 import typing
 from typing import List, Optional
 
 import blatann
-from blatann.gap.bond_db import BondDatabase, BondDbEntry, BondDatabaseLoader
+from blatann.gap.bond_db import BondDatabase, BondDatabaseLoader, BondDbEntry
 from blatann.gap.gap_types import PeerAddress
 from blatann.nrf.nrf_types import BLEGapMasterId
 

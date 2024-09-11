@@ -1,11 +1,10 @@
-import time
-import threading
+import enum
 import logging
 import sys
-import enum
+import threading
+import time
 
 from blatann.utils import _threading
-
 
 LOG_FORMAT = "[%(asctime)s] [%(threadName)s] [%(name)s.%(funcName)s:%(lineno)s] [%(levelname)s]: %(message)s"
 

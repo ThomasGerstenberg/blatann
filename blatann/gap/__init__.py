@@ -1,10 +1,9 @@
-import enum
-from blatann.nrf import nrf_events, nrf_types
-from blatann.gap.smp import (SecurityStatus, IoCapabilities, AuthenticationKeyType,
-                             SecurityParameters, PairingPolicy, SecurityLevel)
-from blatann.gap.scanning import ScanParameters
 from blatann.gap.advertising import AdvertisingData, AdvertisingFlags
-
+from blatann.gap.scanning import ScanParameters
+from blatann.gap.smp_types import (
+    AuthenticationKeyType, IoCapabilities, PairingPolicy, SecurityLevel, SecurityParameters, SecurityStatus
+)
+from blatann.nrf import nrf_events, nrf_types
 
 HciStatus = nrf_types.BLEHci
 

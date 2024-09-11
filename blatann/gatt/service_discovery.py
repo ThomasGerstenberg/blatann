@@ -1,11 +1,10 @@
 import logging
 
-from blatann.event_type import EventSource, Event
+from blatann.event_args import DatabaseDiscoveryCompleteEventArgs, EventArgs
+from blatann.event_type import Event, EventSource
 from blatann.gatt import gattc
 from blatann.nrf import nrf_events
 from blatann.waitables.event_waitable import EventWaitable
-from blatann.event_args import EventArgs, DatabaseDiscoveryCompleteEventArgs
-
 
 logger = logging.getLogger(__name__)
 

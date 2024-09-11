@@ -6,9 +6,10 @@ before moving on to the rest of the program
 This is designed to work alongside the peripheral example running on a separate nordic chip
 """
 import struct
+
 from blatann import BleDevice
+from blatann.examples import constants, example_utils
 from blatann.gap import smp
-from blatann.examples import example_utils, constants
 from blatann.nrf import nrf_events
 
 logger = example_utils.setup_logger(level="DEBUG")

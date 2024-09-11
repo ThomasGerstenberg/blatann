@@ -7,14 +7,14 @@ can be run with the nRF Connect app
 import time
 
 from blatann import BleDevice
-from blatann.gatt import gatts, PresentationFormat
-from blatann.examples import example_utils, constants
-from blatann.gap import smp, advertising
-from blatann.bt_sig.assigned_numbers import Format, Units, Namespace, NamespaceDescriptor
+from blatann.bt_sig.assigned_numbers import Format, Namespace, NamespaceDescriptor, Units
+from blatann.bt_sig.uuids import DescriptorUuid
+from blatann.examples import constants, example_utils
+from blatann.gap import advertising, smp
+from blatann.gatt import PresentationFormat, gatts
 from blatann.gatt.gatts_attribute import GattsAttributeProperties
 from blatann.services.ble_data_types import Uint32
 from blatann.waitables import GenericWaitable
-from blatann.bt_sig.uuids import DescriptorUuid
 
 logger = example_utils.setup_logger(level="INFO")
 

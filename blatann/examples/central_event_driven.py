@@ -16,11 +16,12 @@ A good rule of thumb when using blatann is just to not mix blocking and non-bloc
 This is designed to work alongside the peripheral example running on a separate nordic chip
 """
 import struct
+
 from blatann import BleDevice
+from blatann.examples import constants, example_utils
 from blatann.gap import smp
-from blatann.examples import example_utils, constants
-from blatann.waitables import GenericWaitable
 from blatann.nrf import nrf_events
+from blatann.waitables import GenericWaitable
 
 logger = example_utils.setup_logger(level="DEBUG")
 

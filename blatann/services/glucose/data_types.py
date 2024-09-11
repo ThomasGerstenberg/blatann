@@ -1,6 +1,6 @@
 from enum import IntEnum
-from blatann.services import ble_data_types
 
+from blatann.services import ble_data_types
 
 # See https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.glucose.xml
 # For more info about the data types and values defined here
