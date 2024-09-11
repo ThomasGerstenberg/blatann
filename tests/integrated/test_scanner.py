@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import threading
 import unittest
 
-from blatann.gap.advertising import AdvertisingMode
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags, AdvertisingPacketType
-from blatann.gap.scanning import MIN_SCAN_WINDOW_MS, MIN_SCAN_INTERVAL_MS, ScanParameters
-from blatann.uuid import Uuid16
+from blatann.gap.advertising import AdvertisingMode
+from blatann.gap.scanning import MIN_SCAN_INTERVAL_MS, MIN_SCAN_WINDOW_MS, ScanParameters
 from blatann.utils import Stopwatch
+from blatann.uuid import Uuid16
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
 

@@ -1,18 +1,20 @@
+from __future__ import annotations
+
 import logging
 import math
-import unittest
 import time
+import unittest
 
 from blatann import BleDevice
 from blatann.event_args import WriteEventArgs
 from blatann.gatt.gattc import GattcCharacteristic
-from blatann.gatt.gatts import GattsCharacteristicProperties, GattsCharacteristic
+from blatann.gatt.gatts import GattsCharacteristic, GattsCharacteristicProperties
 from blatann.peer import Phy
 from blatann.utils import Stopwatch
 from blatann.uuid import Uuid128
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
-from tests.integrated.helpers import PeriphConn, CentralConn, setup_connection, rand_bytes
+from tests.integrated.helpers import CentralConn, PeriphConn, rand_bytes, setup_connection
 
 
 class _PeriphConn(PeriphConn):

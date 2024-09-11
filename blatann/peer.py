@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import asyncio
+import enum
 import logging
 import threading
-import enum
-from typing import Optional, Type, Tuple
+from typing import Optional, Tuple, Type
 
-from blatann.event_type import EventSource, Event
-from blatann.gap import smp
-from blatann.gap.gap_types import Phy, PeerAddress, ConnectionParameters, ActiveConnectionParameters
-from blatann.gatt import gattc, service_discovery, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM, DLE_MAX, DLE_MIN, DLE_OVERHEAD
-from blatann.nrf import nrf_events
-from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
-from blatann.nrf.nrf_types import BLEGapDataLengthParams
-from blatann.waitables.waitable import EmptyWaitable, Waitable
-from blatann.waitables.event_waitable import EventWaitable
 from blatann.event_args import *
+from blatann.event_type import Event, EventSource
+from blatann.gap import smp
+from blatann.gap.gap_types import ActiveConnectionParameters, ConnectionParameters, PeerAddress, Phy
+from blatann.gatt import DLE_MAX, DLE_MIN, DLE_OVERHEAD, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM, gattc, service_discovery
+from blatann.nrf import nrf_events
+from blatann.nrf.nrf_types import BLEGapDataLengthParams
+from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
+from blatann.waitables.event_waitable import EventWaitable
+from blatann.waitables.waitable import EmptyWaitable, Waitable
 
 logger = logging.getLogger(__name__)
 

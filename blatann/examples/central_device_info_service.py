@@ -5,11 +5,12 @@ The operations here are programmed in a procedural manner.
 This can be used alongside any peripheral which implements the DIS and advertises the 16-bit DIS service UUID.
 The peripheral_device_info_service example can be used with this.
 """
+from __future__ import annotations
+
 from blatann import BleDevice
 from blatann.examples import example_utils
-from blatann.services import device_info
 from blatann.nrf import nrf_events
-
+from blatann.services import device_info
 
 logger = example_utils.setup_logger(level="INFO")
 

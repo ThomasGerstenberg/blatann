@@ -5,13 +5,14 @@ This is compatible with the nRF Connect app (Android version tested) and the cen
 
 This is a simple example which just echos back any data that the client sends to it.
 """
+from __future__ import annotations
+
 from blatann import BleDevice
 from blatann.gap import advertising
-from blatann.utils import setup_logger
-from blatann.services import nordic_uart
 from blatann.gatt import MTU_SIZE_FOR_MAX_DLE
+from blatann.services import nordic_uart
+from blatann.utils import setup_logger
 from blatann.waitables import GenericWaitable
-
 
 logger = setup_logger(level="DEBUG")
 

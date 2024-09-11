@@ -1,6 +1,7 @@
 from __future__ import annotations
-import re
+
 import binascii
+import re
 import secrets
 from typing import List, Union
 

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from enum import IntEnum
 
-from blatann.nrf.nrf_types import *
-from blatann.nrf.nrf_dll_load import driver
 import blatann.nrf.nrf_driver_types
+from blatann.nrf.nrf_dll_load import driver
+from blatann.nrf.nrf_types import *
 from blatann.utils import repr_format
 
 

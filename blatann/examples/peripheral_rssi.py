@@ -1,12 +1,13 @@
 """
 This is a simple example which demonstrates enabling RSSI updates for active connections.
 """
+from __future__ import annotations
+
 import blatann.peer
 from blatann import BleDevice
-from blatann.examples import example_utils, constants
+from blatann.examples import constants, example_utils
 from blatann.gap import AdvertisingData
 from blatann.waitables import GenericWaitable
-
 
 logger = example_utils.setup_logger(level="INFO")
 

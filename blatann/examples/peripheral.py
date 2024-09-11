@@ -5,21 +5,21 @@ such as reading, writing and notifying characteristics.
 This peripheral can be used with one of the central examples running on a separate nordic device,
 or can be run with the nRF Connect app to explore the contents of the service
 """
+from __future__ import annotations
+
 import atexit
 import binascii
 import struct
 import threading
 import time
 
-from blatann.peer import ConnectionParameters
-
 from blatann import BleDevice
 from blatann.bt_sig.assigned_numbers import Appearance
+from blatann.examples import constants, example_utils
+from blatann.gap import IoCapabilities, advertising, smp
+from blatann.peer import ConnectionParameters
 from blatann.uuid import Uuid16
-from blatann.examples import example_utils, constants
-from blatann.gap import advertising, smp, IoCapabilities
 from blatann.waitables import GenericWaitable
-
 
 logger = example_utils.setup_logger(level="DEBUG")
 

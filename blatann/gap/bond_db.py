@@ -1,10 +1,11 @@
 from __future__ import annotations
-import typing
+
 import logging
+import typing
 
 from blatann.gap import smp_crypto
 from blatann.nrf.nrf_types import (
-    BLEGapAddr, BLEGapAddrTypes, BLEGapEncryptKey, BLEGapIdKey, BLEGapSignKey, BLEGapSecKeyset, BLEGapMasterId
+    BLEGapAddr, BLEGapAddrTypes, BLEGapEncryptKey, BLEGapIdKey, BLEGapMasterId, BLEGapSecKeyset, BLEGapSignKey
 )
 
 if typing.TYPE_CHECKING:

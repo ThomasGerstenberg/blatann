@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from enum import IntEnum
-from blatann.services import ble_data_types
+
 from blatann.exceptions import DecodeError
+from blatann.services import ble_data_types
 
 
 class RacpOpcode(IntEnum):

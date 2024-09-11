@@ -1,18 +1,19 @@
+from __future__ import annotations
+
 import logging
 from threading import Lock
 from typing import Union
 
-from blatann import peer, exceptions
-from blatann.gap import advertising, scanning, default_bond_db, IoCapabilities, SecurityParameters, PairingPolicy
-from blatann.gap.gap_types import Phy, ConnectionParameters, PeerAddress
+from blatann import exceptions, peer
+from blatann.bt_sig.uuids import UUID_DESCRIPTION_MAP
+from blatann.gap import IoCapabilities, PairingPolicy, SecurityParameters, advertising, default_bond_db, scanning
+from blatann.gap.gap_types import ConnectionParameters, PeerAddress, Phy
 from blatann.gap.generic_access_service import GenericAccessService
-from blatann.gatt import gatts, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM, MTU_SIZE_DEFAULT
+from blatann.gatt import MTU_SIZE_DEFAULT, MTU_SIZE_FOR_MAX_DLE, MTU_SIZE_MINIMUM, gatts
 from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_driver import NrfDriver, NrfDriverObserver
 from blatann.uuid import Uuid, Uuid16, Uuid128
 from blatann.waitables.connection_waitable import PeripheralConnectionWaitable
-from blatann.bt_sig.uuids import UUID_DESCRIPTION_MAP
-
 
 logger = logging.getLogger(__name__)
 

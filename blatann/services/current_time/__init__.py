@@ -1,7 +1,9 @@
-from blatann.services.current_time.constants import (CURRENT_TIME_SERVICE_UUID,
-                                                     CURRENT_TIME_CHARACTERISTIC_UUID,
-                                                     LOCAL_TIME_INFO_CHARACTERISTIC_UUID,
-                                                     REFERENCE_INFO_CHARACTERISTIC_UUID)
+from __future__ import annotations
+
+from blatann.services.current_time.constants import (
+    CURRENT_TIME_CHARACTERISTIC_UUID, CURRENT_TIME_SERVICE_UUID, LOCAL_TIME_INFO_CHARACTERISTIC_UUID,
+    REFERENCE_INFO_CHARACTERISTIC_UUID
+)
 from blatann.services.current_time.data_types import *
 from blatann.services.current_time.service import CurrentTimeServer as _CurrentTimeServer
 

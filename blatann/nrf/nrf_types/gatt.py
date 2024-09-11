@@ -1,10 +1,13 @@
-from enum import Enum
+from __future__ import annotations
+
 import logging
-from blatann.nrf.nrf_dll_load import driver
+from enum import Enum
+
 import blatann.nrf.nrf_driver_types as util
+from blatann.nrf.nrf_dll_load import driver
+from blatann.nrf.nrf_types.enums import *
 from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
 from blatann.nrf.nrf_types.smp import *
-from blatann.nrf.nrf_types.enums import *
 from blatann.utils import repr_format
 
 logger = logging.getLogger(__name__)

@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import asyncio
 import queue
 import threading
 from typing import Iterable
-from blatann.waitables.waitable import Waitable
-from blatann.nrf.nrf_events import GapEvtTimeout, BLEGapTimeoutSrc, GapEvtAdvReport
+
 from blatann.gap.advertise_data import ScanReport, ScanReportCollection
+from blatann.nrf.nrf_events import BLEGapTimeoutSrc, GapEvtAdvReport, GapEvtTimeout
+from blatann.waitables.waitable import Waitable
 
 
 class ScanFinishedWaitable(Waitable):

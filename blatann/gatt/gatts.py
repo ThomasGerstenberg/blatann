@@ -1,25 +1,24 @@
 from __future__ import annotations
 
 import asyncio
-import typing
-from typing import Optional, List, Iterable
-from collections import namedtuple
 import logging
+import typing
+from collections import namedtuple
+from typing import Iterable, List, Optional
 
-
-from blatann.gatt.gatts_attribute import GattsAttribute, GattsAttributeProperties
-from blatann.gatt.managers import GattsOperationManager
-from blatann.nrf import nrf_types, nrf_events
 from blatann import gatt
 from blatann.bt_sig.uuids import DescriptorUuid
+from blatann.event_args import *
+from blatann.event_type import Event, EventSource
+from blatann.exceptions import InvalidOperationException, InvalidStateException
+from blatann.gatt import PresentationFormat
+from blatann.gatt.gatts_attribute import GattsAttribute, GattsAttributeProperties
+from blatann.gatt.managers import GattsOperationManager
+from blatann.nrf import nrf_events, nrf_types
+from blatann.services.ble_data_types import BleDataStream
 from blatann.uuid import Uuid
 from blatann.waitables.event_queue import AsyncEventQueue, EventQueue
-from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
-from blatann.exceptions import InvalidOperationException, InvalidStateException
-from blatann.event_type import EventSource, Event
-from blatann.event_args import *
-from blatann.services.ble_data_types import BleDataStream
-from blatann.gatt import PresentationFormat
+from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
 
 if typing.TYPE_CHECKING:
     from blatann.device import BleDevice

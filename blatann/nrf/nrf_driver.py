@@ -35,19 +35,22 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import annotations
+
 import atexit
 import functools
-import wrapt
 import queue
 import traceback
-from threading import Thread, Lock, Event
+from threading import Event, Lock, Thread
 
+import wrapt
+from pc_ble_driver_py.exceptions import NordicSemiException
+
+import blatann.nrf.nrf_driver_types as util
+from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events import *
 from blatann.nrf.nrf_types import *
-from blatann.nrf.nrf_dll_load import driver
-from pc_ble_driver_py.exceptions import NordicSemiException
-import blatann.nrf.nrf_driver_types as util
-from blatann.nrf.nrf_types.config import BleEnableConfig, BleConnConfig
+from blatann.nrf.nrf_types.config import BleConnConfig, BleEnableConfig
 
 logger = logging.getLogger(__name__)
 

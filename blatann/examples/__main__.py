@@ -1,7 +1,9 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
+
 import glob
-from os import path
 import sys
+from os import path
+
 import blatann.examples
 
 # Non-example python files to exclude

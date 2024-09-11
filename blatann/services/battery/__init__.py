@@ -1,5 +1,9 @@
-from blatann.services.battery.service import BatteryServer as _BatteryServer, BatteryClient as _BatteryClient, SecurityLevel
-from blatann.services.battery.constants import BATTERY_SERVICE_UUID, BATTERY_LEVEL_CHARACTERISTIC_UUID
+from __future__ import annotations
+
+from blatann.services.battery.constants import BATTERY_LEVEL_CHARACTERISTIC_UUID, BATTERY_SERVICE_UUID
+from blatann.services.battery.service import BatteryClient as _BatteryClient
+from blatann.services.battery.service import BatteryServer as _BatteryServer
+from blatann.services.battery.service import SecurityLevel
 
 
 def add_battery_service(gatts_database, enable_notifications=False, security_level=SecurityLevel.OPEN):

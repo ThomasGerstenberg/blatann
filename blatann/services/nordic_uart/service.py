@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import logging
-from blatann.gatt import MTU_SIZE_DEFAULT, WRITE_BYTE_OVERHEAD
-from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
-from blatann.event_type import EventSource, Event
+
 from blatann import exceptions
-from blatann.services.ble_data_types import Uint16, BleDataStream
+from blatann.event_type import Event, EventSource
+from blatann.gatt import MTU_SIZE_DEFAULT, WRITE_BYTE_OVERHEAD
+from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
+from blatann.services.ble_data_types import BleDataStream, Uint16
 from blatann.services.nordic_uart.constants import *
 from blatann.waitables.event_waitable import EventWaitable
-
 
 logger = logging.getLogger(__name__)
 

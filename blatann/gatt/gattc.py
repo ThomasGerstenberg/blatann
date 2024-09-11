@@ -2,21 +2,20 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Optional, Iterable
+from typing import Iterable, List, Optional
 
 from blatann import gatt
+from blatann.bt_sig.uuids import DeclarationUuid, DescriptorUuid, Uuid
+from blatann.event_args import *
+from blatann.event_type import Event, EventSource
+from blatann.exceptions import InvalidOperationException
 from blatann.gatt.gattc_attribute import GattcAttribute
 from blatann.gatt.managers import GattcOperationManager
-from blatann.bt_sig.uuids import Uuid, DeclarationUuid, DescriptorUuid
-from blatann.event_type import EventSource, Event
 from blatann.gatt.reader import GattcReader
 from blatann.gatt.writer import GattcWriter
-from blatann.nrf import nrf_types, nrf_events
+from blatann.nrf import nrf_events, nrf_types
 from blatann.waitables.event_queue import AsyncEventQueue, EventQueue
 from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
-from blatann.exceptions import InvalidOperationException
-from blatann.event_args import *
-
 
 logger = logging.getLogger(__name__)
 

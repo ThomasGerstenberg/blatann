@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import logging
-from blatann.nrf import nrf_events, nrf_types
+
 from blatann import exceptions
-from blatann.waitables.connection_waitable import ClientConnectionWaitable
 from blatann.event_type import Event, EventSource
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags
-
+from blatann.nrf import nrf_events, nrf_types
+from blatann.waitables.connection_waitable import ClientConnectionWaitable
 
 logger = logging.getLogger(__name__)
 

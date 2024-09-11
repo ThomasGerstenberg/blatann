@@ -1,12 +1,13 @@
-import unittest
-import time
+from __future__ import annotations
 
-from blatann.uuid import Uuid16
+import time
+import unittest
 
 from blatann.gap.advertise_data import AdvertisingData, AdvertisingFlags, AdvertisingPacketType
 from blatann.gap.advertising import AdvertisingMode
-from blatann.gap.scanning import ScanReport, Scanner
+from blatann.gap.scanning import Scanner, ScanReport
 from blatann.services.nordic_uart import NORDIC_UART_SERVICE_UUID
+from blatann.uuid import Uuid16
 
 from tests.integrated.base import BlatannTestCase, TestParams, long_running
 

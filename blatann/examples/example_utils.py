@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from blatann import BleDevice
 from blatann.utils import setup_logger
 

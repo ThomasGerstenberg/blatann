@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import struct
+
 from blatann.utils import IntEnumWithDescription
 
 

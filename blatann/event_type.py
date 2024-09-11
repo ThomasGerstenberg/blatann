@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import types
-from typing import TypeVar, Generic, Callable
-from threading import Lock
 import weakref
-
+from threading import Lock
+from typing import Callable, Generic, TypeVar
 
 TSender = TypeVar("TSender")
 TEvent = TypeVar("TEvent")

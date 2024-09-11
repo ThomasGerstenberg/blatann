@@ -1,11 +1,13 @@
-import os
+from __future__ import annotations
+
 import logging
+import os
 import queue
 import time
-from typing import Optional
-from unittest import TestCase, SkipTest
-from unittest.util import safe_repr
 from functools import wraps
+from typing import Optional
+from unittest import SkipTest, TestCase
+from unittest.util import safe_repr
 
 from blatann import BleDevice
 from blatann.gap.default_bond_db import DefaultBondDatabaseLoader

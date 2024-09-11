@@ -3,15 +3,16 @@ from __future__ import annotations
 import asyncio
 import typing
 
-from blatann.waitables.waitable import Waitable
-from blatann.nrf.nrf_events import GapEvtConnected, GapEvtTimeout, BLEGapRoles, BLEGapTimeoutSrc
 from blatann.exceptions import InvalidStateException
+from blatann.nrf.nrf_events import BLEGapRoles, BLEGapTimeoutSrc, GapEvtConnected, GapEvtTimeout
+from blatann.waitables.waitable import Waitable
 
 if typing.TYPE_CHECKING:
     from typing import Tuple
+
     from blatann.device import BleDevice
-    from blatann.peer import Peer, Client, Peripheral
     from blatann.event_args import DisconnectionEventArgs
+    from blatann.peer import Client, Peer, Peripheral
 
 
 class ConnectionWaitable(Waitable):

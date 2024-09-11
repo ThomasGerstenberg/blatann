@@ -1,7 +1,9 @@
-from enum import IntEnum
+from __future__ import annotations
+
+import datetime
 import math
 import struct
-import datetime
+from enum import IntEnum
 
 
 class BleDataStream(object):

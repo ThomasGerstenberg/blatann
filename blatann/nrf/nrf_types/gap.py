@@ -1,13 +1,14 @@
-from enum import Enum, IntEnum
-import logging
+from __future__ import annotations
 
-from blatann.utils import repr_format
+import logging
+from enum import Enum, IntEnum
+
 from pc_ble_driver_py.exceptions import NordicSemiException
-from blatann.nrf.nrf_dll_load import driver
+
 import blatann.nrf.nrf_driver_types as util
+from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_types.enums import *
 from blatann.utils import repr_format
-
 
 logger = logging.getLogger(__name__)
 

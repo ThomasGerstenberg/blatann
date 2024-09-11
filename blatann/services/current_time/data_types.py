@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import datetime
 from enum import IntEnum
+
 from blatann.services import ble_data_types
 
 # See https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.current_time.xml

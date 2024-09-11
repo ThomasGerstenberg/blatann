@@ -1,16 +1,18 @@
 from __future__ import annotations
+
 import datetime
 import logging
+
 import pytz.reference
 
-from blatann.event_type import EventSource, Event
-from blatann.exceptions import InvalidOperationException
 from blatann.event_args import DecodedReadCompleteEventArgs, DecodedWriteEventArgs
-from blatann.services.decoded_event_dispatcher import DecodedReadWriteEventDispatcher
+from blatann.event_type import Event, EventSource
+from blatann.exceptions import InvalidOperationException
+from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
 from blatann.services.current_time.constants import *
 from blatann.services.current_time.data_types import *
-from blatann.gatt.gatts import GattsService, GattsCharacteristicProperties
-from blatann.waitables.event_waitable import IdBasedEventWaitable, EventWaitable
+from blatann.services.decoded_event_dispatcher import DecodedReadWriteEventDispatcher
+from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
 
 logger = logging.getLogger(__name__)
 

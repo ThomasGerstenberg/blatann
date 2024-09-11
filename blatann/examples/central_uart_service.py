@@ -5,13 +5,15 @@ This is compatible with the peripheral_uart_service example.
 
 This is a simple example which just echos back any data that the client sends to it.
 """
-from builtins import input
-from blatann import BleDevice
-from blatann.nrf import nrf_events
-from blatann.utils import setup_logger
-from blatann.services import nordic_uart
-from blatann.gatt import MTU_SIZE_FOR_MAX_DLE
+from __future__ import annotations
 
+from builtins import input
+
+from blatann import BleDevice
+from blatann.gatt import MTU_SIZE_FOR_MAX_DLE
+from blatann.nrf import nrf_events
+from blatann.services import nordic_uart
+from blatann.utils import setup_logger
 
 logger = setup_logger(level="DEBUG")
 

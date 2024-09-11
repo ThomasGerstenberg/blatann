@@ -1,8 +1,9 @@
+from __future__ import annotations
+
+import logging
+import queue
 import threading
 from typing import Generic, Optional, TypeVar
-import queue
-import logging
-
 
 logger = logging.getLogger(__name__)
 

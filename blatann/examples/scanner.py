@@ -1,6 +1,8 @@
 """
 This example simply demonstrates scanning for peripheral devices
 """
+from __future__ import annotations
+
 from blatann import BleDevice
 from blatann.examples import example_utils
 

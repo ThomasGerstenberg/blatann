@@ -1,11 +1,12 @@
-import time
-from typing import Iterable, List, Dict, Union, Optional, Tuple
+from __future__ import annotations
+
 import logging
+import time
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
+from blatann import exceptions, uuid
 from blatann.gap.gap_types import PeerAddress
-from blatann.nrf import nrf_types, nrf_events
-from blatann import uuid, exceptions
-
+from blatann.nrf import nrf_events, nrf_types
 
 logger = logging.getLogger(__name__)
 
