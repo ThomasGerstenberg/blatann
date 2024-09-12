@@ -141,7 +141,7 @@ class TestAdvertisingData(BlatannTestCase):
 
         self.assertEqual(iterations+1, len(non_dupes))
         for i, packet in enumerate(non_dupes):
-            expected_service_data = bytes(service_data_preamble + [i])
+            expected_service_data = bytes(service_data_preamble + [i])  # noqa: RUF005
             self.assertEqual(expected_service_data, packet.advertise_data.service_data)
 
     # TODO 04.20.20: Add more tests around data content (128-bit uuid, service data, mfg data, etc.)

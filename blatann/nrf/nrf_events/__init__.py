@@ -12,7 +12,7 @@ from blatann.nrf.nrf_events import (  # isort: skip
     smp_events as _smp_events
 )
 
-__all__ = [
+__all__ = [  # noqa PLE0604 - *_mod.__all__ is rexporting the submodules
     *_gap_events.__all__,
     *_gatt_events.__all__,
     *_generic_events.__all__,

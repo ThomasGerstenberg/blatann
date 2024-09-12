@@ -189,7 +189,7 @@ class GattsAttribute(Attribute):
             # Send reply before processing write, in case user sets data in gatts_write handler
             try:
                 self._ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
-            except Exception:  # noqa: E722
+            except Exception:
                 pass
             if write_event.write_op == nrf_types.BLEGattsWriteOperation.prep_write_req:
                 self._write_queued = True
