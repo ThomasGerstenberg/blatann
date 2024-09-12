@@ -11,7 +11,7 @@ from blatann.nrf import nrf_events, nrf_types
 logger = logging.getLogger(__name__)
 
 
-class AdvertisingFlags(object):
+class AdvertisingFlags:
     LIMITED_DISCOVERY_MODE = 0x01
     GENERAL_DISCOVERY_MODE = 0x02
     BR_EDR_NOT_SUPPORTED = 0x04
@@ -22,7 +22,7 @@ class AdvertisingFlags(object):
 AdvertisingPacketType = nrf_types.BLEGapAdvType
 
 
-class AdvertisingData(object):
+class AdvertisingData:
     """
     Class which represents data that can be advertised
     """
@@ -282,7 +282,7 @@ class AdvertisingData(object):
                 self.service_uuid128s == other.service_uuid128s)
 
 
-class ScanReport(object):
+class ScanReport:
     """
     Represents a payload and associated metadata that's received during scanning
     """
@@ -347,7 +347,7 @@ class ScanReport(object):
         return "{}: {}dBm - {}".format(self.device_name, self.rssi, self.advertise_data)
 
 
-class ScanReportCollection(object):
+class ScanReportCollection:
     """
     Collection of all the advertising data and scan reports found in a scanning session
     """

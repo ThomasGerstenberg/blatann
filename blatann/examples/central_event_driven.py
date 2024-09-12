@@ -28,7 +28,7 @@ from blatann.waitables import GenericWaitable
 logger = example_utils.setup_logger(level="DEBUG")
 
 
-class HexConverterTest(object):
+class HexConverterTest:
     """
     Class to perform the hex conversion process. It is passed in the hex conversion characteristic
     and the waitable to signal when the process completes
@@ -87,7 +87,7 @@ class HexConverterTest(object):
             self.start()
 
 
-class MyPeripheralConnection(object):
+class MyPeripheralConnection:
     """
     Class to handle the post-connection database discovery and pairing process
     """
@@ -190,7 +190,7 @@ class MyPeripheralConnection(object):
         logger.info("Counting char notification. Current count: {}".format(current_count))
 
 
-class ConnectionManager(object):
+class ConnectionManager:
     """
     Manages scanning and connecting to the target peripheral
     """

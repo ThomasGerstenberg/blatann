@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BondingData(object):
+class BondingData:
     def __init__(self, own_ltk: BLEGapEncryptKey, peer_ltk: BLEGapEncryptKey,
                  peer_id: BLEGapIdKey, peer_sign: BLEGapSignKey):
         self.own_ltk = own_ltk
@@ -49,7 +49,7 @@ class BondingData(object):
         return cls(own_ltk, peer_ltk, peer_id, peer_sign)
 
 
-class BondDbEntry(object):
+class BondDbEntry:
     def __init__(self, entry_id=0):
         self.id = entry_id
         self.own_addr: PeerAddress = None
@@ -125,7 +125,7 @@ class BondDbEntry(object):
         return entry
 
 
-class BondDatabase(object):
+class BondDatabase:
     def create(self) -> BondDbEntry:
         raise NotImplementedError()
 
@@ -151,7 +151,7 @@ class BondDatabase(object):
         raise NotImplementedError()
 
 
-class BondDatabaseLoader(object):
+class BondDatabaseLoader:
     def load(self) -> BondDatabase:
         raise NotImplementedError()
 

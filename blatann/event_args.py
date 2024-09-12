@@ -58,7 +58,7 @@ class GattOperationCompleteReason(Enum):
     TIMED_OUT = 6
 
 
-class EventArgs(object):
+class EventArgs:
     """
     Base Event Arguments class
     """

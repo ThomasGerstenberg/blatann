@@ -10,7 +10,7 @@ from blatann.services.glucose.racp import RacpResponseCode
 logger = logging.getLogger(__name__)
 
 
-class IGlucoseDatabase(object):
+class IGlucoseDatabase:
     """
     Defines the interface required for the Glucose Service to fetch records and record info
     """

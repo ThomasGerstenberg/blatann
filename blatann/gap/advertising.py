@@ -17,7 +17,7 @@ MIN_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.min
 MAX_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.max
 
 
-class Advertiser(object):
+class Advertiser:
     """
     Class which manages the advertising state of the BLE Device
     """

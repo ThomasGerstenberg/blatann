@@ -18,7 +18,7 @@ class GattcReadCompleteEventArgs(EventArgs):
         self.data = data
 
 
-class GattcReader(object):
+class GattcReader:
     """
     Class which implements the state machine for completely reading a peripheral's attribute
     """

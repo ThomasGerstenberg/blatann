@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 
-class SecurityManager(object):
+class SecurityManager:
     """
     Handles performing security procedures with a connected peer
     """

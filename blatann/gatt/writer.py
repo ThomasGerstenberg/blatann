@@ -18,7 +18,7 @@ class GattcWriteCompleteEventArgs(EventArgs):
         self.data = data
 
 
-class GattcWriter(object):
+class GattcWriter:
     """
     Class which implements the state machine for writing a value to a peripheral's attribute
     """

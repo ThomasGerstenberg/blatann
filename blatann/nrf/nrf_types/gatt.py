@@ -278,7 +278,7 @@ class BleGattsEnableParams:
         return params
 
 
-class BLEGattsCharHandles(object):
+class BLEGattsCharHandles:
     def __init__(self, value_handle=0, user_desc_handle=0, cccd_handle=0, sccd_handle=0):
         self.value_handle = value_handle
         self.user_desc_handle = user_desc_handle

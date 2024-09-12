@@ -16,7 +16,7 @@ from blatann.waitables import EventWaitable
 logger = logging.getLogger(__name__)
 
 
-class _DisCharacteristic(object):
+class _DisCharacteristic:
     def __init__(self, service, uuid, data_class):
         self.service = service
         self.uuid = uuid
@@ -74,7 +74,7 @@ class _DisClientCharacteristic(_DisCharacteristic):
         return EventWaitable(self._on_read_complete_event)
 
 
-class _DeviceInfoService(object):
+class _DeviceInfoService:
     def __init__(self, service):
         if isinstance(service, GattsService):
             char_cls = _DisServerCharacteristic

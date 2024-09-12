@@ -6,7 +6,7 @@ import struct
 from enum import IntEnum
 
 
-class BleDataStream(object):
+class BleDataStream:
     def __init__(self, value=b""):
         self.value = value
         self.decode_index = 0
@@ -68,7 +68,7 @@ class BleDataStream(object):
         return s
 
 
-class BleCompoundDataType(object):
+class BleCompoundDataType:
     data_stream_types = []
 
     def encode_values(self, *values):
@@ -109,7 +109,7 @@ class BleCompoundDataType(object):
         return size
 
 
-class BleDataType(object):
+class BleDataType:
     @classmethod
     def encode(cls, value):
         raise NotImplementedError()
@@ -247,7 +247,7 @@ class String(BleDataType):
 
 
 class SFloat(BleDataType):
-    class ReservedMantissaValues(object):
+    class ReservedMantissaValues:
         POS_INFINITY = 0x07FE
         NEG_INFINITY = 0x0802
         NAN = 0x07FF

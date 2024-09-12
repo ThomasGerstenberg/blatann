@@ -21,7 +21,7 @@ class _DiscoveryEventArgs(EventArgs):
         self.status = status
 
 
-class _DiscoveryState(object):
+class _DiscoveryState:
     def __init__(self):
         self.current_handle = 0x0001
         self.services = []
@@ -72,7 +72,7 @@ class _DiscoveryState(object):
                 yield service, c
 
 
-class _Discoverer(object):
+class _Discoverer:
     def __init__(self, name, ble_device, peer):
         """
         :type ble_device: blatann.BleDevice
@@ -377,7 +377,7 @@ class _DescriptorDiscoverer(_Discoverer):
         self._discover_next_handle_range()
 
 
-class DatabaseDiscoverer(object):
+class DatabaseDiscoverer:
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice

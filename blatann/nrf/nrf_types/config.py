@@ -66,7 +66,7 @@ class BleOptConnEventExtension(BleEnableOpt):
     _driver_type = driver.ble_common_opt_conn_evt_ext_t
 
 
-class BlePaLnaConfig(object):
+class BlePaLnaConfig:
     def __init__(self, enabled=False, active_high=True, pin=0):
         self.enabled = enabled
         self.active_high = active_high

@@ -13,7 +13,7 @@ from blatann.waitables.event_waitable import EventWaitable
 logger = logging.getLogger(__name__)
 
 
-class NordicUartServer(object):
+class NordicUartServer:
     def __init__(self, service, max_characteristic_size=None):
         """
         :type service: GattsService
@@ -73,7 +73,7 @@ class NordicUartServer(object):
         return cls(service, max_characteristic_size)
 
 
-class NordicUartClient(object):
+class NordicUartClient:
     def __init__(self, service, max_characteristic_size=None):
         """
         :type service: blatann.gatt.gattc.GattcService

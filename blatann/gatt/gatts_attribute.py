@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class GattsAttributeProperties(object):
+class GattsAttributeProperties:
     def __init__(self, read=True, write=False, security_level=gatt.SecurityLevel.OPEN,
                  max_length=20, variable_length=True, read_auth=False, write_auth=False):
         self.read = read

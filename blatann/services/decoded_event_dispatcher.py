@@ -10,7 +10,7 @@ from blatann.gatt import GattStatusCode
 from blatann.services import ble_data_types
 
 
-class DecodedReadWriteEventDispatcher(object):
+class DecodedReadWriteEventDispatcher:
     def __init__(self, owner, ble_type, event_to_raise, logger=None):
         self.owner = owner
         self.ble_type = ble_type

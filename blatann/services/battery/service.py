@@ -14,7 +14,7 @@ from blatann.waitables import EventWaitable
 logger = logging.getLogger(__name__)
 
 
-class BatteryServer(object):
+class BatteryServer:
     def __init__(self, service, enable_notifications=False, security_level=SecurityLevel.OPEN):
         """
         :type service: GattsService
@@ -52,7 +52,7 @@ class BatteryServer(object):
         return BatteryServer(service, enable_notifications, security_level)
 
 
-class BatteryClient(object):
+class BatteryClient:
     def __init__(self, gattc_service):
         """
         :type gattc_service: blatann.gatt.gattc.GattcService

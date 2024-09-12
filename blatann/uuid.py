@@ -8,7 +8,7 @@ from typing import List, Union
 from blatann.nrf.nrf_types import BLEUUID as _BLEUUID
 
 
-class Uuid(object):
+class Uuid:
     """
     Base class for UUIDs
     """

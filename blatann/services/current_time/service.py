@@ -17,7 +17,7 @@ from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
 logger = logging.getLogger(__name__)
 
 
-class CurrentTimeServer(object):
+class CurrentTimeServer:
 
     def __init__(self, service, is_writable=False,
                  enable_local_time_info_char=False, enable_ref_time_info_char=False):
@@ -208,7 +208,7 @@ class CurrentTimeServer(object):
         return cls(service, is_writable, enable_local_time_info_char, enable_ref_time_info_char)
 
 
-class CurrentTimeClient(object):
+class CurrentTimeClient:
 
     def __init__(self, gattc_service):
         """

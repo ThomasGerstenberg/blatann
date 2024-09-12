@@ -36,7 +36,7 @@ class _EventLogger(NrfDriverObserver):
                 logger.debug("Got NRF Driver event: %s", event)
 
 
-class _UuidManager(object):
+class _UuidManager:
     def __init__(self, ble_driver):
         """
 

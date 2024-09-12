@@ -13,7 +13,7 @@ from blatann.services.glucose.racp import *
 logger = logging.getLogger(__name__)
 
 
-class GlucoseServer(object):
+class GlucoseServer:
     def __init__(self, service, glucose_database, security_level=SecurityLevel.OPEN,
                  include_context_characteristic=True):
         """
