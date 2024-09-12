@@ -47,7 +47,7 @@ class ScanParameters(nrf_types.BLEGapScanParams):
                f"timeout: {self.timeout_s}s, active: {self.active})"
 
 
-class Scanner(object):
+class Scanner:
     def __init__(self, ble_device):
         """
         :type ble_device: blatann.device.BleDevice
@@ -133,7 +133,8 @@ class Scanner(object):
 
         try:
             self.ble_device.ble_driver.ble_gap_scan_stop()
-        except:
+        except Exception:  # noqa: E722
+            # Ignore errors in case scanning wasn't active
             pass
 
     def _on_adv_report(self, driver, adv_report):
@@ -149,6 +150,6 @@ class Scanner(object):
         """
         :type event: nrf_events.GapEvtTimeout
         """
-        if event.src == nrf_events.BLEGapTimeoutSrc.scan:
+        if event.src == nrf_types.BLEGapTimeoutSrc.scan:
             self._is_scanning = False
             self._on_scan_timeout.notify(self.ble_device, self.scan_report)

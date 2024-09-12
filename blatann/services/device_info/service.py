@@ -9,14 +9,20 @@ from blatann.gatt import GattStatusCode
 from blatann.gatt.gattc import GattcService
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
 from blatann.services import ble_data_types
-from blatann.services.device_info.constants import *
+from blatann.services.device_info.constants import (
+    DIS_SERVICE_UUID, FIRMWARE_REV_UUID, HARDWARE_REV_UUID, MANUFACTURER_NAME_UUID, MODEL_NUMBER_UUID, PNP_ID_UUID,
+    REGULATORY_CERT_UUID, SERIAL_NUMBER_UUID, SOFTWARE_REV_UUID, SYSTEM_ID_UUID, FirmwareRevisionCharacteristic,
+    HardwareRevisionCharacteristic, ManufacturerNameCharacteristic, ModelNumberCharacteristic, PnpIdCharacteristic,
+    RegulatoryCertificateCharacteristic, SerialNumberCharacteristic, SoftwareRevisionCharacteristic,
+    SystemIdCharacteristic
+)
 from blatann.services.device_info.data_types import PnpId, SystemId
 from blatann.waitables import EventWaitable
 
 logger = logging.getLogger(__name__)
 
 
-class _DisCharacteristic(object):
+class _DisCharacteristic:
     def __init__(self, service, uuid, data_class):
         self.service = service
         self.uuid = uuid
@@ -74,7 +80,7 @@ class _DisClientCharacteristic(_DisCharacteristic):
         return EventWaitable(self._on_read_complete_event)
 
 
-class _DeviceInfoService(object):
+class _DeviceInfoService:
     def __init__(self, service):
         if isinstance(service, GattsService):
             char_cls = _DisServerCharacteristic

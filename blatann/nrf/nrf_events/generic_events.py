@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from enum import IntEnum
-
-import blatann.nrf.nrf_driver_types
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_types import *
 from blatann.utils import repr_format
 
+__all__ = [
+    "BLEEvent",
+    "EvtUserMemoryRequest",
+]
 
-class BLEEvent(object):
+
+class BLEEvent:
     evt_id = None
 
     def __init__(self, conn_handle):

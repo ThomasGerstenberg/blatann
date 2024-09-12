@@ -1,19 +1,27 @@
 from __future__ import annotations
 
 import logging
+from typing import List
 
 from blatann.event_args import WriteEventArgs
 from blatann.gatt import SecurityLevel
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
-from blatann.services.glucose.constants import *
-from blatann.services.glucose.data_types import *
+from blatann.services import ble_data_types
+from blatann.services.glucose import GlucoseMeasurement
+from blatann.services.glucose.constants import (
+    FEATURE_CHARACTERISTIC_UUID, GLUCOSE_SERVICE_UUID, MEASUREMENT_CHARACTERISTIC_UUID,
+    MEASUREMENT_CONTEXT_CHARACTERISTIC_UUID, RACP_CHARACTERISTIC_UUID
+)
+from blatann.services.glucose.data_types import GlucoseFeatures
 from blatann.services.glucose.database import IGlucoseDatabase
-from blatann.services.glucose.racp import *
+from blatann.services.glucose.racp import (
+    FilterType, RacpCommand, RacpOpcode, RacpOperator, RacpResponse, RacpResponseCode
+)
 
 logger = logging.getLogger(__name__)
 
 
-class GlucoseServer(object):
+class GlucoseServer:
     def __init__(self, service, glucose_database, security_level=SecurityLevel.OPEN,
                  include_context_characteristic=True):
         """
@@ -40,7 +48,7 @@ class GlucoseServer(object):
         self.racp_characteristic = service.add_characteristic(RACP_CHARACTERISTIC_UUID, racp_props)
         self.racp_characteristic.on_write.register(self._on_racp_write)
         self._current_command = None
-        self._records_to_report = []  # type: list[GlucoseMeasurement]
+        self._records_to_report: List[GlucoseMeasurement] = []
         self._active_notifications = []
         self.service.peer.on_disconnect.register(self._on_disconnect)
         self.measurement_characteristic.on_notify_complete.register(self._on_notify_complete)

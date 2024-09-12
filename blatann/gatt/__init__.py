@@ -24,7 +24,7 @@ The minimum allowed MTU size
 MTU_SIZE_MINIMUM = 23
 
 """
-The ideal MTU size to use when using the maximum link-layer Data Length Extension setting (251) 
+The ideal MTU size to use when using the maximum link-layer Data Length Extension setting (251)
 """
 MTU_SIZE_FOR_MAX_DLE = 247
 
@@ -78,7 +78,7 @@ class SubscriptionState(enum.IntEnum):
         return cls(struct.unpack("<H", buf)[0])
 
 
-class CharacteristicProperties(object):
+class CharacteristicProperties:
     def __init__(self, read=True, write=False, notify=False, indicate=False, broadcast=False,
                  write_no_response=False, signed_write=False):
         self.read = read
@@ -112,7 +112,7 @@ class CharacteristicProperties(object):
         return "CharProps({})".format(",".join(props))
 
 
-class Attribute(object):
+class Attribute:
     """
     Represents a single attribute which lives inside a Characteristic (both remote and local)
     """
@@ -161,7 +161,7 @@ class Attribute(object):
         return f"Attribute({self._handle}): {self._uuid.descriptive_string}"
 
 
-class Characteristic(object):
+class Characteristic:
     """
     Abstract class that represents a BLE characteristic (both remote and local).
     """
@@ -189,7 +189,7 @@ class Characteristic(object):
         return f"Characteristic: {self.uuid.descriptive_string}, {self._properties}, attributes: [{attr_str}]"
 
 
-class Service(object):
+class Service:
     """
     Abstract class that represents a BLE Service (both remote and local)
     """
@@ -220,7 +220,7 @@ class Service(object):
         return f"Service: {self.uuid.descriptive_string} [{self.start_handle}-{self.end_handle}], characteristics: [{char_str}]"
 
 
-class GattDatabase(object):
+class GattDatabase:
     """
     Abstract class that represents a BLE Database (both remote and local)
     """

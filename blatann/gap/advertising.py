@@ -17,14 +17,14 @@ MIN_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.min
 MAX_ADVERTISING_INTERVAL_MS = nrf_types.adv_interval_range.max
 
 
-class Advertiser(object):
+class Advertiser:
     """
     Class which manages the advertising state of the BLE Device
     """
     # Constant used to indicate that the BLE device should advertise indefinitely, until
     # connected to or stopped manually
     ADVERTISE_FOREVER = 0
-    """Special value used to indicate that the BLE device should advertise indefinitely 
+    """Special value used to indicate that the BLE device should advertise indefinitely
        until either a central is connected or stopped manually."""
 
     def __init__(self, ble_device, client, conn_tag=0):
@@ -230,7 +230,7 @@ class Advertiser(object):
         """
         :type event: nrf_events.GapEvtTimeout
         """
-        if event.src == nrf_events.BLEGapTimeoutSrc.advertising:
+        if event.src == nrf_types.BLEGapTimeoutSrc.advertising:
             # Notify that advertising timed out first which may call stop() to disable auto-restart
             self._on_advertising_timeout.notify(self)
             if self._auto_restart:

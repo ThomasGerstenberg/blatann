@@ -50,12 +50,11 @@ def on_passkey_entry(peer, passkey_event_args):
     passkey_event_args.resolve(passkey)
 
 
-async def _main(serial_port):
+async def _main(ble_device: BleDevice):
     # Set the target to the peripheral's advertised name
     target_device_name = constants.PERIPHERAL_NAME
 
-    # Create and open the BLE device (and suppress spammy logs)
-    ble_device = BleDevice(serial_port)
+    # Open the BLE device (and suppress spammy logs)
     ble_device.event_logger.suppress(nrf_events.GapEvtAdvReport)
     ble_device.open()
 
@@ -138,7 +137,8 @@ async def _main(serial_port):
 
 
 def main(serial_port):
-    asyncio.run(_main(serial_port), debug=True)
+    ble_device = BleDevice(serial_port)
+    asyncio.run(_main(ble_device), debug=True)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import logging
 from blatann.event_args import DatabaseDiscoveryCompleteEventArgs, EventArgs
 from blatann.event_type import Event, EventSource
 from blatann.gatt import gattc
-from blatann.nrf import nrf_events
+from blatann.nrf import nrf_events, nrf_types
 from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class _DiscoveryEventArgs(EventArgs):
         self.status = status
 
 
-class _DiscoveryState(object):
+class _DiscoveryState:
     def __init__(self):
         self.current_handle = 0x0001
         self.services = []
@@ -72,7 +72,7 @@ class _DiscoveryState(object):
                 yield service, c
 
 
-class _Discoverer(object):
+class _Discoverer:
     def __init__(self, name, ble_device, peer):
         """
         :type ble_device: blatann.BleDevice
@@ -108,7 +108,7 @@ class _ServiceDiscoverer(_Discoverer):
         self.peer.driver_event_subscribe(self._on_service_uuid_read, nrf_events.GattcEvtReadResponse)
         return EventWaitable(self.on_complete)
 
-    def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
+    def _on_complete(self, status=nrf_types.BLEGattStatusCode.success):
         self.peer.driver_event_unsubscribe(self._on_primary_service_discovery)
         self.peer.driver_event_unsubscribe(self._on_service_uuid_read)
         self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
@@ -122,7 +122,7 @@ class _ServiceDiscoverer(_Discoverer):
         if event.conn_handle != self.peer.conn_handle:
             return
 
-        if event.status == nrf_events.BLEGattStatusCode.success:
+        if event.status == nrf_types.BLEGattStatusCode.success:
             # Add the services discovered and check to see if there's more
             self._state.services.extend(event.services)
             end_handle = event.services[-1].end_handle
@@ -132,7 +132,7 @@ class _ServiceDiscoverer(_Discoverer):
             else:
                 # Reached the end of the handle range, now discover their UUIDs
                 self._discover_uuids()
-        elif event.status == nrf_events.BLEGattStatusCode.attribute_not_found:
+        elif event.status == nrf_types.BLEGattStatusCode.attribute_not_found:
             # No other attributes/services are found, continue on to discover UUIDs
             self._discover_uuids()
         else:
@@ -165,7 +165,7 @@ class _ServiceDiscoverer(_Discoverer):
         if len(event.data) != 16:
             logger.error("Service UUID not 16 bytes: {}".format(event.data))
         else:
-            nrf_uuid = nrf_events.BLEUUID.from_array(event.data)
+            nrf_uuid = nrf_types.BLEUUID.from_array(event.data)
             self.ble_device.uuid_manager.register_uuid(nrf_uuid)
             logger.info("Discovered UUID: {}".format(nrf_uuid))
             self._state.current_service.uuid = nrf_uuid
@@ -192,7 +192,7 @@ class _CharacteristicDiscoverer(_Discoverer):
         self._discover_characteristics()
         return EventWaitable(self.on_complete)
 
-    def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
+    def _on_complete(self, status=nrf_types.BLEGattStatusCode.success):
         self.peer.driver_event_unsubscribe(self._on_characteristic_discovery)
         self.peer.driver_event_unsubscribe(self._on_char_uuid_read)
         self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
@@ -210,7 +210,7 @@ class _CharacteristicDiscoverer(_Discoverer):
         if event.conn_handle != self.peer.conn_handle:
             return
 
-        if event.status == nrf_events.BLEGattStatusCode.attribute_not_found:
+        if event.status == nrf_types.BLEGattStatusCode.attribute_not_found:
             # Done discovering characteristics in this service, discover next service or unknown UUIDs
             self._state.service_index += 1
             self._state.char_index = 0
@@ -220,7 +220,7 @@ class _CharacteristicDiscoverer(_Discoverer):
             else:
                 self._discover_characteristics()
             return
-        elif event.status != nrf_events.BLEGattStatusCode.success:
+        elif event.status != nrf_types.BLEGattStatusCode.success:
             self._on_complete(event.status)
             return
 
@@ -272,7 +272,7 @@ class _CharacteristicDiscoverer(_Discoverer):
         if len(uuid_bytes) != 16:
             logger.error("Characteristic UUID not 16 bytes: {}".format(uuid_bytes))
         else:
-            nrf_uuid = nrf_events.BLEUUID.from_array(uuid_bytes)
+            nrf_uuid = nrf_types.BLEUUID.from_array(uuid_bytes)
             self.ble_device.uuid_manager.register_uuid(nrf_uuid)
             logger.info("Discovered UUID: {}".format(nrf_uuid))
             char.uuid = nrf_uuid
@@ -303,7 +303,7 @@ class _DescriptorDiscoverer(_Discoverer):
             self._discover_next_handle_range()
         return on_complete_waitable
 
-    def _on_complete(self, status=nrf_events.BLEGattStatusCode.success):
+    def _on_complete(self, status=nrf_types.BLEGattStatusCode.success):
         self.peer.driver_event_unsubscribe(self._on_descriptor_discovery)
         self._on_complete_event.notify(self, _DiscoveryEventArgs(self._state.services, status))
 
@@ -353,10 +353,10 @@ class _DescriptorDiscoverer(_Discoverer):
         if event.conn_handle != self.peer.conn_handle:
             return
 
-        if event.status == nrf_events.BLEGattStatusCode.attribute_not_found:
+        if event.status == nrf_types.BLEGattStatusCode.attribute_not_found:
             self._on_complete()
             return
-        elif event.status != nrf_events.BLEGattStatusCode.success:
+        elif event.status != nrf_types.BLEGattStatusCode.success:
             self._on_complete(event.status)
             return
 
@@ -377,7 +377,7 @@ class _DescriptorDiscoverer(_Discoverer):
         self._discover_next_handle_range()
 
 
-class DatabaseDiscoverer(object):
+class DatabaseDiscoverer:
     def __init__(self, ble_device, peer):
         """
         :type ble_device: blatann.device.BleDevice
@@ -405,7 +405,7 @@ class DatabaseDiscoverer(object):
         :type event_args: _DiscoveryEventArgs
         """
         logger.info("Service Discovery complete")
-        if event_args.status != nrf_events.BLEGattStatusCode.success:
+        if event_args.status != nrf_types.BLEGattStatusCode.success:
             logger.error("Error discovering services: {}".format(event_args.status))
             self._on_complete([], event_args.status)
         else:
@@ -417,7 +417,7 @@ class DatabaseDiscoverer(object):
         :type event_args: _DiscoveryEventArgs
         """
         logger.info("Characteristic Discovery complete")
-        if event_args.status != nrf_events.BLEGattStatusCode.success:
+        if event_args.status != nrf_types.BLEGattStatusCode.success:
             logger.error("Error discovering characteristics: {}".format(event_args.status))
             self._on_complete([], event_args.status)
         else:

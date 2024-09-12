@@ -7,13 +7,38 @@ from pc_ble_driver_py.exceptions import NordicSemiException
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_types.enums import *
+from blatann.nrf.nrf_types.enums import BLEGapAdvType, BLEGapPhy
 from blatann.utils import repr_format
 
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    "BLE_GAP_DEVNAME_DEFAULT",
+    "BLE_GAP_EVENT_LENGTH_MIN",
+    "BLEAdvData",
+    "BLEGapAddr",
+    "BLEGapAddrTypes",
+    "BLEGapAdvParams",
+    "BLEGapConnParams",
+    "BLEGapDataLengthParams",
+    "BLEGapPhys",
+    "BLEGapPrivacyParams",
+    "BLEGapScanParams",
+    "adv_interval_range",
+    "conn_interval_range",
+    "conn_timeout_range",
+    "scan_interval_range",
+    "scan_timeout_range",
+    "scan_window_range",
+    "TimeRange",
+]
 
-class TimeRange(object):
+
+BLE_GAP_DEVNAME_DEFAULT = driver.BLE_GAP_DEVNAME_DEFAULT
+BLE_GAP_EVENT_LENGTH_MIN = driver.BLE_GAP_EVENT_LENGTH_MIN
+
+
+class TimeRange:
 
     def __init__(self, name, val_min, val_max, unit_ms_conversion, divisor=1.0, units="ms"):
         self._name = name
@@ -61,7 +86,7 @@ conn_timeout_range = TimeRange("Connection Timeout",
                                driver.BLE_GAP_CP_CONN_SUP_TIMEOUT_MIN, driver.BLE_GAP_CP_CONN_SUP_TIMEOUT_MAX, util.UNIT_10_MS)
 
 
-class BLEGapAdvParams(object):
+class BLEGapAdvParams:
     def __init__(self, interval_ms, timeout_s, advertising_type=BLEGapAdvType.connectable_undirected, channel_mask=None):
         self.interval_ms = interval_ms
         self.timeout_s = timeout_s
@@ -96,7 +121,7 @@ class BLEGapAdvParams(object):
             ch_mask_str)
 
 
-class BLEGapScanParams(object):
+class BLEGapScanParams:
     def __init__(self, interval_ms, window_ms, timeout_s, active=True):
         self.interval_ms = interval_ms
         self.window_ms = window_ms
@@ -116,7 +141,7 @@ class BLEGapScanParams(object):
         return scan_params
 
 
-class BLEGapConnParams(object):
+class BLEGapConnParams:
     def __init__(self, min_conn_interval_ms, max_conn_interval_ms, conn_sup_timeout_ms, slave_latency):
         self.min_conn_interval_ms = min_conn_interval_ms
         self.max_conn_interval_ms = max_conn_interval_ms
@@ -172,8 +197,7 @@ class BLEGapAddrTypes(IntEnum):
     anonymous = 127  # This isn't defined in the headers for Softdevice v5 and was added in v6
 
 
-class BLEGapAddr(object):
-
+class BLEGapAddr:
     def __init__(self, addr_type, addr):
         assert isinstance(addr_type, BLEGapAddrTypes), 'Invalid argument type'
         self.addr_type = addr_type
@@ -255,7 +279,7 @@ class BLEGapAddr(object):
         return "{}({})".format(self.__class__.__name__, str(self))
 
 
-class BLEAdvData(object):
+class BLEAdvData:
     class Types(Enum):
         flags = driver.BLE_GAP_AD_TYPE_FLAGS
         service_16bit_uuid_more_available = driver.BLE_GAP_AD_TYPE_16BIT_SERVICE_UUID_MORE_AVAILABLE
@@ -353,7 +377,7 @@ class BLEAdvData(object):
         return str(self.records)
 
 
-class BLEGapDataLengthParams(object):
+class BLEGapDataLengthParams:
     def __init__(self, max_tx_octets=0, max_rx_octets=0, max_tx_time_us=0, max_rx_time_us=0):
         self.max_tx_octets = max_tx_octets
         self.max_rx_octets = max_rx_octets
@@ -372,7 +396,7 @@ class BLEGapDataLengthParams(object):
         return repr_format(self, tx=self.max_tx_octets, rx=self.max_rx_octets)
 
 
-class BLEGapPhys(object):
+class BLEGapPhys:
     def __init__(self, tx_phys=BLEGapPhy.auto, rx_phys=BLEGapPhy.auto):
         self.tx_phys = tx_phys
         self.rx_phys = rx_phys
@@ -384,7 +408,7 @@ class BLEGapPhys(object):
         return params
 
 
-class BLEGapPrivacyParams(object):
+class BLEGapPrivacyParams:
     DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S = driver.BLE_GAP_DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S
 
     def __init__(self, enabled=False, resolvable_addr=False,

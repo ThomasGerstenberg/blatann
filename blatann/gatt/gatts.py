@@ -4,11 +4,11 @@ import asyncio
 import logging
 import typing
 from collections import namedtuple
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Union
 
 from blatann import gatt
 from blatann.bt_sig.uuids import DescriptorUuid
-from blatann.event_args import *
+from blatann.event_args import NotificationCompleteEventArgs, SubscriptionStateChangeEventArgs, WriteEventArgs
 from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.gatt import PresentationFormat
@@ -18,7 +18,7 @@ from blatann.nrf import nrf_events, nrf_types
 from blatann.services.ble_data_types import BleDataStream
 from blatann.uuid import Uuid
 from blatann.waitables.event_queue import AsyncEventQueue, EventQueue
-from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
+from blatann.waitables.event_waitable import IdBasedEventWaitable
 
 if typing.TYPE_CHECKING:
     from blatann.device import BleDevice
@@ -187,8 +187,11 @@ class GattsCharacteristic(gatt.Characteristic):
         """
         if isinstance(data, BleDataStream):
             value = data.value
-        if isinstance(data, str):
+        elif isinstance(data, str):
             value = data.encode(self.string_encoding)
+        else:
+            # Assumed bytes, send the data as-is
+            value = data
         if not self.notifiable:
             raise InvalidOperationException("Cannot notify client. "
                                             "{} not set up for notifications or indications".format(self.uuid))
@@ -196,7 +199,7 @@ class GattsCharacteristic(gatt.Characteristic):
             raise InvalidStateException("Client is not subscribed, cannot notify client")
 
         notification_id = self._notification_manager.notify(self, self._value_attr.handle,
-                                                            self._on_notify_complete, data)
+                                                            self._on_notify_complete, value)
         return IdBasedEventWaitable(self._on_notify_complete, notification_id)
 
     def add_descriptor(self, uuid: Uuid, properties: GattsAttributeProperties,
@@ -621,8 +624,8 @@ class GattsDatabase(gatt.GattDatabase):
         if not event.write:
             return
         # execute writes can span multiple services and characteristics. Should only reply at the top-level here
-        if event.write.write_op not in [nrf_events.BLEGattsWriteOperation.exec_write_req_now,
-                                        nrf_events.BLEGattsWriteOperation.exec_write_req_cancel]:
+        if event.write.write_op not in [nrf_types.BLEGattsWriteOperation.exec_write_req_now,
+                                        nrf_types.BLEGattsWriteOperation.exec_write_req_cancel]:
             return
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, False)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)

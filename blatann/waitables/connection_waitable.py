@@ -4,25 +4,23 @@ import asyncio
 import typing
 
 from blatann.exceptions import InvalidStateException
-from blatann.nrf.nrf_events import BLEGapRoles, BLEGapTimeoutSrc, GapEvtConnected, GapEvtTimeout
+from blatann.nrf import nrf_events, nrf_types
 from blatann.waitables.waitable import Waitable
 
 if typing.TYPE_CHECKING:
-    from typing import Tuple
-
     from blatann.device import BleDevice
     from blatann.event_args import DisconnectionEventArgs
     from blatann.peer import Client, Peer, Peripheral
 
 
 class ConnectionWaitable(Waitable):
-    def __init__(self, ble_device: BleDevice, current_peer: Peer, role=BLEGapRoles.periph):
+    def __init__(self, ble_device: BleDevice, current_peer: Peer, role=nrf_types.BLEGapRoles.periph):
         super().__init__()
         self._peer = current_peer
         self._role = role
         self.ble_driver = ble_device.ble_driver
-        ble_device.ble_driver.event_subscribe(self._on_connected_event, GapEvtConnected)
-        ble_device.ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
+        ble_device.ble_driver.event_subscribe(self._on_connected_event, nrf_events.GapEvtConnected)
+        ble_device.ble_driver.event_subscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
 
     def wait(self, timeout: float = None, exception_on_timeout=True) -> Peer:
         return super().wait(timeout, exception_on_timeout)
@@ -31,23 +29,23 @@ class ConnectionWaitable(Waitable):
         return await super().as_async(timeout, exception_on_timeout, loop)
 
     def _event_occured(self, ble_driver, result):
-        ble_driver.event_unsubscribe(self._on_connected_event, GapEvtConnected)
-        ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
+        ble_driver.event_unsubscribe(self._on_connected_event, nrf_events.GapEvtConnected)
+        ble_driver.event_unsubscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
         self._notify(result)
 
     def _on_timeout(self):
-        self.ble_driver.event_unsubscribe(self._on_connected_event, GapEvtConnected)
-        self.ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
+        self.ble_driver.event_unsubscribe(self._on_connected_event, nrf_events.GapEvtConnected)
+        self.ble_driver.event_unsubscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
 
-    def _on_timeout_event(self, ble_driver, event: GapEvtTimeout):
-        if self._role == BLEGapRoles.periph:
-            expected_source = BLEGapTimeoutSrc.advertising
+    def _on_timeout_event(self, ble_driver, event: nrf_events.GapEvtTimeout):
+        if self._role == nrf_types.BLEGapRoles.periph:
+            expected_source = nrf_types.BLEGapTimeoutSrc.advertising
         else:
-            expected_source = BLEGapTimeoutSrc.conn
+            expected_source = nrf_types.BLEGapTimeoutSrc.conn
         if event.src == expected_source:
             self._event_occured(ble_driver, None)
 
-    def _on_connected_event(self, ble_driver, event: GapEvtConnected):
+    def _on_connected_event(self, ble_driver, event: nrf_events.GapEvtConnected):
         if event.role != self._role:
             return
         self._event_occured(ble_driver, self._peer)
@@ -55,7 +53,7 @@ class ConnectionWaitable(Waitable):
 
 class ClientConnectionWaitable(ConnectionWaitable):
     def __init__(self, ble_device: BleDevice, peer: Peer):
-        super().__init__(ble_device, peer, BLEGapRoles.periph)
+        super().__init__(ble_device, peer, nrf_types.BLEGapRoles.periph)
 
     def wait(self, timeout=None, exception_on_timeout=True) -> Client:
         return super().wait(timeout, exception_on_timeout)
@@ -63,7 +61,7 @@ class ClientConnectionWaitable(ConnectionWaitable):
 
 class PeripheralConnectionWaitable(ConnectionWaitable):
     def __init__(self, ble_device, peer):
-        super().__init__(ble_device, peer, BLEGapRoles.central)
+        super().__init__(ble_device, peer, nrf_types.BLEGapRoles.central)
 
     def wait(self, timeout=None, exception_on_timeout=True) -> Peripheral:
         return super().wait(timeout, exception_on_timeout)

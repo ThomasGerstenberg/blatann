@@ -88,7 +88,7 @@ class BlatannTestCase(TestCase):
             self.fail(self._formatMessage(message, standard_msg))
 
 
-class TestParams(object):
+class TestParams:
     def __init__(self, test_params, setup=None, teardown=None, long_running_params=None):
         self.test_params = test_params
         self.long_running_params = long_running_params or []
@@ -150,7 +150,7 @@ def long_running(func):
     return f
 
 
-class EventCollector(object):
+class EventCollector:
     def __init__(self):
         self._q = queue.Queue()
 

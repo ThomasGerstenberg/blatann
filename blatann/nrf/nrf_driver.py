@@ -39,17 +39,17 @@ from __future__ import annotations
 
 import atexit
 import functools
+import logging
 import queue
 import traceback
 from threading import Event, Lock, Thread
 
 import wrapt
-from pc_ble_driver_py.exceptions import NordicSemiException
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_events import *
-from blatann.nrf.nrf_types import *
+from blatann.nrf.nrf_events import *  # noqa: F403
+from blatann.nrf.nrf_types import *  # noqa: F403
 from blatann.nrf.nrf_types.config import BleConnConfig, BleEnableConfig
 
 logger = logging.getLogger(__name__)
@@ -86,12 +86,12 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
     return wrapper(wrapped)
 
 
-class NrfDriverObserver(object):
+class NrfDriverObserver:
     def on_driver_event(self, nrf_driver, event):
         pass
 
 
-class NrfDriver(object):
+class NrfDriver:
     default_baud_rate = 1000000
     ATT_MTU_DEFAULT = driver.BLE_GATT_ATT_MTU_DEFAULT
 
@@ -733,7 +733,7 @@ class NrfDriver(object):
             for obs in observers:
                 try:
                     obs.on_driver_event(self, event)
-                except:
+                except Exception:  # noqa: E722
                     traceback.print_exc()
 
             # Call all the handlers for the event type provided
@@ -742,7 +742,7 @@ class NrfDriver(object):
                     for handler in handlers:
                         try:
                             handler(self, event)
-                        except:
+                        except Exception:  # noqa: E722
                             traceback.print_exc()
 
         self._event_stopped.set()

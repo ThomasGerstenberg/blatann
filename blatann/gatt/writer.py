@@ -18,7 +18,7 @@ class GattcWriteCompleteEventArgs(EventArgs):
         self.data = data
 
 
-class GattcWriter(object):
+class GattcWriter:
     """
     Class which implements the state machine for writing a value to a peripheral's attribute
     """
@@ -105,7 +105,7 @@ class GattcWriter(object):
             return
         if event.attr_handle != self._handle and event.write_op != nrf_types.BLEGattWriteOperation.execute_write_req:
             return
-        if event.status != nrf_events.BLEGattStatusCode.success:
+        if event.status != nrf_types.BLEGattStatusCode.success:
             self._complete(event.status)
             return
 
@@ -122,6 +122,6 @@ class GattcWriter(object):
             logger.error("Got unknown write operation: {}".format(event))
             self._complete(nrf_types.BLEGattStatusCode.unknown)
 
-    def _complete(self, status=nrf_events.BLEGattStatusCode.success):
+    def _complete(self, status=nrf_types.BLEGattStatusCode.success):
         self._busy = False
         self._on_write_complete.notify(self, GattcWriteCompleteEventArgs(self._handle, status, self._data))

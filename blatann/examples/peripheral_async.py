@@ -156,9 +156,8 @@ def on_passkey_entry(peer: Client, passkey_event_args: PasskeyEntryEventArgs):
     passkey_event_args.resolve(passkey)
 
 
-async def _main(serial_port):
-    # Create and open the device
-    ble_device = BleDevice(serial_port)
+async def _main(ble_device: BleDevice):
+    # Open the device
     ble_device.configure()
     ble_device.open()
 
@@ -223,7 +222,14 @@ async def _main(serial_port):
 
 
 def main(serial_port):
-    asyncio.run(_main(serial_port), debug=True)
+    ble_device = BleDevice(serial_port)
+    try:
+        asyncio.run(_main(ble_device), debug=True)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Ensure the device is closed
+        ble_device.close()
 
 
 if __name__ == '__main__':

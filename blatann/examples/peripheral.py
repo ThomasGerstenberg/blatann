@@ -175,7 +175,7 @@ def on_passkey_entry(peer, passkey_event_args):
     passkey_event_args.resolve(passkey)
 
 
-class CountingCharacteristicThread(object):
+class CountingCharacteristicThread:
     """
     Thread which updates the counting characteristic and notifies
     the client each time its updated.
@@ -304,7 +304,7 @@ def main(serial_port):
     counting_char_thread.join()
     logger.info("Done")
     ble_device.close()
-    
+
 
 if __name__ == '__main__':
     main("COM6")

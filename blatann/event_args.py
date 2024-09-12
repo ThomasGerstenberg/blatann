@@ -7,6 +7,34 @@ from blatann.gap.gap_types import ActiveConnectionParameters
 from blatann.nrf.nrf_types import BLEGattStatusCode as GattStatusCode
 from blatann.utils import repr_format
 
+__all__ = [
+    "GattOperationCompleteReason",
+    "EventArgs",
+    "DisconnectionEventArgs",
+    "MtuSizeUpdatedEventArgs",
+    "DataLengthUpdatedEventArgs",
+    "PhyUpdatedEventArgs",
+    "ConnectionParametersUpdatedEventArgs",
+    "SecurityProcess",
+    "PairingCompleteEventArgs",
+    "SecurityLevelChangedEventArgs",
+    "PasskeyEntryEventArgs",
+    "PasskeyDisplayEventArgs",
+    "PeripheralSecurityRequestEventArgs",
+    "PairingRejectedReason",
+    "PairingRejectedEventArgs",
+    "WriteEventArgs",
+    "DecodedWriteEventArgs",
+    "SubscriptionStateChangeEventArgs",
+    "NotificationCompleteEventArgs",
+    "ReadCompleteEventArgs",
+    "WriteCompleteEventArgs",
+    "SubscriptionWriteCompleteEventArgs",
+    "NotificationReceivedEventArgs",
+    "DatabaseDiscoveryCompleteEventArgs",
+    "DecodedReadCompleteEventArgs",
+]
+
 TDecodedValue = TypeVar("TDecodedValue")
 
 
@@ -30,7 +58,7 @@ class GattOperationCompleteReason(Enum):
     TIMED_OUT = 6
 
 
-class EventArgs(object):
+class EventArgs:
     """
     Base Event Arguments class
     """

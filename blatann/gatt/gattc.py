@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Iterable, List, Optional
+from typing import Callable, Iterable, List, Optional
 
 from blatann import gatt
 from blatann.bt_sig.uuids import DeclarationUuid, DescriptorUuid, Uuid
-from blatann.event_args import *
+from blatann.event_args import (
+    NotificationReceivedEventArgs, ReadCompleteEventArgs, SubscriptionWriteCompleteEventArgs, WriteCompleteEventArgs
+)
 from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException
 from blatann.gatt.gattc_attribute import GattcAttribute
@@ -397,7 +399,7 @@ class GattcCharacteristic(gatt.Characteristic):
             return
 
         is_indication = False
-        if event.hvx_type == nrf_events.BLEGattHVXType.indication:
+        if event.hvx_type == nrf_types.BLEGattHVXType.indication:
             is_indication = True
             self.ble_device.ble_driver.ble_gattc_hv_confirm(event.conn_handle, event.attr_handle)
 

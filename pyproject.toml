@@ -41,8 +41,13 @@ line-length = 120
 target-version = "py37"
 
 [tool.ruff.lint]
-# TODO: Remove these and fix instances once others are cleaned up
-ignore = ["F401", "F403", "F405"]
+select = ["E4", "E7", "E9", "F", "W"]
+ignore = ["F401"]  # ignore unused imports globally, revisit this suppression later
+
+[tool.ruff.lint.per-file-ignores]
+"blatann/nrf/nrf_driver.py" = ["F405"]
+"blatann/nrf/nrf_events/__init__.py" = ["F403", "F405"]
+"blatann/nrf/nrf_types/__init__.py" = ["F403"]
 
 [tool.ruff.format]
 quote-style = "double"

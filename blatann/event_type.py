@@ -50,7 +50,7 @@ class Event(Generic[TSender, TEvent]):
             entry = handler
         with self._handler_lock:
             if handler not in self._handlers_set:
-                self._handlers.append(handler)
+                self._handlers.append(entry)
                 self._handlers_set.add(handler)
         return EventSubscriptionContext(self, handler)
 

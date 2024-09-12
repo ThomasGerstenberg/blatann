@@ -5,6 +5,21 @@ from blatann.nrf.nrf_events.gatt_events import *
 from blatann.nrf.nrf_events.generic_events import *
 from blatann.nrf.nrf_events.smp_events import *
 
+from blatann.nrf.nrf_events import (  # isort: skip
+    gap_events as _gap_events,
+    gatt_events as _gatt_events,
+    generic_events as _generic_events,
+    smp_events as _smp_events
+)
+
+__all__ = [
+    *_gap_events.__all__,
+    *_gatt_events.__all__,
+    *_generic_events.__all__,
+    *_smp_events.__all__,
+    "event_decode",
+]
+
 _event_classes = [
     EvtUserMemoryRequest,
 

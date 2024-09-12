@@ -8,7 +8,7 @@ from blatann.gatt import Attribute
 from blatann.gatt.managers import GattcOperationManager
 from blatann.nrf import nrf_types
 from blatann.uuid import Uuid
-from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
+from blatann.waitables.event_waitable import IdBasedEventWaitable
 
 logger = logging.getLogger(__name__)
 

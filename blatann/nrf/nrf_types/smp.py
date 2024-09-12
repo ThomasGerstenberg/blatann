@@ -2,17 +2,32 @@ from __future__ import annotations
 
 import binascii
 import logging
-from enum import Enum
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_types.enums import *
 from blatann.nrf.nrf_types.gap import BLEGapAddr
+
+__all__ = [
+    "BLEGapDhKey",
+    "BLEGapEncryptInfo",
+    "BLEGapEncryptKey",
+    "BLEGapIdKey",
+    "BLEGapMasterId",
+    "BLEGapPublicKey",
+    "BLEGapSecKeyDist",
+    "BLEGapSecKeys",
+    "BLEGapSecKeyset",
+    "BLEGapSecLevels",
+    "BLEGapSecMode",
+    "BLEGapSecModeType",
+    "BLEGapSecParams",
+    "BLEGapSignKey",
+]
 
 logger = logging.getLogger(__name__)
 
 
-class BLEGapSecMode(object):
+class BLEGapSecMode:
     def __init__(self, sec_mode, level):
         self.sm = sec_mode
         self.level = level
@@ -28,7 +43,7 @@ class BLEGapSecMode(object):
         return cls(params.sm, params.lv)
 
 
-class BLEGapSecModeType(object):
+class BLEGapSecModeType:
     NO_ACCESS = BLEGapSecMode(0, 0)
     OPEN = BLEGapSecMode(1, 1)
     ENCRYPTION = BLEGapSecMode(1, 2)
@@ -38,7 +53,7 @@ class BLEGapSecModeType(object):
     SIGN_OR_ENCRYPT_MITM = BLEGapSecMode(2, 2)
 
 
-class BLEGapSecLevels(object):
+class BLEGapSecLevels:
     def __init__(self, lv1, lv2, lv3, lv4):
         self.lv1 = lv1
         self.lv2 = lv2
@@ -65,7 +80,7 @@ class BLEGapSecLevels(object):
                                                                    self.lv1, self.lv2, self.lv3, self.lv4)
 
 
-class BLEGapSecKeyDist(object):
+class BLEGapSecKeyDist:
     def __init__(self, enc_key=False, id_key=False, sign_key=False, link_key=False):
         self.enc_key = enc_key
         self.id_key = id_key
@@ -92,7 +107,7 @@ class BLEGapSecKeyDist(object):
             self.__class__.__name__, self.enc_key, self.id_key, self.sign_key, self.link_key)
 
 
-class BLEGapSecParams(object):
+class BLEGapSecParams:
     def __init__(self, bond, mitm, le_sec_pairing, keypress_noti, io_caps, oob, min_key_size, max_key_size, kdist_own,
                  kdist_peer):
         self.bond = bond
@@ -143,7 +158,7 @@ class BLEGapSecParams(object):
                                                          self.kdist_own, self.kdist_peer)
 
 
-class BLEGapMasterId(object):
+class BLEGapMasterId:
     RAND_LEN = driver.BLE_GAP_SEC_RAND_LEN
 
     RAND_INVALID = b"\x00" * RAND_LEN
@@ -190,7 +205,7 @@ class BLEGapMasterId(object):
         return "{}(e: {!r}, r: {!r})".format(self.__class__.__name__, self.ediv, binascii.hexlify(self.rand))
 
 
-class BLEGapEncryptInfo(object):
+class BLEGapEncryptInfo:
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 
     def __init__(self, ltk=b"", lesc=False, auth=False):
@@ -234,7 +249,7 @@ class BLEGapEncryptInfo(object):
         return "Encrypt(ltk: {}, lesc: {}, auth: {})".format(binascii.hexlify(self.ltk), self.lesc, self.auth)
 
 
-class BLEGapEncryptKey(object):
+class BLEGapEncryptKey:
     def __init__(self, enc_info=None, master_id=None):
         self.enc_info = enc_info or BLEGapEncryptInfo()
         self.master_id = master_id or BLEGapMasterId()
@@ -270,7 +285,7 @@ class BLEGapEncryptKey(object):
         return "key: {}, master_id: {}".format(self.enc_info, self.master_id)
 
 
-class BLEGapIdKey(object):
+class BLEGapIdKey:
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 
     def __init__(self, irk=b"", peer_addr=None):
@@ -314,7 +329,7 @@ class BLEGapIdKey(object):
         return "irk: {}, peer: {}".format(binascii.hexlify(self.irk).decode("ascii"), self.peer_addr)
 
 
-class BLEGapPublicKey(object):
+class BLEGapPublicKey:
     KEY_LENGTH = driver.BLE_GAP_LESC_P256_PK_LEN
 
     def __init__(self, key=b""):
@@ -337,7 +352,7 @@ class BLEGapPublicKey(object):
         return binascii.hexlify(self.key).decode("ascii")
 
 
-class BLEGapDhKey(object):
+class BLEGapDhKey:
     KEY_LENGTH = driver.BLE_GAP_LESC_DHKEY_LEN
 
     def __init__(self, key=b""):
@@ -361,7 +376,7 @@ class BLEGapDhKey(object):
         return binascii.hexlify(self.key).decode("ascii")
 
 
-class BLEGapSignKey(object):
+class BLEGapSignKey:
     KEY_LENGTH = driver.BLE_GAP_SEC_KEY_LEN
 
     def __init__(self, key=b""):
@@ -393,7 +408,7 @@ class BLEGapSignKey(object):
         return binascii.hexlify(self.key).decode("ascii")
 
 
-class BLEGapSecKeys(object):
+class BLEGapSecKeys:
     def __init__(self, enc_key=None, id_key=None, sign_key=None, public_key=None):
         if not enc_key:
             enc_key = BLEGapEncryptKey()
@@ -429,7 +444,7 @@ class BLEGapSecKeys(object):
                                                               self.sign_key, self.public_key)
 
 
-class BLEGapSecKeyset(object):
+class BLEGapSecKeyset:
     def __init__(self, own_keys=None, peer_keys=None):
         if not own_keys:
             own_keys = BLEGapSecKeys()

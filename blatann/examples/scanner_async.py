@@ -11,9 +11,8 @@ from blatann.examples import example_utils
 logger = example_utils.setup_logger(level="INFO")
 
 
-async def _main(serial_port):
-    # Create and open the device
-    ble_device = BleDevice(serial_port)
+async def _main(ble_device: BleDevice):
+    # Open the device
     ble_device.open()
 
     logger.info("Scanning...")
@@ -37,7 +36,14 @@ async def _main(serial_port):
 
 
 def main(serial_port):
-    asyncio.run(_main(serial_port))
+    ble_device = BleDevice(serial_port)
+    try:
+        asyncio.run(_main(ble_device))
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Ensure the ble device is closed on exit
+        ble_device.close()
 
 
 if __name__ == '__main__':

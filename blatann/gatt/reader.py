@@ -18,7 +18,7 @@ class GattcReadCompleteEventArgs(EventArgs):
         self.data = data
 
 
-class GattcReader(object):
+class GattcReader:
     """
     Class which implements the state machine for completely reading a peripheral's attribute
     """
@@ -81,7 +81,7 @@ class GattcReader(object):
         """
         if event.conn_handle != self.peer.conn_handle or event.attr_handle != self._handle:
             return
-        if event.status != nrf_events.BLEGattStatusCode.success:
+        if event.status != nrf_types.BLEGattStatusCode.success:
             self._complete(event.status)
             return
 
@@ -94,7 +94,7 @@ class GattcReader(object):
         else:
             self._complete()
 
-    def _complete(self, status=nrf_events.BLEGattStatusCode.success):
+    def _complete(self, status=nrf_types.BLEGattStatusCode.success):
         self._busy = False
         event_args = GattcReadCompleteEventArgs(self._handle, status, bytes(self._data))
         self._on_read_complete_event.notify(self, event_args)

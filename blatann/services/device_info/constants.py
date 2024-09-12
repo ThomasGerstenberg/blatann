@@ -16,7 +16,7 @@ REGULATORY_CERT_UUID = CharacteristicUuid.ieee11073_20601_regulatory_certificati
 PNP_ID_UUID = CharacteristicUuid.pnp_id
 
 
-class _Characteristic(object):
+class _Characteristic:
     def __init__(self, name, uuid):
         self.uuid = uuid
         self.name = name

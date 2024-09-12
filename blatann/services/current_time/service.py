@@ -9,15 +9,21 @@ from blatann.event_args import DecodedReadCompleteEventArgs, DecodedWriteEventAr
 from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
-from blatann.services.current_time.constants import *
-from blatann.services.current_time.data_types import *
+from blatann.services.current_time.constants import (
+    CURRENT_TIME_CHARACTERISTIC_UUID, CURRENT_TIME_SERVICE_UUID, LOCAL_TIME_INFO_CHARACTERISTIC_UUID,
+    REFERENCE_INFO_CHARACTERISTIC_UUID
+)
+from blatann.services.current_time.data_types import (
+    AdjustmentReason, AdjustmentReasonType, CurrentTime, DaylightSavingsTimeOffset, LocalTimeInfo, ReferenceTimeInfo,
+    TimeAccuracy, TimeSource
+)
 from blatann.services.decoded_event_dispatcher import DecodedReadWriteEventDispatcher
-from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
+from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)
 
 
-class CurrentTimeServer(object):
+class CurrentTimeServer:
 
     def __init__(self, service, is_writable=False,
                  enable_local_time_info_char=False, enable_ref_time_info_char=False):
@@ -208,7 +214,7 @@ class CurrentTimeServer(object):
         return cls(service, is_writable, enable_local_time_info_char, enable_ref_time_info_char)
 
 
-class CurrentTimeClient(object):
+class CurrentTimeClient:
 
     def __init__(self, gattc_service):
         """

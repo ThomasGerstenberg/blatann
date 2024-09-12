@@ -36,7 +36,7 @@ def repr_format(obj, *args, **kwargs):
     return "{}({})".format(obj.__class__.__name__, inner)
 
 
-class Stopwatch(object):
+class Stopwatch:
     def __init__(self):
         self._t_start = 0
         self._t_stop = 0
@@ -90,7 +90,7 @@ class Stopwatch(object):
         return self
 
 
-class SynchronousMonotonicCounter(object):
+class SynchronousMonotonicCounter:
     """
     Utility class which implements a thread-safe monotonic counter
     """

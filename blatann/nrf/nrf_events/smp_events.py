@@ -3,7 +3,22 @@ from __future__ import annotations
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.gap_events import GapEvt
-from blatann.nrf.nrf_types import *
+from blatann.nrf.nrf_types import (
+    BLEGapAddr, BLEGapAuthKeyType, BLEGapDhKey, BLEGapMasterId, BLEGapPublicKey, BLEGapSecKeyDist, BLEGapSecLevels,
+    BLEGapSecParams, BLEGapSecStatus
+)
+
+__all__ = [
+    "GapEvtAuthKeyRequest",
+    "GapEvtAuthStatus",
+    "GapEvtConnSecUpdate",
+    "GapEvtLescDhKeyRequest",
+    "GapEvtPasskeyDisplay",
+    "GapEvtSec",
+    "GapEvtSecInfoRequest",
+    "GapEvtSecParamsRequest",
+    "GapEvtSecRequest",
+]
 
 
 class GapEvtSec(GapEvt):
@@ -172,7 +187,7 @@ class GapEvtLescDhKeyRequest(GapEvtSec):
 
     def __init__(self, conn_handle, remote_public_key, oob_required):
         super(GapEvtLescDhKeyRequest, self).__init__(conn_handle)
-        self.remote_public_key = remote_public_key  # type: BLEGapDhKey
+        self.remote_public_key: BLEGapDhKey = remote_public_key
         self.oob_required = oob_required
 
     @classmethod

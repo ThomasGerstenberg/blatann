@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from blatann.bt_sig.assigned_numbers import Appearance
 from blatann.nrf import nrf_types
-from blatann.peer import ConnectionParameters, Union
+from blatann.peer import ConnectionParameters
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class GenericAccessService:
     DEVICE_NAME_MAX_LENGTH = 31
 
     def __init__(self, ble_driver,
-                 device_name=nrf_types.driver.BLE_GAP_DEVNAME_DEFAULT,
+                 device_name=nrf_types.BLE_GAP_DEVNAME_DEFAULT,
                  appearance=Appearance.unknown):
         """
         :type ble_driver: blatann.nrf.nrf_driver.NrfDriver

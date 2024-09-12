@@ -6,6 +6,12 @@ from enum import Enum
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
 
+__all__ = [
+    "BLE_CONN_HANDLE_INVALID",
+    "BLEUUID",
+    "BLEUUIDBase",
+]
+
 logger = logging.getLogger(__name__)
 
 BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
@@ -13,7 +19,7 @@ BLE_CONN_HANDLE_INVALID = driver.BLE_CONN_HANDLE_INVALID
 NoneType = type(None)
 
 
-class BLEUUIDBase(object):
+class BLEUUIDBase:
     BLE_UUID_TYPE_BLE = driver.BLE_UUID_TYPE_BLE
 
     def __init__(self, vs_uuid_base=None, uuid_type=None):
@@ -64,7 +70,7 @@ class BLEUUIDBase(object):
         return uuid
 
 
-class BLEUUID(object):
+class BLEUUID:
     class Standard(Enum):
         unknown = 0x0000
         service_primary = 0x2800

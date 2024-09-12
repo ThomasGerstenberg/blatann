@@ -1,14 +1,39 @@
+"""
+GATT Classes
+"""
 from __future__ import annotations
 
 import logging
-from enum import Enum
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_types.enums import *
-from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
-from blatann.nrf.nrf_types.smp import *
+from blatann.nrf.nrf_types.enums import BLEGattExecWriteFlag, BLEGattHVXType, BLEGattStatusCode, BLEGattWriteOperation
+from blatann.nrf.nrf_types.generic import BLEUUID
+from blatann.nrf.nrf_types.smp import BLEGapSecMode, BLEGapSecModeType
 from blatann.utils import repr_format
+
+__all__ = [
+    "BLE_GATT_HANDLE_INVALID",
+    "BLE_GATTS_ATTR_TAB_SIZE_DEFAULT",
+    "BLEGattcAttrInfo128",
+    "BLEGattcAttrInfo16",
+    "BLEGattcDescriptor",
+    "BLEGattCharacteristic",
+    "BLEGattCharacteristicProperties",
+    "BLEGattcWriteParams",
+    "BLEGattExtendedCharacteristicProperties",
+    "BleGattHandle",
+    "BLEGattsAttribute",
+    "BLEGattsAttrMetadata",
+    "BLEGattsAuthorizeParams",
+    "BLEGattsCharHandles",
+    "BLEGattsCharMetadata",
+    "BLEGattService",
+    "BLEGattsHvx",
+    "BLEGattsPresentationFormat",
+    "BLEGattsRwAuthorizeReplyParams",
+    "BLEGattsValue",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -16,24 +41,12 @@ NoneType = type(None)
 
 
 BLE_GATT_HANDLE_INVALID = driver.BLE_GATT_HANDLE_INVALID
+BLE_GATTS_ATTR_TAB_SIZE_DEFAULT = driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT
 
-"""
-GATT Classes
-"""
 # TODO: BleGattCharExtProps
 
 
-class BleGattEnableParams(object):
-    def __init__(self, max_att_mtu=0):
-        self.att_mtu = max_att_mtu
-
-    def to_c(self):
-        params = driver.ble_gatt_enable_params_t()
-        params.att_mtu = self.att_mtu
-        return params
-
-
-class BLEGattCharacteristicProperties(object):
+class BLEGattCharacteristicProperties:
     def __init__(self, broadcast=False, read=False, write_wo_resp=False,
                  write=False, notify=False, indicate=False, auth_signed_wr=False):
         self.broadcast = broadcast
@@ -66,7 +79,7 @@ class BLEGattCharacteristicProperties(object):
         return params
 
 
-class BLEGattExtendedCharacteristicProperties(object):
+class BLEGattExtendedCharacteristicProperties:
     def __init__(self, reliable_write=False, writable_aux=False):
         self.reliable_write = reliable_write
         self.writable_aux = writable_aux
@@ -82,7 +95,7 @@ class BLEGattExtendedCharacteristicProperties(object):
         return cls(params.reliable_wr, params.wr_aux)
 
 
-class BLEGattService(object):
+class BLEGattService:
     srvc_uuid = BLEUUID(BLEUUID.Standard.service_primary)
 
     def __init__(self, uuid, start_handle, end_handle):
@@ -109,7 +122,7 @@ class BLEGattService(object):
                                                                     self.start_handle, self.end_handle)
 
 
-class BLEGattCharacteristic(object):
+class BLEGattCharacteristic:
     char_uuid = BLEUUID(BLEUUID.Standard.characteristic)
 
     def __init__(self, uuid, handle_decl, handle_value, data_decl=None, data_value=None, char_props=None):
@@ -143,7 +156,7 @@ class BLEGattCharacteristic(object):
         )
 
 
-class BleGattHandle(object):
+class BleGattHandle:
     def __init__(self, handle=BLE_GATT_HANDLE_INVALID):
         self.handle = handle
 
@@ -153,7 +166,7 @@ GATTC Classes
 """
 
 
-class BLEGattcWriteParams(object):
+class BLEGattcWriteParams:
     def __init__(self, write_op, flags, handle, data, offset):
         assert isinstance(write_op, BLEGattWriteOperation), 'Invalid argument type'
         assert isinstance(flags, BLEGattExecWriteFlag), 'Invalid argument type'
@@ -168,8 +181,8 @@ class BLEGattcWriteParams(object):
         return cls(write_op=BLEGattWriteOperation(gattc_write_params.write_op),
                    flags=gattc_write_params.flags,
                    handle=gattc_write_params.handle,
-                   data=util.uint8_array_to_list(gattc_write_params.p_value,
-                                                 gattc_write_params.len))
+                   data=util.uint8_array_to_list(gattc_write_params.p_value, gattc_write_params.len),
+                   offset=gattc_write_params.offset)
 
     def to_c(self):
         self.__data_array = util.list_to_uint8_array(self.data)
@@ -188,7 +201,7 @@ class BLEGattcWriteParams(object):
                            flags=self.flags, data=self.data)
 
 
-class BLEGattcDescriptor(object):
+class BLEGattcDescriptor:
     def __init__(self, uuid, handle, data=None):
         self.handle = handle
         self.uuid = uuid
@@ -203,7 +216,7 @@ class BLEGattcDescriptor(object):
         return repr_format(self, handle=self.handle, uuid=self.uuid)
 
 
-class BLEGattcAttrInfo16(object):
+class BLEGattcAttrInfo16:
     def __init__(self, handle, uuid):
         self.handle = handle
         self.uuid = uuid
@@ -218,7 +231,7 @@ class BLEGattcAttrInfo16(object):
         return "{}(handle={!r}, uuid={})".format(self.__class__.__name__, self.handle, self.uuid)
 
 
-class BLEGattcAttrInfo128(object):
+class BLEGattcAttrInfo128:
     def __init__(self, attr_handle, uuid):
         self.handle = attr_handle
         self.uuid = uuid
@@ -239,20 +252,7 @@ GATTS Classes
 # TODO: BleGattsCharPf
 
 
-class BleGattsEnableParams(object):
-    def __init__(self, service_changed, attribute_table_size):
-        assert attribute_table_size % 4 == 0  # attribute table size must be a multiple of 4
-        self.service_changed = service_changed
-        self.attribute_table_size = attribute_table_size
-
-    def to_c(self):
-        params = driver.ble_gatts_enable_params_t()
-        params.service_changed = self.service_changed
-        params.attr_tab_size = self.attribute_table_size
-        return params
-
-
-class BLEGattsCharHandles(object):
+class BLEGattsCharHandles:
     def __init__(self, value_handle=0, user_desc_handle=0, cccd_handle=0, sccd_handle=0):
         self.value_handle = value_handle
         self.user_desc_handle = user_desc_handle
@@ -275,7 +275,7 @@ class BLEGattsCharHandles(object):
                    handle_params.sccd_handle)
 
 
-class BLEGattsAttribute(object):
+class BLEGattsAttribute:
     def __init__(self, uuid, attr_metadata, max_len, value=b""):
         self.uuid = uuid
         self.attribute_metadata = attr_metadata
@@ -297,7 +297,7 @@ class BLEGattsAttribute(object):
         return params
 
 
-class BLEGattsPresentationFormat(object):
+class BLEGattsPresentationFormat:
     def __init__(self, fmt, exponent, unit, namespace, description):
         self.format = fmt
         self.exponent = exponent
@@ -319,7 +319,7 @@ class BLEGattsPresentationFormat(object):
         return cls(params.format, params.exponent, params.unit, params.name_space, params.desc)
 
 
-class BLEGattsAttrMetadata(object):
+class BLEGattsAttrMetadata:
     def __init__(self, read_permissions=BLEGapSecModeType.OPEN, write_permissions=BLEGapSecModeType.OPEN,
                  variable_length=False, read_auth=False, write_auth=False):
         self.read_perm = read_permissions
@@ -348,7 +348,7 @@ class BLEGattsAttrMetadata(object):
         return cls(read_perm, write_perm, vlen, read_auth, write_auth)
 
 
-class BLEGattsCharMetadata(object):
+class BLEGattsCharMetadata:
     def __init__(self, char_props, user_description="", user_description_max_size=0,
                  user_desc_metadata=None, cccd_metadata=None, sccd_metadata=None, presentation_format=None):
         self.char_props = char_props
@@ -384,7 +384,7 @@ class BLEGattsCharMetadata(object):
         pass
 
 
-class BLEGattsAuthorizeParams(object):
+class BLEGattsAuthorizeParams:
     def __init__(self, gatt_status, update, offset=0, data=""):
         assert isinstance(gatt_status, BLEGattStatusCode)
         self.gatt_status = gatt_status
@@ -408,7 +408,7 @@ class BLEGattsAuthorizeParams(object):
         return repr_format(self, gatt_status=self.gatt_status, update=self.update, offset=self.offset)
 
 
-class BLEGattsRwAuthorizeReplyParams(object):
+class BLEGattsRwAuthorizeReplyParams:
     def __init__(self, read=None, write=None):
         assert isinstance(read, (BLEGattsAuthorizeParams, NoneType))
         assert isinstance(write, (BLEGattsAuthorizeParams, NoneType))
@@ -438,7 +438,7 @@ class BLEGattsRwAuthorizeReplyParams(object):
             return repr_format(self, write=self.write)
 
 
-class BLEGattsValue(object):
+class BLEGattsValue:
     def __init__(self, value, offset=0):
         self.value = value
         self.offset = offset
@@ -461,7 +461,7 @@ class BLEGattsValue(object):
         return repr_format(self, offset=self.offset, value=self.value)
 
 
-class BLEGattsHvx(object):
+class BLEGattsHvx:
     def __init__(self, char_handle, hvx_type, data, offset=0):
         assert isinstance(hvx_type, BLEGattHVXType)
 

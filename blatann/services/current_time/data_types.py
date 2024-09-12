@@ -8,6 +8,18 @@ from blatann.services import ble_data_types
 # See https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.current_time.xml
 # For more info about the data types and values defined here
 
+__all__ = [
+    "DaylightSavingsTimeOffset",
+    "AdjustmentReasonType",
+    "TimeSource",
+    "TimeAccuracy",
+    "AdjustmentReason",
+    "ExactTime256",
+    "CurrentTime",
+    "LocalTimeInfo",
+    "ReferenceTimeInfo",
+]
+
 
 class DaylightSavingsTimeOffset(IntEnum):
     standard_time = 0
@@ -30,7 +42,7 @@ class DaylightSavingsTimeOffset(IntEnum):
         dst_15_min_incrs = int((seconds / 3600.0) * 4)
         try:
             return DaylightSavingsTimeOffset(dst_15_min_incrs)
-        except:
+        except ValueError:
             # Cannot convert to one of the standard enums, use unknown
             return DaylightSavingsTimeOffset.unknown
 
@@ -142,7 +154,8 @@ class LocalTimeInfo(ble_data_types.BleCompoundDataType):
         tz_offset_hrs = tz_offset_15min / 4.0
         try:
             dst_offset = DaylightSavingsTimeOffset(dst_offset)
-        except:
+        except ValueError:
+            # Use just the integer value
             pass
         return LocalTimeInfo(tz_offset_hrs, dst_offset)
 
@@ -195,7 +208,8 @@ class ReferenceTimeInfo(ble_data_types.BleCompoundDataType):
 
         try:
             src = TimeSource(src)
-        except:
+        except ValueError:
+            # Use the raw int value
             pass
 
         return ReferenceTimeInfo(src, accuracy, hrs_since_update)

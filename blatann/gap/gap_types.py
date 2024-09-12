@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 
-from blatann.nrf import nrf_events, nrf_types
+from blatann.nrf import nrf_types
 
 
 class Phy(enum.IntFlag):
@@ -11,17 +11,17 @@ class Phy(enum.IntFlag):
 
     .. note:: Coded PHY is currently not supported (hardware limitation)
     """
-    auto = int(nrf_events.BLEGapPhy.auto)          #: Automatically select the PHY based on what's supported
-    one_mbps = int(nrf_events.BLEGapPhy.one_mbps)  #: 1 Mbps PHY
-    two_mbps = int(nrf_events.BLEGapPhy.two_mbps)  #: 2 Mbps PHY
+    auto = int(nrf_types.BLEGapPhy.auto)          #: Automatically select the PHY based on what's supported
+    one_mbps = int(nrf_types.BLEGapPhy.one_mbps)  #: 1 Mbps PHY
+    two_mbps = int(nrf_types.BLEGapPhy.two_mbps)  #: 2 Mbps PHY
     # NOT SUPPORTED coded = int(nrf_events.BLEGapPhy.coded)
 
 
-class PeerAddress(nrf_events.BLEGapAddr):
+class PeerAddress(nrf_types.BLEGapAddr):
     pass
 
 
-class ConnectionParameters(nrf_events.BLEGapConnParams):
+class ConnectionParameters(nrf_types.BLEGapConnParams):
     """
     Represents the connection parameters that are sent during negotiation. This includes
     the preferred min/max interval range, timeout, and slave latency
@@ -38,7 +38,7 @@ class ConnectionParameters(nrf_events.BLEGapConnParams):
         return str(self)
 
 
-class ActiveConnectionParameters(object):
+class ActiveConnectionParameters:
     """
     Represents the connection parameters that are currently in use with a peer device.
     This is similar to ConnectionParameters with the sole difference being

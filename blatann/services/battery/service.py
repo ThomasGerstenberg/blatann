@@ -3,18 +3,19 @@ from __future__ import annotations
 import binascii
 import logging
 
-from blatann.event_args import DecodedReadCompleteEventArgs, GattOperationCompleteReason, ReadCompleteEventArgs
+from blatann.event_args import DecodedReadCompleteEventArgs
 from blatann.event_type import Event, EventSource
 from blatann.gatt import GattStatusCode, SecurityLevel
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
-from blatann.services.battery.constants import *
-from blatann.services.battery.data_types import *
+from blatann.services.battery.constants import BATTERY_LEVEL_CHARACTERISTIC_UUID, BATTERY_SERVICE_UUID
+from blatann.services.battery.data_types import BatteryLevel
+from blatann.services.ble_data_types import BleDataStream
 from blatann.waitables import EventWaitable
 
 logger = logging.getLogger(__name__)
 
 
-class BatteryServer(object):
+class BatteryServer:
     def __init__(self, service, enable_notifications=False, security_level=SecurityLevel.OPEN):
         """
         :type service: GattsService
@@ -52,7 +53,7 @@ class BatteryServer(object):
         return BatteryServer(service, enable_notifications, security_level)
 
 
-class BatteryClient(object):
+class BatteryClient:
     def __init__(self, gattc_service):
         """
         :type gattc_service: blatann.gatt.gattc.GattcService
@@ -117,7 +118,7 @@ class BatteryClient(object):
         """
         decoded_value = None
         try:
-            stream = ble_data_types.BleDataStream(event_args.value)
+            stream = BleDataStream(event_args.value)
             decoded_value = BatteryLevel.decode(stream)
         except Exception as e:  # TODO not so generic
             logger.error("Failed to decode Battery Level, stream: [{}]".format(binascii.hexlify(event_args.value)))
@@ -134,7 +135,7 @@ class BatteryClient(object):
         decoded_value = None
         if event_args.status == GattStatusCode.success:
             try:
-                stream = ble_data_types.BleDataStream(event_args.value)
+                stream = BleDataStream(event_args.value)
                 decoded_value = BatteryLevel.decode(stream)
             except Exception as e:  # TODO not so generic
                 logger.error("Failed to decode Battery Level, stream: [{}]".format(binascii.hexlify(event_args.value)))
