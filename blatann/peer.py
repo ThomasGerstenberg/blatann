@@ -6,7 +6,10 @@ import logging
 import threading
 from typing import Callable, Optional, Tuple, Type
 
-from blatann.event_args import *
+from blatann.event_args import (
+    ConnectionParametersUpdatedEventArgs, DatabaseDiscoveryCompleteEventArgs, DataLengthUpdatedEventArgs,
+    DisconnectionEventArgs, MtuSizeUpdatedEventArgs, PairingRejectedReason, PhyUpdatedEventArgs
+)
 from blatann.event_type import Event, EventSource
 from blatann.gap import smp
 from blatann.gap.gap_types import ActiveConnectionParameters, ConnectionParameters, PeerAddress, Phy

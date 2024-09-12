@@ -7,7 +7,7 @@ from pc_ble_driver_py.exceptions import NordicSemiException
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_types.enums import *
+from blatann.nrf.nrf_types.enums import BLEGapAdvType, BLEGapPhy
 from blatann.utils import repr_format
 
 logger = logging.getLogger(__name__)

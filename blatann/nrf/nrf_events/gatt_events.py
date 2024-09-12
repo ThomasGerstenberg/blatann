@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from pc_ble_driver_py.exceptions import NordicSemiException
+
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.generic_events import BLEEvent
-from blatann.nrf.nrf_types import *
+from blatann.nrf.nrf_types import (
+    BLEUUID, BLEGattcAttrInfo16, BLEGattcAttrInfo128, BLEGattcDescriptor, BLEGattCharacteristic, BLEGattHVXType,
+    BLEGattService, BLEGattStatusCode, BLEGattsWriteOperation, BLEGattWriteOperation
+)
 
 __all__ = [
     "GattEvt",
@@ -29,8 +34,9 @@ __all__ = [
     "GattsEvtWrite",
 ]
 
+
 """
-Base Event Classes
+Base GATT Event Classes
 """
 
 

@@ -42,7 +42,7 @@ target-version = "py37"
 
 [tool.ruff.lint]
 # TODO: Remove these and fix instances once others are cleaned up
-ignore = ["F401", "F403", "F405"]
+ignore = ["F401", "F405"]
 
 [tool.ruff.format]
 quote-style = "double"

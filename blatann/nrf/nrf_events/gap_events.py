@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.generic_events import BLEEvent
-from blatann.nrf.nrf_types import *
+from blatann.nrf.nrf_types import (
+    BLEAdvData, BLEGapAddr, BLEGapAdvType, BLEGapConnParams, BLEGapPhy, BLEGapRoles, BLEGapTimeoutSrc, BLEHci
+)
 
 __all__ = [
     "GapEvt",

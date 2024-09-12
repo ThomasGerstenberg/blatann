@@ -45,12 +45,11 @@ import traceback
 from threading import Event, Lock, Thread
 
 import wrapt
-from pc_ble_driver_py.exceptions import NordicSemiException
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_events import *
-from blatann.nrf.nrf_types import *
+from blatann.nrf.nrf_events import *  # noqa: F403
+from blatann.nrf.nrf_types import *  # noqa: F403
 from blatann.nrf.nrf_types.config import BleConnConfig, BleEnableConfig
 
 logger = logging.getLogger(__name__)

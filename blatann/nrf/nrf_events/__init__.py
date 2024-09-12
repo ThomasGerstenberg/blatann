@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from blatann.nrf.nrf_events.gap_events import *
-from blatann.nrf.nrf_events.gatt_events import *
-from blatann.nrf.nrf_events.generic_events import *
-from blatann.nrf.nrf_events.smp_events import *
+from blatann.nrf.nrf_events.gap_events import *  # noqa: F403
+from blatann.nrf.nrf_events.gatt_events import *  # noqa: F403
+from blatann.nrf.nrf_events.generic_events import *  # noqa: F403
+from blatann.nrf.nrf_events.smp_events import *  # noqa: F403
 
 from blatann.nrf.nrf_events import (  # isort: skip
     gap_events as _gap_events,

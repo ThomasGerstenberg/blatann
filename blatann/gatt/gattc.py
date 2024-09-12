@@ -6,7 +6,9 @@ from typing import Callable, Iterable, List, Optional
 
 from blatann import gatt
 from blatann.bt_sig.uuids import DeclarationUuid, DescriptorUuid, Uuid
-from blatann.event_args import *
+from blatann.event_args import (
+    NotificationReceivedEventArgs, ReadCompleteEventArgs, SubscriptionWriteCompleteEventArgs, WriteCompleteEventArgs
+)
 from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException
 from blatann.gatt.gattc_attribute import GattcAttribute

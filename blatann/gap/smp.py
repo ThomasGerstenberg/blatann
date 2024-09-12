@@ -6,7 +6,10 @@ import threading
 import typing
 from typing import Union
 
-from blatann.event_args import *
+from blatann.event_args import (
+    PairingCompleteEventArgs, PairingRejectedEventArgs, PairingRejectedReason, PasskeyDisplayEventArgs,
+    PasskeyEntryEventArgs, PeripheralSecurityRequestEventArgs, SecurityLevelChangedEventArgs, SecurityProcess
+)
 from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.gap import smp_crypto

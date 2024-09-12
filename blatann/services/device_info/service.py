@@ -9,7 +9,13 @@ from blatann.gatt import GattStatusCode
 from blatann.gatt.gattc import GattcService
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
 from blatann.services import ble_data_types
-from blatann.services.device_info.constants import *
+from blatann.services.device_info.constants import (
+    DIS_SERVICE_UUID, FIRMWARE_REV_UUID, HARDWARE_REV_UUID, MANUFACTURER_NAME_UUID, MODEL_NUMBER_UUID, PNP_ID_UUID,
+    REGULATORY_CERT_UUID, SERIAL_NUMBER_UUID, SOFTWARE_REV_UUID, SYSTEM_ID_UUID, FirmwareRevisionCharacteristic,
+    HardwareRevisionCharacteristic, ManufacturerNameCharacteristic, ModelNumberCharacteristic, PnpIdCharacteristic,
+    RegulatoryCertificateCharacteristic, SerialNumberCharacteristic, SoftwareRevisionCharacteristic,
+    SystemIdCharacteristic
+)
 from blatann.services.device_info.data_types import PnpId, SystemId
 from blatann.waitables import EventWaitable
 

@@ -4,13 +4,12 @@ GATT Classes
 from __future__ import annotations
 
 import logging
-from enum import Enum
 
 import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
-from blatann.nrf.nrf_types.enums import *
-from blatann.nrf.nrf_types.generic import BLEUUID, BLEUUIDBase
-from blatann.nrf.nrf_types.smp import *
+from blatann.nrf.nrf_types.enums import BLEGattExecWriteFlag, BLEGattHVXType, BLEGattStatusCode, BLEGattWriteOperation
+from blatann.nrf.nrf_types.generic import BLEUUID
+from blatann.nrf.nrf_types.smp import BLEGapSecMode, BLEGapSecModeType
 from blatann.utils import repr_format
 
 __all__ = [
@@ -22,7 +21,6 @@ __all__ = [
     "BLEGattCharacteristic",
     "BLEGattCharacteristicProperties",
     "BLEGattcWriteParams",
-    "BleGattEnableParams",
     "BLEGattExtendedCharacteristicProperties",
     "BleGattHandle",
     "BLEGattsAttribute",
@@ -30,7 +28,6 @@ __all__ = [
     "BLEGattsAuthorizeParams",
     "BLEGattsCharHandles",
     "BLEGattsCharMetadata",
-    "BleGattsEnableParams",
     "BLEGattService",
     "BLEGattsHvx",
     "BLEGattsPresentationFormat",
@@ -47,16 +44,6 @@ BLE_GATT_HANDLE_INVALID = driver.BLE_GATT_HANDLE_INVALID
 BLE_GATTS_ATTR_TAB_SIZE_DEFAULT = driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT
 
 # TODO: BleGattCharExtProps
-
-
-class BleGattEnableParams:
-    def __init__(self, max_att_mtu=0):
-        self.att_mtu = max_att_mtu
-
-    def to_c(self):
-        params = driver.ble_gatt_enable_params_t()
-        params.att_mtu = self.att_mtu
-        return params
 
 
 class BLEGattCharacteristicProperties:
@@ -263,19 +250,6 @@ class BLEGattcAttrInfo128:
 GATTS Classes
 """
 # TODO: BleGattsCharPf
-
-
-class BleGattsEnableParams:
-    def __init__(self, service_changed, attribute_table_size):
-        assert attribute_table_size % 4 == 0  # attribute table size must be a multiple of 4
-        self.service_changed = service_changed
-        self.attribute_table_size = attribute_table_size
-
-    def to_c(self):
-        params = driver.ble_gatts_enable_params_t()
-        params.service_changed = self.service_changed
-        params.attr_tab_size = self.attribute_table_size
-        return params
 
 
 class BLEGattsCharHandles:

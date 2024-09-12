@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pc_ble_driver_py.exceptions import NordicSemiException
 
-from blatann.nrf.nrf_types.config import *
-from blatann.nrf.nrf_types.enums import *
-from blatann.nrf.nrf_types.gap import *
-from blatann.nrf.nrf_types.gatt import *
-from blatann.nrf.nrf_types.generic import *
-from blatann.nrf.nrf_types.smp import *
+from blatann.nrf.nrf_types.config import *  # noqa: F403
+from blatann.nrf.nrf_types.enums import *  # noqa: F403
+from blatann.nrf.nrf_types.gap import *  # noqa: F403
+from blatann.nrf.nrf_types.gatt import *  # noqa: F403
+from blatann.nrf.nrf_types.generic import *  # noqa: F403
+from blatann.nrf.nrf_types.smp import *  # noqa: F403
 
 from blatann.nrf.nrf_types import (  # isort: skip
     config as _config,

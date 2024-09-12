@@ -8,7 +8,7 @@ from typing import Iterable, List, Optional, Union
 
 from blatann import gatt
 from blatann.bt_sig.uuids import DescriptorUuid
-from blatann.event_args import *
+from blatann.event_args import NotificationCompleteEventArgs, SubscriptionStateChangeEventArgs, WriteEventArgs
 from blatann.event_type import Event, EventSource
 from blatann.exceptions import InvalidOperationException, InvalidStateException
 from blatann.gatt import PresentationFormat

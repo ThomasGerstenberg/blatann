@@ -7,7 +7,10 @@ from blatann.event_type import Event, EventSource
 from blatann.gatt import MTU_SIZE_DEFAULT, WRITE_BYTE_OVERHEAD
 from blatann.gatt.gatts import GattsCharacteristicProperties, GattsService
 from blatann.services.ble_data_types import BleDataStream, Uint16
-from blatann.services.nordic_uart.constants import *
+from blatann.services.nordic_uart import (
+    NORDIC_UART_FEATURE_CHARACTERISTIC_UUID, NORDIC_UART_RX_CHARACTERISTIC_UUID, NORDIC_UART_SERVICE_UUID,
+    NORDIC_UART_TX_CHARACTERISTIC_UUID
+)
 from blatann.waitables.event_waitable import EventWaitable
 
 logger = logging.getLogger(__name__)
