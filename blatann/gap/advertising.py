@@ -24,7 +24,7 @@ class Advertiser:
     # Constant used to indicate that the BLE device should advertise indefinitely, until
     # connected to or stopped manually
     ADVERTISE_FOREVER = 0
-    """Special value used to indicate that the BLE device should advertise indefinitely 
+    """Special value used to indicate that the BLE device should advertise indefinitely
        until either a central is connected or stopped manually."""
 
     def __init__(self, ble_device, client, conn_tag=0):

@@ -24,7 +24,7 @@ The minimum allowed MTU size
 MTU_SIZE_MINIMUM = 23
 
 """
-The ideal MTU size to use when using the maximum link-layer Data Length Extension setting (251) 
+The ideal MTU size to use when using the maximum link-layer Data Length Extension setting (251)
 """
 MTU_SIZE_FOR_MAX_DLE = 247
 

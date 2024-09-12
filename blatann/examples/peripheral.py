@@ -304,7 +304,7 @@ def main(serial_port):
     counting_char_thread.join()
     logger.info("Done")
     ble_device.close()
-    
+
 
 if __name__ == '__main__':
     main("COM6")
