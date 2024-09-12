@@ -1,14 +1,30 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, IntEnum
-
-from pc_ble_driver_py.lib import nrf_ble_driver_sd_api_v5
+from enum import IntEnum
 
 from blatann.nrf import nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "BleConnConfig",
+    "BleEnableConfig",
+    "BleEnableOpt",
+    "BleOptConnEventExtension",
+    "BleOptGapAuthPayloadTimeout",
+    "BleOptGapChannelMap",
+    "BleOptGapCompatMode1",
+    "BleOptGapLocalConnLatency",
+    "BleOptGapPasskey",
+    "BleOptGapScanRequestReport",
+    "BleOptGapSlaveLatencyDisable",
+    "BleOption",
+    "BleOptionFlag",
+    "BleOptPaLna",
+    "BlePaLnaConfig",
+]
 
 
 class BleOptionFlag(IntEnum):
@@ -23,7 +39,7 @@ class BleOptionFlag(IntEnum):
     gap_slave_latency_disable = driver.BLE_GAP_OPT_SLAVE_LATENCY_DISABLE
 
 
-class BleOption(object):
+class BleOption:
     option_flag = None
     path = ""
 
@@ -44,7 +60,7 @@ class BleEnableOpt(BleOption):
         return opt
 
 
-class BleOptConnEventExtenion(BleEnableOpt):
+class BleOptConnEventExtension(BleEnableOpt):
     option_flag = BleOptionFlag.conn_event_extension
     path = "common_opt.conn_evt_ext"
     _driver_type = driver.ble_common_opt_conn_evt_ext_t
@@ -177,7 +193,7 @@ class BleOptGapSlaveLatencyDisable(BleOption):
         opt.disable = int(self.disabled)
 
 
-class BleEnableConfig(object):
+class BleEnableConfig:
     def __init__(self,
                  vs_uuid_count=10,
                  periph_role_count=driver.BLE_GAP_ROLE_COUNT_PERIPH_DEFAULT,
@@ -241,7 +257,7 @@ class BleEnableConfig(object):
         yield self.get_attr_tab_size_cfg()
 
 
-class BleConnConfig(object):
+class BleConnConfig:
     DEFAULT_CONN_TAG = 1
 
     def __init__(self, conn_tag=DEFAULT_CONN_TAG,

@@ -5,6 +5,30 @@ from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.generic_events import BLEEvent
 from blatann.nrf.nrf_types import *
 
+__all__ = [
+    "GattEvt",
+    "GattcEvt",
+    "GattcEvtAttrInfoDiscoveryResponse",
+    "GattcEvtCharacteristicDiscoveryResponse",
+    "GattcEvtDescriptorDiscoveryResponse",
+    "GattcEvtHvx",
+    "GattcEvtMtuExchangeResponse",
+    "GattcEvtPrimaryServiceDiscoveryResponse",
+    "GattcEvtReadResponse",
+    "GattcEvtTimeout",
+    "GattcEvtWriteCmdTxComplete",
+    "GattcEvtWriteResponse",
+    "GattsEvt",
+    "GattsEvtExchangeMtuRequest",
+    "GattsEvtHandleValueConfirm",
+    "GattsEvtNotificationTxComplete",
+    "GattsEvtRead",
+    "GattsEvtReadWriteAuthorizeRequest",
+    "GattsEvtSysAttrMissing",
+    "GattsEvtTimeout",
+    "GattsEvtWrite",
+]
+
 """
 Base Event Classes
 """

@@ -16,7 +16,7 @@ from blatann.utils.queued_tasks_manager import QueuedTasksManagerBase
 logger = logging.getLogger(__name__)
 
 
-class _ReadTask(object):
+class _ReadTask:
     _id_generator = SynchronousMonotonicCounter(1)
 
     def __init__(self, handle, callback):
@@ -31,7 +31,7 @@ class _ReadTask(object):
         self.callback(sender, self)
 
 
-class _WriteTask(object):
+class _WriteTask:
     _id_generator = SynchronousMonotonicCounter(1)
 
     def __init__(self, handle, data, callback, with_response=True):
@@ -230,7 +230,7 @@ class GattcOperationManager:
         self._write_no_response_manager.clear_all()
 
 
-class _Notification(object):
+class _Notification:
     _id_generator = SynchronousMonotonicCounter(1)
 
     def __init__(self, characteristic, handle, on_complete, data):

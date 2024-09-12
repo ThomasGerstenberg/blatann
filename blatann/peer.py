@@ -4,15 +4,14 @@ import asyncio
 import enum
 import logging
 import threading
-from typing import Optional, Tuple, Type
+from typing import Callable, Optional, Tuple, Type
 
 from blatann.event_args import *
 from blatann.event_type import Event, EventSource
 from blatann.gap import smp
 from blatann.gap.gap_types import ActiveConnectionParameters, ConnectionParameters, PeerAddress, Phy
 from blatann.gatt import DLE_MAX, DLE_MIN, DLE_OVERHEAD, MTU_SIZE_DEFAULT, MTU_SIZE_MINIMUM, gattc, service_discovery
-from blatann.nrf import nrf_events
-from blatann.nrf.nrf_types import BLEGapDataLengthParams
+from blatann.nrf import nrf_events, nrf_types
 from blatann.nrf.nrf_types.enums import BLE_CONN_HANDLE_INVALID
 from blatann.waitables.event_waitable import EventWaitable
 from blatann.waitables.waitable import EmptyWaitable, Waitable
@@ -33,7 +32,7 @@ DEFAULT_CONNECTION_PARAMS = ConnectionParameters(15, 30, 4000, 0)
 DEFAULT_SECURITY_PARAMS = smp.SecurityParameters(reject_pairing_requests=True)
 
 
-class Peer(object):
+class Peer:
     """
     Object that represents a BLE-connected (or disconnected) peer
     """
@@ -76,7 +75,7 @@ class Peer(object):
         self._negotiated_mtu_size = None
         self._preferred_phy = preferred_phy
         self._current_phy = Phy.one_mbps
-        self._disconnection_reason = nrf_events.BLEHci.local_host_terminated_connection
+        self._disconnection_reason = nrf_types.BLEHci.local_host_terminated_connection
 
         self._connection_based_driver_event_handlers = {}
         self._connection_handler_lock = threading.Lock()
@@ -330,7 +329,7 @@ class Peer(object):
     Public Methods
     """
 
-    def disconnect(self, status_code=nrf_events.BLEHci.remote_user_terminated_connection) -> Waitable[Tuple[Peer, DisconnectionEventArgs]]:
+    def disconnect(self, status_code=nrf_types.BLEHci.remote_user_terminated_connection) -> Waitable[Tuple[Peer, DisconnectionEventArgs]]:
         """
         Disconnects from the peer, giving the optional status code.
         Returns a waitable that will trigger when the disconnection is complete.
@@ -418,7 +417,7 @@ class Peer(object):
         else:
             data_length = self.mtu_size + DLE_OVERHEAD
 
-        params = BLEGapDataLengthParams(data_length, data_length)
+        params = nrf_types.BLEGapDataLengthParams(data_length, data_length)
         self._ble_device.ble_driver.ble_gap_data_length_update(self.conn_handle, params)
         return EventWaitable(self._on_data_length_updated)
 
@@ -631,7 +630,7 @@ class Peripheral(Peer):
                  write_no_resp_queue_size=1,
                  preferred_mtu_size=MTU_SIZE_DEFAULT,
                  preferred_phy=Phy.auto):
-        super().__init__(ble_device, nrf_events.BLEGapRoles.central, connection_params,
+        super().__init__(ble_device, nrf_types.BLEGapRoles.central, connection_params,
                          security_params, name, write_no_resp_queue_size,
                          preferred_mtu_size, preferred_phy)
         self.peer_address = peer_address
@@ -704,7 +703,7 @@ class Client(Peer):
                  write_no_resp_queue_size=1,
                  preferred_mtu_size=MTU_SIZE_DEFAULT,
                  preferred_phy=Phy.auto):
-        super().__init__(ble_device, nrf_events.BLEGapRoles.periph, connection_params,
+        super().__init__(ble_device, nrf_types.BLEGapRoles.periph, connection_params,
                          security_params, name, write_no_resp_queue_size,
                          preferred_mtu_size, preferred_phy)
         self._first_connection = True

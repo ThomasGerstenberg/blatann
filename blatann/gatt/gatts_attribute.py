@@ -166,8 +166,8 @@ class GattsAttribute(Attribute):
         self._on_write.notify(self, WriteEventArgs(self._value))
 
     def _on_write_auth_request(self, write_event: nrf_events.GattsEvtWrite):
-        if write_event.write_op in [nrf_events.BLEGattsWriteOperation.exec_write_req_cancel,
-                                    nrf_events.BLEGattsWriteOperation.exec_write_req_now]:
+        if write_event.write_op in [nrf_types.BLEGattsWriteOperation.exec_write_req_cancel,
+                                    nrf_types.BLEGattsWriteOperation.exec_write_req_now]:
             self._execute_queued_write(write_event.write_op)
             # Reply should already be handled in database since this can span multiple attributes and services
             return
@@ -191,10 +191,10 @@ class GattsAttribute(Attribute):
                 self._ble_device.ble_driver.ble_gatts_rw_authorize_reply(write_event.conn_handle, reply)
             except Exception:  # noqa: E722
                 pass
-            if write_event.write_op == nrf_events.BLEGattsWriteOperation.prep_write_req:
+            if write_event.write_op == nrf_types.BLEGattsWriteOperation.prep_write_req:
                 self._write_queued = True
                 self._queued_write_chunks.append(self._QueuedChunk(write_event.offset, write_event.data))
-            elif write_event.write_op in [nrf_events.BLEGattsWriteOperation.write_req,
+            elif write_event.write_op in [nrf_types.BLEGattsWriteOperation.write_req,
                                           nrf_types.BLEGattsWriteOperation.write_cmd]:
                 self._on_gatts_write(None, write_event)
 
@@ -234,7 +234,7 @@ class GattsAttribute(Attribute):
             return
 
         self._write_queued = False
-        if write_op == nrf_events.BLEGattsWriteOperation.exec_write_req_cancel:
+        if write_op == nrf_types.BLEGattsWriteOperation.exec_write_req_cancel:
             logger.info("Cancelling write request, char: {}".format(self._uuid))
         else:
             logger.info("Executing write request, char: {}".format(self._uuid))

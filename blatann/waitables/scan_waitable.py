@@ -6,7 +6,7 @@ import threading
 from typing import Iterable
 
 from blatann.gap.advertise_data import ScanReport, ScanReportCollection
-from blatann.nrf.nrf_events import BLEGapTimeoutSrc, GapEvtAdvReport, GapEvtTimeout
+from blatann.nrf import nrf_events, nrf_types
 from blatann.waitables.waitable import Waitable
 
 
@@ -18,7 +18,7 @@ class ScanFinishedWaitable(Waitable):
     def __init__(self, ble_device):
         super().__init__()
         self.scanner = ble_device.scanner
-        ble_device.ble_driver.event_subscribe(self._on_timeout_event, GapEvtTimeout)
+        ble_device.ble_driver.event_subscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
         self.scanner.on_scan_received.register(self._on_scan_report)
         self.ble_driver = ble_device.ble_driver
         self._scan_report_queue = queue.Queue()
@@ -63,12 +63,12 @@ class ScanFinishedWaitable(Waitable):
             scan_report = await self._scan_report_queue.get()
 
     def _event_occurred(self, ble_driver):
-        ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
+        ble_driver.event_unsubscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
         self.scanner.on_scan_received.deregister(self._on_scan_report)
         self._notify(self.scanner.scan_report)
 
     def _on_timeout(self):
-        self.ble_driver.event_unsubscribe(self._on_timeout_event, GapEvtTimeout)
+        self.ble_driver.event_unsubscribe(self._on_timeout_event, nrf_events.GapEvtTimeout)
         self.scanner.on_scan_received.deregister(self._on_scan_report)
 
     def _add_item(self, scan_report):
@@ -82,11 +82,8 @@ class ScanFinishedWaitable(Waitable):
     def _on_scan_report(self, device, scan_report):
         self._add_item(scan_report)
 
-    def _on_timeout_event(self, ble_driver, event):
-        """
-        :type event: GapEvtTimeout
-        """
-        if event.src == BLEGapTimeoutSrc.scan:
+    def _on_timeout_event(self, ble_driver, event: nrf_events.GapEvtTimeout):
+        if event.src == nrf_types.BLEGapTimeoutSrc.scan:
             self._event_occurred(ble_driver)
             self._add_item(None)
 

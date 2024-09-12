@@ -4,6 +4,7 @@ import enum
 import logging
 import threading
 import typing
+from typing import Union
 
 from blatann.event_args import *
 from blatann.event_type import Event, EventSource

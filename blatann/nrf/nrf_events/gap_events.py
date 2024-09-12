@@ -1,11 +1,23 @@
 from __future__ import annotations
 
-from enum import IntEnum
-
-import blatann.nrf.nrf_driver_types as util
 from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.generic_events import BLEEvent
 from blatann.nrf.nrf_types import *
+
+__all__ = [
+    "GapEvt",
+    "GapEvtAdvReport",
+    "GapEvtConnected",
+    "GapEvtConnParamUpdate",
+    "GapEvtConnParamUpdateRequest",
+    "GapEvtDataLengthUpdate",
+    "GapEvtDataLengthUpdateRequest",
+    "GapEvtDisconnected",
+    "GapEvtPhyUpdate",
+    "GapEvtPhyUpdateRequest",
+    "GapEvtRssiChanged",
+    "GapEvtTimeout",
+]
 
 
 class GapEvt(BLEEvent):

@@ -230,7 +230,7 @@ class Advertiser(object):
         """
         :type event: nrf_events.GapEvtTimeout
         """
-        if event.src == nrf_events.BLEGapTimeoutSrc.advertising:
+        if event.src == nrf_types.BLEGapTimeoutSrc.advertising:
             # Notify that advertising timed out first which may call stop() to disable auto-restart
             self._on_advertising_timeout.notify(self)
             if self._auto_restart:

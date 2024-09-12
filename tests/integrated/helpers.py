@@ -11,13 +11,13 @@ from blatann.peer import Client, ConnectionParameters, Peripheral
 from blatann.uuid import generate_random_uuid128
 
 
-class PeriphConn(object):
+class PeriphConn:
     def __init__(self):
         self.dev: BleDevice = None
         self.peer: Client = None
 
 
-class CentralConn(object):
+class CentralConn:
     def __init__(self):
         self.dev: BleDevice = None
         self.peer: Peripheral = None

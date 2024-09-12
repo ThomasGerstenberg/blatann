@@ -4,7 +4,7 @@ import asyncio
 import logging
 import typing
 from collections import namedtuple
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Union
 
 from blatann import gatt
 from blatann.bt_sig.uuids import DescriptorUuid
@@ -18,7 +18,7 @@ from blatann.nrf import nrf_events, nrf_types
 from blatann.services.ble_data_types import BleDataStream
 from blatann.uuid import Uuid
 from blatann.waitables.event_queue import AsyncEventQueue, EventQueue
-from blatann.waitables.event_waitable import EventWaitable, IdBasedEventWaitable
+from blatann.waitables.event_waitable import IdBasedEventWaitable
 
 if typing.TYPE_CHECKING:
     from blatann.device import BleDevice
@@ -624,8 +624,8 @@ class GattsDatabase(gatt.GattDatabase):
         if not event.write:
             return
         # execute writes can span multiple services and characteristics. Should only reply at the top-level here
-        if event.write.write_op not in [nrf_events.BLEGattsWriteOperation.exec_write_req_now,
-                                        nrf_events.BLEGattsWriteOperation.exec_write_req_cancel]:
+        if event.write.write_op not in [nrf_types.BLEGattsWriteOperation.exec_write_req_now,
+                                        nrf_types.BLEGattsWriteOperation.exec_write_req_cancel]:
             return
         params = nrf_types.BLEGattsAuthorizeParams(nrf_types.BLEGattStatusCode.success, False)
         reply = nrf_types.BLEGattsRwAuthorizeReplyParams(write=params)

@@ -152,7 +152,7 @@ class BleDevice(NrfDriverObserver):
                   max_connected_peripherals=1,
                   max_connected_clients=1,
                   max_secured_peripherals=1,
-                  attribute_table_size=nrf_types.driver.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
+                  attribute_table_size=nrf_types.BLE_GATTS_ATTR_TAB_SIZE_DEFAULT,
                   att_mtu_max_size=MTU_SIZE_FOR_MAX_DLE,
                   event_length=6):
         """
@@ -178,8 +178,8 @@ class BleDevice(NrfDriverObserver):
         """
         if self.ble_driver.is_open:
             raise exceptions.InvalidStateException("Cannot configure the BLE device after it has been opened")
-        if event_length < nrf_types.driver.BLE_GAP_EVENT_LENGTH_MIN:
-            raise ValueError(f"Event length must be >= {nrf_types.driver.BLE_GAP_EVENT_LENGTH_MIN}")
+        if event_length < nrf_types.BLE_GAP_EVENT_LENGTH_MIN:
+            raise ValueError(f"Event length must be >= {nrf_types.BLE_GAP_EVENT_LENGTH_MIN}")
         self._ble_configuration = nrf_types.BleEnableConfig(vendor_specific_uuid_count, max_connected_clients,
                                                             max_connected_peripherals, max_secured_peripherals,
                                                             service_changed, attribute_table_size)
@@ -413,7 +413,7 @@ class BleDevice(NrfDriverObserver):
                                                     event.conn_params.max_conn_interval_ms,
                                                     event.conn_params.conn_sup_timeout_ms,
                                                     event.conn_params.slave_latency)
-            if event.role == nrf_events.BLEGapRoles.periph:
+            if event.role == nrf_types.BLEGapRoles.periph:
                 self.client.peer_connected(event.conn_handle, event.peer_addr, conn_params)
             else:
                 if self.connecting_peripheral.peer_address != event.peer_addr:
@@ -424,7 +424,7 @@ class BleDevice(NrfDriverObserver):
                     self.connecting_peripheral.peer_connected(event.conn_handle, event.peer_addr, conn_params)
                 self.connecting_peripheral = None
         if isinstance(event, nrf_events.GapEvtTimeout):
-            if event.src == nrf_events.BLEGapTimeoutSrc.conn:
+            if event.src == nrf_types.BLEGapTimeoutSrc.conn:
                 self.connecting_peripheral = None
         if isinstance(event, nrf_events.GapEvtDisconnected):
             for peer_address, p in self.connected_peripherals.items():

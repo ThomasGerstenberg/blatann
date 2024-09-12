@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import atexit
 import functools
+import logging
 import queue
 import traceback
 from threading import Event, Lock, Thread
@@ -86,12 +87,12 @@ def NordicSemiErrorCheck(wrapped=None, expected=driver.NRF_SUCCESS):
     return wrapper(wrapped)
 
 
-class NrfDriverObserver(object):
+class NrfDriverObserver:
     def on_driver_event(self, nrf_driver, event):
         pass
 
 
-class NrfDriver(object):
+class NrfDriver:
     default_baud_rate = 1000000
     ATT_MTU_DEFAULT = driver.BLE_GATT_ATT_MTU_DEFAULT
 

@@ -5,6 +5,18 @@ from blatann.nrf.nrf_dll_load import driver
 from blatann.nrf.nrf_events.gap_events import GapEvt
 from blatann.nrf.nrf_types import *
 
+__all__ = [
+    "GapEvtAuthKeyRequest",
+    "GapEvtAuthStatus",
+    "GapEvtConnSecUpdate",
+    "GapEvtLescDhKeyRequest",
+    "GapEvtPasskeyDisplay",
+    "GapEvtSec",
+    "GapEvtSecInfoRequest",
+    "GapEvtSecParamsRequest",
+    "GapEvtSecRequest",
+]
+
 
 class GapEvtSec(GapEvt):
     pass
