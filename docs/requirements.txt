@@ -1,3 +1,4 @@
-sphinx-autodoc-typehints
+sphinx-autodoc-typehints~=2.4
 pc-ble-driver-py
-sphinx-rtd-theme
+sphinx-rtd-theme>=3.0.0rc1
+sphinx~=8.0
