@@ -73,7 +73,7 @@ def main(serial_port):
             if event_args.status == GattStatusCode.success:
                 try:
                     fmt = PresentationFormat.decode(event_args.value)
-                    logger.info(f"Presentation Format: {str(fmt.format)}, Exponent: {fmt.exponent}, Unit: {str(fmt.unit)}")
+                    logger.info(f"Presentation Format: {fmt.format}, Exponent: {fmt.exponent}, Unit: {fmt.unit}")
                 except Exception as e:
                     logger.error("Failed to decode the presentation format descriptor")
                     logger.exception(e)

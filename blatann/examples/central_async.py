@@ -99,12 +99,14 @@ async def _main(ble_device: BleDevice):
 
     # Find the counting characteristic
     counting_char = peer.database.find_characteristic(constants.COUNTING_CHAR_UUID)
+
     if counting_char:
         # Create the task that will handle all notifications from this characteristic
-        asyncio.create_task(
+        counting_task = asyncio.create_task(
             handle_counting_char(counting_char)
         )
     else:
+        counting_task = None
         logger.warning("Failed to find counting characteristic")
 
     # Find the hex conversion characteristic. This characteristic takes in a bytestream and converts it to its
@@ -134,6 +136,10 @@ async def _main(ble_device: BleDevice):
     logger.info("Disconnecting from peripheral")
     await peer.disconnect().as_async()
     ble_device.close()
+
+    # Wait for the counting task to exit
+    if counting_task:
+        await counting_task
 
 
 def main(serial_port):

@@ -133,7 +133,7 @@ class Scanner:
 
         try:
             self.ble_device.ble_driver.ble_gap_scan_stop()
-        except Exception:  # noqa: E722
+        except Exception:
             # Ignore errors in case scanning wasn't active
             pass
 

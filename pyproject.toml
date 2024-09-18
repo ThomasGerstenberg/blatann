@@ -41,13 +41,19 @@ line-length = 120
 target-version = "py37"
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "W"]
-ignore = ["F401"]  # ignore unused imports globally, revisit this suppression later
+select = ["E", "F", "W", "PLC", "PLW", "PLE", "RUF"]
+ignore = [
+    "F401",   # ignore unused imports globally, revisit this suppression later
+    "E501",   # ignore line lengths. While it's set at 120, it's not a hard limit
+    "RUF012", # ignore docstring required for mutable class var (revisit later)
+    "RUF013", # allow implicit optional, e.g. allow 'def my_fun(x: int = None)'
+]
 
 [tool.ruff.lint.per-file-ignores]
 "blatann/nrf/nrf_driver.py" = ["F405"]
 "blatann/nrf/nrf_events/__init__.py" = ["F403", "F405"]
 "blatann/nrf/nrf_types/__init__.py" = ["F403"]
+"blatann/bt_sig/*.py" = ["RUF001"]
 
 [tool.ruff.format]
 quote-style = "double"

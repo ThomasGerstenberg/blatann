@@ -117,9 +117,10 @@ class EventSource(Event):
         for h in handlers:
             if isinstance(h, weakref.ref):
                 h_ref = h
-                h = h_ref()
+                h = h_ref()  # noqa: PLW2901  allow reassignment to iterated 'h'
                 if h is None:
                     dead_weakrefs.append(h_ref)
+                    continue
 
             try:
                 h(sender, event_args)

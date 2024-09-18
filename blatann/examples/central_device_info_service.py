@@ -62,7 +62,7 @@ def main(serial_port):
     for char in device_info.CHARACTERISTICS:
         if dis.has(char):
             logger.info("Reading characteristic: {}...".format(char))
-            char, event_args = dis.get(char).wait()
+            _, event_args = dis.get(char).wait()
             if isinstance(event_args.value, bytes):
                 value = event_args.value.decode("utf8")
             else:

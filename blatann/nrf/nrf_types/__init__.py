@@ -18,7 +18,7 @@ from blatann.nrf.nrf_types import (  # isort: skip
     smp as _smp
 )
 
-__all__ = [
+__all__ = [  # noqa PLE0604 - *_mod.__all__ is rexporting the submodules
     "NordicSemiException",
     *_config.__all__,
     *_enums.__all__,
