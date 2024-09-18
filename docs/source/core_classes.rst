@@ -52,6 +52,7 @@ the user can register a handler to be called when the operation completes:
 ``async`` methods are also provided for use with asyncio:
 
 .. code-block:: python
+
     # BLE operations support async/await
     sender, event_args = await characteristic.read().as_async(timeout=5)
     # Characteristic operations can be iterated as an async queue

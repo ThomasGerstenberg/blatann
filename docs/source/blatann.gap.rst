@@ -21,3 +21,4 @@ Submodules
    blatann.gap.scanning
    blatann.gap.smp
    blatann.gap.smp_crypto
+   blatann.gap.smp_types
