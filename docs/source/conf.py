@@ -26,9 +26,9 @@ copyright = u'2019, Thomas Gerstenberg'
 author = u'Thomas Gerstenberg'
 
 # The short X.Y version
-version = u'v0.5.x'
+version = u'v0.6.x'
 # The full version, including alpha/beta/rc tags
-release = u'v0.5.0'
+release = u'v0.6.0'
 
 
 # -- General configuration ---------------------------------------------------

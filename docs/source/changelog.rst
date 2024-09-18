@@ -1,6 +1,45 @@
 Changelog
 =========
 
+
+v0.6.0
+------
+
+v0.6.0 is mostly a maintenance release and adds support for some new experimental async APIs.
+Full list of issues and PRs for this release can be found here: `0.6.0 Milestone`_
+
+**Highlights**
+
+- *[Experimental]* Adds async support to waitables for use in asyncio event loops.
+
+  - See the new ``peripheral_async.py`` and ``central_async.py`` examples for usage,
+    but generally any invocation of ``ble_operation().wait()`` can be modified to ``await ble_operation().as_async()``
+
+  - **Note:** this API is only *partially* async.
+    The USB communications to the BLE device is still synchronous (blocking), but the longer BLE operations can now be async.
+
+- Adds convenience method to the client to wait for an incoming connection as a peripheral (ex: ``ble_device.client.wait_for_connection(timeout)``)
+
+**Fixes**
+
+- Fixes a warning emitted by a recent version of the cryptography library (thanks @AnatoleMombrun)
+
+- Fixes issue with the Nordic UART Client not respecting the negotiated MTU size (thanks @linuslundin)
+
+- Fixes a few minor bugs uncovered through linting
+
+- Fixes issue with incorrect response when requesting a record from an empty glucose database in the glucose service
+
+**Changes**
+
+- **[Potential Breaking Change]** The import structure for some non-public-facing files have been adjusted for correctness.
+  Typical usage of the API should not be affected, likely only affected if importing types from the inner ``blatann.nrf`` package
+
+- Miscellaneous documentation updates (thanks @mdxs)
+
+- Adds optional parameters when connecting as a client to set the preferred MTU size and PHY in case the peripheral initiates those BLE operations first
+
+
 v0.5.0
 ------
 
@@ -314,6 +353,7 @@ public API should be mostly unchanged except for the noted changes below.
 
 .. _0.4.0 Milestone: https://github.com/ThomasGerstenberg/blatann/milestone/7?closed=1
 .. _0.5.0 Milestone: https://github.com/ThomasGerstenberg/blatann/milestone/8?closed=1
+.. _0.6.0 Milestone: https://github.com/ThomasGerstenberg/blatann/milestone/9?closed=1
 .. _Event callback example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/tests/integrated/test_advertising_duration.py#L48
 .. _ScanFinishedWaitable example: https://github.com/ThomasGerstenberg/blatann/blob/1f85c68cf6db84ba731a55d3d22b8c2eb0d2779b/blatann/examples/scanner.py#L20
 .. _Peripheral Descriptor Example: https://github.com/ThomasGerstenberg/blatann/blob/master/blatann/examples/peripheral_descriptors.py
